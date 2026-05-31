@@ -1,0 +1,17 @@
+apiVersion: kudeploy.com/v1alpha1
+kind: BuildRun
+metadata:
+  name: whoami-latest
+  namespace: whoami
+spec:
+  context: .
+  dockerfile: ./Dockerfile
+  git:
+    url: https://github.com/kudeploy/whoami
+    secretRef:
+      name: git-credentials
+  image:
+    repository: ghcr.io/kudeploy/whoami
+    tag: latest
+    secretRef:
+      name: image-credentials
