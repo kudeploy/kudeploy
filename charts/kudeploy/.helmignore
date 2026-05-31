@@ -2,5 +2,7 @@
 .git/
 .gitignore
 .helmignore
+node_modules/
+package.json
 *.swp
 *.tmp

@@ -8,7 +8,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types",
     "version-packages": "changeset version && node scripts/sync-chart-versions.mjs && helm dependency update charts/kudeploy-controller && helm dependency update charts/kudeploy",
-    "publish-packages": "changeset publish"
+    "publish-packages": "node scripts/publish-packages.mjs"
   },
   "devDependencies": {
     "@changesets/cli": "^2.31.0",

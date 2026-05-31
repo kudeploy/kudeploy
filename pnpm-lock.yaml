@@ -23,9 +23,20 @@ importers:
 
   apps/controller: {}
 
-  charts/kudeploy: {}
+  charts/kudeploy:
+    dependencies:
+      '@kudeploy/chart-kudeploy-controller':
+        specifier: workspace:*
+        version: link:../kudeploy-controller
+      '@kudeploy/chart-kudeploy-crds':
+        specifier: workspace:*
+        version: link:../kudeploy-crds
 
-  charts/kudeploy-controller: {}
+  charts/kudeploy-controller:
+    dependencies:
+      '@kudeploy/controller':
+        specifier: workspace:*
+        version: link:../../apps/controller
 
   charts/kudeploy-crds: {}
 

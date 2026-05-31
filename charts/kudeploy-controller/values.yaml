@@ -13,8 +13,8 @@ replicaCount: 1
 
 image:
   registry: ghcr.io
-  repository: kudeploy/kudeploy-controller
-  tag: latest
+  repository: kudeploy/controller
+  tag: ""
   digest: ""
   pullPolicy: IfNotPresent
   pullSecrets: []
