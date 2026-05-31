@@ -1,0 +1,110 @@
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+
+nameOverride: ""
+fullnameOverride: ""
+namespaceOverride: ""
+
+commonLabels: {}
+commonAnnotations: {}
+
+replicaCount: 1
+
+image:
+  registry: ghcr.io
+  repository: kudeploy/kudeploy-controller
+  tag: latest
+  digest: ""
+  pullPolicy: IfNotPresent
+  pullSecrets: []
+
+controller:
+  command:
+    - /manager
+  extraArgs: []
+
+leaderElection:
+  enabled: true
+
+healthProbe:
+  bindAddress: ":8081"
+  port: 8081
+  liveness:
+    initialDelaySeconds: 15
+    periodSeconds: 20
+  readiness:
+    initialDelaySeconds: 5
+    periodSeconds: 10
+
+metrics:
+  enabled: true
+  bindAddress: ":8443"
+  port: 8443
+  service:
+    enabled: true
+    type: ClusterIP
+    port: 8443
+    annotations: {}
+  serviceMonitor:
+    enabled: false
+    namespace: ""
+    additionalLabels: {}
+    interval: ""
+    scrapeTimeout: ""
+    path: /metrics
+    scheme: https
+    bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+    tlsConfig:
+      insecureSkipVerify: true
+
+networkPolicy:
+  enabled: false
+  namespaceSelector:
+    matchLabels:
+      metrics: enabled
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+rbac:
+  create: true
+  userRoles:
+    create: true
+
+podAnnotations:
+  kubectl.kubernetes.io/default-container: manager
+podLabels: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  readOnlyRootFilesystem: true
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 128Mi
+  requests:
+    cpu: 10m
+    memory: 64Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+priorityClassName: ""
+
+extraEnv: []
+extraVolumeMounts: []
+extraVolumes: []
+
+terminationGracePeriodSeconds: 10

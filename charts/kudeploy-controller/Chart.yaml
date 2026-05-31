@@ -1,0 +1,10 @@
+apiVersion: v2
+name: kudeploy-controller
+description: Kudeploy Kubernetes controller.
+type: application
+version: 0.1.0
+appVersion: 0.1.0
+dependencies:
+  - name: common
+    version: 0.x.x
+    repository: oci://ghcr.io/community-helm-charts

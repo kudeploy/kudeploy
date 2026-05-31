@@ -2,10 +2,10 @@
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: {{ include "kudeploy.fullname" . }}-metrics
-  namespace: {{ default (include "kudeploy.namespace" .) .Values.metrics.serviceMonitor.namespace }}
+  name: {{ include "kudeploy-controller.fullname" . }}-metrics
+  namespace: {{ default (include "kudeploy-controller.namespace" .) .Values.metrics.serviceMonitor.namespace }}
   labels:
-    {{- include "kudeploy.labels" . | nindent 4 }}
+    {{- include "kudeploy-controller.labels" . | nindent 4 }}
     {{- with .Values.metrics.serviceMonitor.additionalLabels }}
     {{- include "common.tplvalues.render" (dict "value" . "context" $) | nindent 4 }}
     {{- end }}
@@ -27,5 +27,5 @@ spec:
       {{- end }}
   selector:
     matchLabels:
-      {{- include "kudeploy.selectorLabels" . | nindent 6 }}
+      {{- include "kudeploy-controller.selectorLabels" . | nindent 6 }}
 {{- end }}

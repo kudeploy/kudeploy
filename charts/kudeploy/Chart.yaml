@@ -1,6 +1,6 @@
 apiVersion: v2
 name: kudeploy
-description: Kudeploy Kubernetes controller.
+description: Kudeploy aggregate chart.
 type: application
 version: 0.1.0
 appVersion: latest
@@ -8,6 +8,6 @@ dependencies:
   - name: kudeploy-crds
     version: 0.x.x
     repository: file://../kudeploy-crds
-  - name: common
+  - name: kudeploy-controller
     version: 0.x.x
-    repository: oci://ghcr.io/community-helm-charts
+    repository: file://../kudeploy-controller

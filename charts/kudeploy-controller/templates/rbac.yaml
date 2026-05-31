@@ -2,9 +2,9 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: {{ include "kudeploy.fullname" . }}-manager
+  name: {{ include "kudeploy-controller.fullname" . }}-manager
   labels:
-    {{- include "kudeploy.labels" . | nindent 4 }}
+    {{- include "kudeploy-controller.labels" . | nindent 4 }}
 rules:
   - apiGroups:
       - ""
@@ -94,25 +94,25 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: {{ include "kudeploy.fullname" . }}-manager
+  name: {{ include "kudeploy-controller.fullname" . }}-manager
   labels:
-    {{- include "kudeploy.labels" . | nindent 4 }}
+    {{- include "kudeploy-controller.labels" . | nindent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: {{ include "kudeploy.fullname" . }}-manager
+  name: {{ include "kudeploy-controller.fullname" . }}-manager
 subjects:
   - kind: ServiceAccount
-    name: {{ include "kudeploy.serviceAccountName" . }}
-    namespace: {{ include "kudeploy.namespace" . }}
+    name: {{ include "kudeploy-controller.serviceAccountName" . }}
+    namespace: {{ include "kudeploy-controller.namespace" . }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: {{ include "kudeploy.fullname" . }}-leader-election
-  namespace: {{ include "kudeploy.namespace" . }}
+  name: {{ include "kudeploy-controller.fullname" . }}-leader-election
+  namespace: {{ include "kudeploy-controller.namespace" . }}
   labels:
-    {{- include "kudeploy.labels" . | nindent 4 }}
+    {{- include "kudeploy-controller.labels" . | nindent 4 }}
 rules:
   - apiGroups:
       - ""
@@ -149,25 +149,25 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: {{ include "kudeploy.fullname" . }}-leader-election
-  namespace: {{ include "kudeploy.namespace" . }}
+  name: {{ include "kudeploy-controller.fullname" . }}-leader-election
+  namespace: {{ include "kudeploy-controller.namespace" . }}
   labels:
-    {{- include "kudeploy.labels" . | nindent 4 }}
+    {{- include "kudeploy-controller.labels" . | nindent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: {{ include "kudeploy.fullname" . }}-leader-election
+  name: {{ include "kudeploy-controller.fullname" . }}-leader-election
 subjects:
   - kind: ServiceAccount
-    name: {{ include "kudeploy.serviceAccountName" . }}
-    namespace: {{ include "kudeploy.namespace" . }}
+    name: {{ include "kudeploy-controller.serviceAccountName" . }}
+    namespace: {{ include "kudeploy-controller.namespace" . }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: {{ include "kudeploy.fullname" . }}-metrics-auth
+  name: {{ include "kudeploy-controller.fullname" . }}-metrics-auth
   labels:
-    {{- include "kudeploy.labels" . | nindent 4 }}
+    {{- include "kudeploy-controller.labels" . | nindent 4 }}
 rules:
   - apiGroups:
       - authentication.k8s.io
@@ -185,24 +185,24 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: {{ include "kudeploy.fullname" . }}-metrics-auth
+  name: {{ include "kudeploy-controller.fullname" . }}-metrics-auth
   labels:
-    {{- include "kudeploy.labels" . | nindent 4 }}
+    {{- include "kudeploy-controller.labels" . | nindent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: {{ include "kudeploy.fullname" . }}-metrics-auth
+  name: {{ include "kudeploy-controller.fullname" . }}-metrics-auth
 subjects:
   - kind: ServiceAccount
-    name: {{ include "kudeploy.serviceAccountName" . }}
-    namespace: {{ include "kudeploy.namespace" . }}
+    name: {{ include "kudeploy-controller.serviceAccountName" . }}
+    namespace: {{ include "kudeploy-controller.namespace" . }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: {{ include "kudeploy.fullname" . }}-metrics-reader
+  name: {{ include "kudeploy-controller.fullname" . }}-metrics-reader
   labels:
-    {{- include "kudeploy.labels" . | nindent 4 }}
+    {{- include "kudeploy-controller.labels" . | nindent 4 }}
 rules:
   - nonResourceURLs:
       - /metrics
@@ -213,9 +213,9 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: {{ include "kudeploy.fullname" . }}-buildrun-admin
+  name: {{ include "kudeploy-controller.fullname" . }}-buildrun-admin
   labels:
-    {{- include "kudeploy.labels" . | nindent 4 }}
+    {{- include "kudeploy-controller.labels" . | nindent 4 }}
 rules:
   - apiGroups:
       - kudeploy.com
@@ -233,9 +233,9 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: {{ include "kudeploy.fullname" . }}-buildrun-editor
+  name: {{ include "kudeploy-controller.fullname" . }}-buildrun-editor
   labels:
-    {{- include "kudeploy.labels" . | nindent 4 }}
+    {{- include "kudeploy-controller.labels" . | nindent 4 }}
 rules:
   - apiGroups:
       - kudeploy.com
@@ -259,9 +259,9 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: {{ include "kudeploy.fullname" . }}-buildrun-viewer
+  name: {{ include "kudeploy-controller.fullname" . }}-buildrun-viewer
   labels:
-    {{- include "kudeploy.labels" . | nindent 4 }}
+    {{- include "kudeploy-controller.labels" . | nindent 4 }}
 rules:
   - apiGroups:
       - kudeploy.com
@@ -281,9 +281,9 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: {{ include "kudeploy.fullname" . }}-project-admin
+  name: {{ include "kudeploy-controller.fullname" . }}-project-admin
   labels:
-    {{- include "kudeploy.labels" . | nindent 4 }}
+    {{- include "kudeploy-controller.labels" . | nindent 4 }}
 rules:
   - apiGroups:
       - kudeploy.com
@@ -301,9 +301,9 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: {{ include "kudeploy.fullname" . }}-project-editor
+  name: {{ include "kudeploy-controller.fullname" . }}-project-editor
   labels:
-    {{- include "kudeploy.labels" . | nindent 4 }}
+    {{- include "kudeploy-controller.labels" . | nindent 4 }}
 rules:
   - apiGroups:
       - kudeploy.com
@@ -327,9 +327,9 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: {{ include "kudeploy.fullname" . }}-project-viewer
+  name: {{ include "kudeploy-controller.fullname" . }}-project-viewer
   labels:
-    {{- include "kudeploy.labels" . | nindent 4 }}
+    {{- include "kudeploy-controller.labels" . | nindent 4 }}
 rules:
   - apiGroups:
       - kudeploy.com

@@ -21,6 +21,14 @@ importers:
         specifier: 5.9.2
         version: 5.9.2
 
+  apps/controller: {}
+
+  charts/kudeploy: {}
+
+  charts/kudeploy-controller: {}
+
+  charts/kudeploy-crds: {}
+
 packages:
 
   '@babel/runtime@7.29.7':
