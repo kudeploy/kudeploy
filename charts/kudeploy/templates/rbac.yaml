@@ -1,0 +1,349 @@
+{{- if .Values.rbac.create }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "kudeploy.fullname" . }}-manager
+  labels:
+    {{- include "kudeploy.labels" . | nindent 4 }}
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - namespaces
+      - serviceaccounts
+      - services
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - create
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - apps
+    resources:
+      - deployments
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - kudeploy.com
+    resources:
+      - buildruns
+      - deployments
+      - projects
+      - services
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - kudeploy.com
+    resources:
+      - buildruns/finalizers
+      - deployments/finalizers
+      - projects/finalizers
+      - services/finalizers
+    verbs:
+      - update
+  - apiGroups:
+      - kudeploy.com
+    resources:
+      - buildruns/status
+      - deployments/status
+      - projects/status
+      - services/status
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - tekton.dev
+    resources:
+      - pipelineruns
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "kudeploy.fullname" . }}-manager
+  labels:
+    {{- include "kudeploy.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "kudeploy.fullname" . }}-manager
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "kudeploy.serviceAccountName" . }}
+    namespace: {{ include "kudeploy.namespace" . }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "kudeploy.fullname" . }}-leader-election
+  namespace: {{ include "kudeploy.namespace" . }}
+  labels:
+    {{- include "kudeploy.labels" . | nindent 4 }}
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - coordination.k8s.io
+    resources:
+      - leases
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "kudeploy.fullname" . }}-leader-election
+  namespace: {{ include "kudeploy.namespace" . }}
+  labels:
+    {{- include "kudeploy.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "kudeploy.fullname" . }}-leader-election
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "kudeploy.serviceAccountName" . }}
+    namespace: {{ include "kudeploy.namespace" . }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "kudeploy.fullname" . }}-metrics-auth
+  labels:
+    {{- include "kudeploy.labels" . | nindent 4 }}
+rules:
+  - apiGroups:
+      - authentication.k8s.io
+    resources:
+      - tokenreviews
+    verbs:
+      - create
+  - apiGroups:
+      - authorization.k8s.io
+    resources:
+      - subjectaccessreviews
+    verbs:
+      - create
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "kudeploy.fullname" . }}-metrics-auth
+  labels:
+    {{- include "kudeploy.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "kudeploy.fullname" . }}-metrics-auth
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "kudeploy.serviceAccountName" . }}
+    namespace: {{ include "kudeploy.namespace" . }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "kudeploy.fullname" . }}-metrics-reader
+  labels:
+    {{- include "kudeploy.labels" . | nindent 4 }}
+rules:
+  - nonResourceURLs:
+      - /metrics
+    verbs:
+      - get
+{{- if .Values.rbac.userRoles.create }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "kudeploy.fullname" . }}-buildrun-admin
+  labels:
+    {{- include "kudeploy.labels" . | nindent 4 }}
+rules:
+  - apiGroups:
+      - kudeploy.com
+    resources:
+      - buildruns
+    verbs:
+      - "*"
+  - apiGroups:
+      - kudeploy.com
+    resources:
+      - buildruns/status
+    verbs:
+      - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "kudeploy.fullname" . }}-buildrun-editor
+  labels:
+    {{- include "kudeploy.labels" . | nindent 4 }}
+rules:
+  - apiGroups:
+      - kudeploy.com
+    resources:
+      - buildruns
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - kudeploy.com
+    resources:
+      - buildruns/status
+    verbs:
+      - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "kudeploy.fullname" . }}-buildrun-viewer
+  labels:
+    {{- include "kudeploy.labels" . | nindent 4 }}
+rules:
+  - apiGroups:
+      - kudeploy.com
+    resources:
+      - buildruns
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - kudeploy.com
+    resources:
+      - buildruns/status
+    verbs:
+      - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "kudeploy.fullname" . }}-project-admin
+  labels:
+    {{- include "kudeploy.labels" . | nindent 4 }}
+rules:
+  - apiGroups:
+      - kudeploy.com
+    resources:
+      - projects
+    verbs:
+      - "*"
+  - apiGroups:
+      - kudeploy.com
+    resources:
+      - projects/status
+    verbs:
+      - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "kudeploy.fullname" . }}-project-editor
+  labels:
+    {{- include "kudeploy.labels" . | nindent 4 }}
+rules:
+  - apiGroups:
+      - kudeploy.com
+    resources:
+      - projects
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - kudeploy.com
+    resources:
+      - projects/status
+    verbs:
+      - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "kudeploy.fullname" . }}-project-viewer
+  labels:
+    {{- include "kudeploy.labels" . | nindent 4 }}
+rules:
+  - apiGroups:
+      - kudeploy.com
+    resources:
+      - projects
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - kudeploy.com
+    resources:
+      - projects/status
+    verbs:
+      - get
+{{- end }}
+{{- end }}

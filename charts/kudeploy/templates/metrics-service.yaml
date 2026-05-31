@@ -1,0 +1,22 @@
+{{- if and .Values.metrics.enabled .Values.metrics.service.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "kudeploy.fullname" . }}-metrics
+  namespace: {{ include "kudeploy.namespace" . }}
+  labels:
+    {{- include "kudeploy.labels" . | nindent 4 }}
+  {{- with .Values.metrics.service.annotations }}
+  annotations:
+    {{- include "common.tplvalues.render" (dict "value" . "context" $) | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.metrics.service.type }}
+  ports:
+    - name: https
+      port: {{ .Values.metrics.service.port }}
+      protocol: TCP
+      targetPort: https
+  selector:
+    {{- include "kudeploy.selectorLabels" . | nindent 4 }}
+{{- end }}

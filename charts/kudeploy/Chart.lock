@@ -1,0 +1,9 @@
+dependencies:
+- name: kudeploy-crds
+  repository: file://../kudeploy-crds
+  version: 0.1.0
+- name: common
+  repository: oci://ghcr.io/community-helm-charts
+  version: 0.1.0
+digest: sha256:4d6dda6c6c51dd009360139b25f2dede3da1a08a1eeed24c6a7fa5e33c5ad240
+generated: "2026-05-31T22:51:48.69929+08:00"

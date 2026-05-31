@@ -46,6 +46,9 @@ help: ## Display this help.
 .PHONY: manifests
 manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
 	"$(CONTROLLER_GEN)" rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+	mkdir -p ../../charts/kudeploy-crds/templates
+	rm -rf ../../charts/kudeploy-crds/templates/*
+	cp -R config/crd/bases/. ../../charts/kudeploy-crds/templates/
 
 .PHONY: generate
 generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
