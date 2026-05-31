@@ -69,10 +69,26 @@ Kudeploy publishes three Helm OCI charts:
 - `ghcr.io/kudeploy/helm-charts/kudeploy-controller`
 - `ghcr.io/kudeploy/helm-charts/kudeploy-crds`
 
-Install the aggregate chart from GHCR:
+Install or upgrade the aggregate chart from GHCR:
 
 ```bash
-helm install kudeploy oci://ghcr.io/kudeploy/helm-charts/kudeploy --version 0.1.0
+helm upgrade --install kudeploy oci://ghcr.io/kudeploy/helm-charts/kudeploy \
+  --namespace kudeploy-system \
+  --create-namespace
+```
+
+Verify the controller is running:
+
+```bash
+kubectl get pods -n kudeploy-system
+```
+
+Use a specific controller image tag when needed:
+
+```bash
+helm upgrade --install kudeploy oci://ghcr.io/kudeploy/helm-charts/kudeploy \
+  --namespace kudeploy-system \
+  --create-namespace
 ```
 
 If GHCR requires authentication in your environment:
