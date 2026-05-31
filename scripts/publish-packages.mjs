@@ -5,9 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const distChartsDir = path.join(rootDir, "dist/charts");
-const controllerImage = process.env.CONTROLLER_IMAGE || "ghcr.io/kudeploy/controller";
 const helmRegistry = process.env.HELM_OCI_REGISTRY || "oci://ghcr.io/kudeploy/helm-charts";
-const dockerPlatforms = process.env.DOCKER_PLATFORMS || "linux/amd64,linux/arm64";
 const args = new Set(process.argv.slice(2));
 const publishAll = process.env.FORCE_PUBLISH === "true" || args.has("--all");
 const overwriteExisting = process.env.OVERWRITE_EXISTING === "true" || args.has("--overwrite");
@@ -64,31 +62,6 @@ function loginHelmRegistry() {
   });
 }
 
-async function publishController() {
-  const version = await readVersion("apps/controller/package.json");
-  const versionedImage = `${controllerImage}:${version}`;
-
-  if (!overwriteExisting && succeeds("docker", ["buildx", "imagetools", "inspect", versionedImage])) {
-    console.log(`${versionedImage} already exists; skipping Docker image publish.`);
-    return;
-  }
-
-  run("docker", [
-    "buildx",
-    "build",
-    "--platform",
-    dockerPlatforms,
-    "--push",
-    "--tag",
-    versionedImage,
-    "--tag",
-    `${controllerImage}:latest`,
-    "--file",
-    "apps/controller/Dockerfile",
-    "apps/controller",
-  ]);
-}
-
 async function publishChart(chartName) {
   const version = await readVersion(`charts/${chartName}/package.json`);
   const chartRef = `${helmRegistry}/${chartName}`;
@@ -102,27 +75,19 @@ async function publishChart(chartName) {
   run("helm", ["push", `${distChartsDir}/${chartName}-${version}.tgz`, helmRegistry]);
 }
 
-const publishControllerImage = publishAll || envFlag("PUBLISH_CONTROLLER");
 const chartsToPublish = charts.filter((chart) => publishAll || envFlag(chart.env));
 
-if (!publishControllerImage && chartsToPublish.length === 0) {
-  console.log("No publish targets selected.");
+if (chartsToPublish.length === 0) {
+  console.log("No Helm chart publish targets selected.");
   process.exit(0);
 }
 
 run("node", ["scripts/sync-chart-versions.mjs"]);
+loginHelmRegistry();
+await mkdir(distChartsDir, { recursive: true });
+run("helm", ["dependency", "update", "charts/kudeploy-controller"]);
+run("helm", ["dependency", "update", "charts/kudeploy"]);
 
-if (publishControllerImage) {
-  await publishController();
-}
-
-if (chartsToPublish.length > 0) {
-  loginHelmRegistry();
-  await mkdir(distChartsDir, { recursive: true });
-  run("helm", ["dependency", "update", "charts/kudeploy-controller"]);
-  run("helm", ["dependency", "update", "charts/kudeploy"]);
-
-  for (const chart of chartsToPublish) {
-    await publishChart(chart.name);
-  }
+for (const chart of chartsToPublish) {
+  await publishChart(chart.name);
 }

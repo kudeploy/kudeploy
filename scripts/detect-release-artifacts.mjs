@@ -9,7 +9,7 @@ const artifacts = [
   {
     key: "controller",
     packagePath: "apps/controller/package.json",
-    markerPaths: ["apps/controller/package.json"],
+    markerPaths: ["apps/controller/package.json", "apps/controller/Dockerfile"],
   },
   {
     key: "kudeploy",
