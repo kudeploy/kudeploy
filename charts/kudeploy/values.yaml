@@ -1,5 +1,9 @@
-# Values for this aggregate chart are passed to subcharts by chart name:
-#
-# kudeploy-controller:
-#   image:
-#     tag: latest
+crds:
+  enabled: true
+
+controller:
+  enabled: true
+  image:
+    registry: ghcr.io
+    repository: kudeploy/controller
+    tag: ""

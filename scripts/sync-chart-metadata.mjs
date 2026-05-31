@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import { readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -20,6 +21,19 @@ function replaceYamlField(yaml, field, value, filePath) {
   }
 
   return nextYaml;
+}
+
+function run(command, commandArgs) {
+  console.log(`$ ${[command, ...commandArgs].join(" ")}`);
+
+  const result = spawnSync(command, commandArgs, {
+    cwd: rootDir,
+    stdio: "inherit",
+  });
+
+  if (result.status !== 0) {
+    throw new Error(`${command} exited with status ${result.status}`);
+  }
 }
 
 const chartNames = await readdir(chartsDir);
@@ -75,3 +89,5 @@ if (nextControllerChartYaml !== controllerChartYaml) {
     `Synced ${controllerChartYamlPath} appVersion to ${controllerPackageJson.version}`,
   );
 }
+
+run("helm", ["dependency", "update", "charts/kudeploy-controller"]);

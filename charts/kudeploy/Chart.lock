@@ -1,9 +1,9 @@
 dependencies:
 - name: kudeploy-crds
-  repository: file://../kudeploy-crds
+  repository: oci://ghcr.io/kudeploy/helm-charts
   version: 0.1.0
 - name: kudeploy-controller
-  repository: file://../kudeploy-controller
+  repository: oci://ghcr.io/kudeploy/helm-charts
   version: 0.1.0
-digest: sha256:7ee884657b19b770e632525da78d71d1b6b4c9bb83aa5bc7821fdce79f68e69e
-generated: "2026-05-31T23:29:29.044838+08:00"
+digest: sha256:342392365f0068ed51fb1cbb56ec272e8c06dec0575bdfd8a46a694cc9b75b93
+generated: "2026-06-01T00:48:34.552744+08:00"

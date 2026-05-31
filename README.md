@@ -1,159 +1,166 @@
-# Turborepo starter
+# Kudeploy
 
-This Turborepo starter is maintained by the Turborepo core team.
+Kudeploy is a Kubernetes controller project distributed as container images and
+Helm OCI charts. This repository is a pnpm workspace that keeps the controller,
+CRDs, Helm charts, and release tooling together.
 
-## Using this example
+## Repository Layout
 
-Run the following command:
-
-```sh
-npx create-turbo@latest
+```text
+apps/controller/              Kubebuilder controller
+charts/kudeploy-crds/         CRD-only Helm chart
+charts/kudeploy-controller/   Controller Helm chart
+charts/kudeploy/              Aggregate chart for CRDs + controller
+scripts/                      Version and publish helpers
 ```
 
-## What's inside?
+The controller currently defines the `kudeploy.com/v1alpha1` APIs for
+`Project`, `Service`, `Deployment`, and `BuildRun`.
 
-This Turborepo includes the following packages/apps:
+## Prerequisites
 
-### Apps and Packages
+- Node.js 24
+- pnpm 11.5.0
+- Go 1.25.7 or newer for controller development
+- Helm 3
+- Docker with buildx for image builds
+- kubectl and a Kubernetes cluster for deployment testing
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+Install workspace dependencies from the repository root:
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo build
+```bash
+nvm use
+corepack enable
+pnpm install
 ```
 
-Without global `turbo`, use your package manager:
+## Controller Development
 
-```sh
-cd my-turborepo
-npx turbo build
-pnpm dlx turbo build
-pnpm exec turbo build
+Controller code lives in `apps/controller`.
+
+```bash
+cd apps/controller
+GOTOOLCHAIN=auto make test
 ```
 
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+Regenerate CRDs after changing API types:
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo build --filter=docs
+```bash
+cd apps/controller
+GOTOOLCHAIN=auto make manifests
 ```
 
-Without global `turbo`:
+`make manifests` writes controller-gen output to
+`apps/controller/config/crd/bases` and copies those files into
+`charts/kudeploy-crds/templates`.
 
-```sh
-npx turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
+Build a local controller image:
+
+```bash
+cd apps/controller
+make docker-build IMG=ghcr.io/kudeploy/controller:dev
 ```
 
-### Develop
+## Helm Charts
 
-To develop all apps and packages, run the following command:
+Kudeploy publishes three Helm OCI charts:
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+- `ghcr.io/kudeploy/helm-charts/kudeploy`
+- `ghcr.io/kudeploy/helm-charts/kudeploy-controller`
+- `ghcr.io/kudeploy/helm-charts/kudeploy-crds`
 
-```sh
-cd my-turborepo
-turbo dev
+Install the aggregate chart from GHCR:
+
+```bash
+helm install kudeploy oci://ghcr.io/kudeploy/helm-charts/kudeploy --version 0.1.0
 ```
 
-Without global `turbo`, use your package manager:
+If GHCR requires authentication in your environment:
 
-```sh
-cd my-turborepo
-npx turbo dev
-pnpm exec turbo dev
-pnpm exec turbo dev
+```bash
+helm registry login ghcr.io
 ```
 
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+For local chart validation:
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo dev --filter=web
+```bash
+helm dependency update charts/kudeploy-controller
+helm dependency update charts/kudeploy
+helm lint charts/kudeploy-crds charts/kudeploy-controller charts/kudeploy
+helm template kudeploy charts/kudeploy
 ```
 
-Without global `turbo`:
+The aggregate `kudeploy` chart depends on the CRD and controller charts from
+`oci://ghcr.io/kudeploy/helm-charts`, so `helm dependency update charts/kudeploy`
+requires the selected child chart versions to already exist in GHCR.
 
-```sh
-npx turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
+### Aggregate Chart Values
+
+```yaml
+crds:
+  enabled: true
+
+controller:
+  enabled: true
 ```
 
-### Remote Caching
+Controller chart values are passed through the subchart name:
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo login
+```yaml
+controller:
+  enabled: true
+  image:
+    registry: ghcr.io
+    repository: kudeploy/controller
+    tag: ""
 ```
 
-Without global `turbo`, use your package manager:
+The aggregate chart aliases `kudeploy-controller` as `controller`, so
+controller values are set with `controller.*`. When `image.tag` is empty, the
+controller chart uses `Chart.appVersion`.
 
-```sh
-cd my-turborepo
-npx turbo login
-pnpm exec turbo login
-pnpm exec turbo login
+## Versioning
+
+Changesets is used for version management only. The workspace packages are
+private and are not published to npm.
+
+Create a changeset for user-visible changes:
+
+```bash
+pnpm changeset
 ```
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
+Apply pending changesets and sync chart metadata:
 
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo link
+```bash
+pnpm run version-packages
 ```
 
-Without global `turbo`:
+This runs `changeset version`, syncs chart versions with chart package versions,
+syncs `charts/kudeploy-controller/Chart.yaml` `appVersion` from
+`apps/controller/package.json`, and refreshes the controller chart dependency on
+`common`. The aggregate chart dependencies are refreshed during publishing after
+the child charts are available in GHCR.
 
-```sh
-npx turbo link
-pnpm exec turbo link
-pnpm exec turbo link
+## Release
+
+The `Release` GitHub Actions workflow handles publishing on `main`.
+
+When unreleased changesets exist, the workflow opens or updates a
+`Version Packages` pull request. After that PR is merged, the workflow publishes:
+
+- `ghcr.io/kudeploy/controller:<app version>`
+- `ghcr.io/kudeploy/controller:latest`
+- changed Helm OCI charts under `ghcr.io/kudeploy/helm-charts`
+
+The workflow can also be run manually with `force=true` to publish the current
+versions. Existing controller image tags are skipped by the workflow image
+check, and existing Helm chart versions are skipped by the publish script.
+
+## Useful Commands
+
+```bash
+pnpm install --frozen-lockfile
+pnpm run version-packages
+helm lint charts/kudeploy-crds charts/kudeploy-controller charts/kudeploy
 ```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)

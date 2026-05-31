@@ -7,7 +7,7 @@
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types",
-    "version-packages": "changeset version && node scripts/sync-chart-versions.mjs && helm dependency update charts/kudeploy-controller && helm dependency update charts/kudeploy",
+    "version-packages": "changeset version && node scripts/sync-chart-metadata.mjs",
     "publish-packages": "node scripts/publish-packages.mjs"
   },
   "devDependencies": {
@@ -16,7 +16,7 @@
     "turbo": "^2.9.16",
     "typescript": "5.9.2"
   },
-  "packageManager": "pnpm@9.0.0",
+  "packageManager": "pnpm@11.5.0",
   "engines": {
     "node": "24.x"
   }

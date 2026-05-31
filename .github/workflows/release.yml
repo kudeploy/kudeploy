@@ -45,6 +45,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Setup Helm
+        uses: azure/setup-helm@v5
+
       - name: Create version pull request
         uses: changesets/action@v1
         with:
@@ -60,13 +63,6 @@ jobs:
         env:
           BASE_SHA: ${{ github.event_name == 'push' && github.event.before || github.sha }}
           FORCE_PUBLISH: ${{ github.event_name == 'workflow_dispatch' && inputs.force && 'true' || 'false' }}
-
-      - name: Setup Helm
-        if: >-
-          steps.release.outputs.kudeploy_changed == 'true' ||
-          steps.release.outputs.kudeploy_controller_changed == 'true' ||
-          steps.release.outputs.kudeploy_crds_changed == 'true'
-        uses: azure/setup-helm@v5
 
       - name: Setup QEMU
         if: steps.release.outputs.controller_changed == 'true' || steps.release.outputs.kudeploy_controller_changed == 'true'

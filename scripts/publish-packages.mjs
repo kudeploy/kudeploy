@@ -76,18 +76,26 @@ async function publishChart(chartName) {
 }
 
 const chartsToPublish = charts.filter((chart) => publishAll || envFlag(chart.env));
+const chartNamesToPublish = new Set(chartsToPublish.map((chart) => chart.name));
 
 if (chartsToPublish.length === 0) {
   console.log("No Helm chart publish targets selected.");
   process.exit(0);
 }
 
-run("node", ["scripts/sync-chart-versions.mjs"]);
+run("node", ["scripts/sync-chart-metadata.mjs"]);
 loginHelmRegistry();
 await mkdir(distChartsDir, { recursive: true });
-run("helm", ["dependency", "update", "charts/kudeploy-controller"]);
-run("helm", ["dependency", "update", "charts/kudeploy"]);
 
-for (const chart of chartsToPublish) {
-  await publishChart(chart.name);
+if (chartNamesToPublish.has("kudeploy-crds")) {
+  await publishChart("kudeploy-crds");
+}
+
+if (chartNamesToPublish.has("kudeploy-controller")) {
+  await publishChart("kudeploy-controller");
+}
+
+if (chartNamesToPublish.has("kudeploy")) {
+  run("helm", ["dependency", "update", "charts/kudeploy"]);
+  await publishChart("kudeploy");
 }
