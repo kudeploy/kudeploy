@@ -80,16 +80,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Read controller version
-        id: controller
-        if: steps.release.outputs.controller_changed == 'true' || steps.release.outputs.kudeploy_controller_changed == 'true'
-        run: echo "version=$(node -p 'require(\"./apps/controller/package.json\").version')" >> "$GITHUB_OUTPUT"
-
       - name: Check controller image
         id: controller_image
         if: steps.release.outputs.controller_changed == 'true' || steps.release.outputs.kudeploy_controller_changed == 'true'
         run: |
-          image="ghcr.io/kudeploy/controller:${{ steps.controller.outputs.version }}"
+          image="ghcr.io/kudeploy/controller:${{ steps.release.outputs.controller_version }}"
           if docker buildx imagetools inspect "$image" >/dev/null 2>&1; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
           else
@@ -108,7 +103,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ghcr.io/kudeploy/controller:${{ steps.controller.outputs.version }}
+            ghcr.io/kudeploy/controller:${{ steps.release.outputs.controller_version }}
             ghcr.io/kudeploy/controller:latest
 
       - name: Publish Helm OCI charts
