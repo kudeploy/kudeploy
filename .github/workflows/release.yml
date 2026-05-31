@@ -49,6 +49,7 @@ jobs:
         uses: azure/setup-helm@v5
 
       - name: Create version pull request
+        id: changesets
         uses: changesets/action@v1
         with:
           version: pnpm run version-packages
@@ -58,6 +59,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Detect release artifacts
+        if: steps.changesets.outputs.hasChangesets == 'false'
         id: release
         run: node scripts/detect-release-artifacts.mjs
         env:
