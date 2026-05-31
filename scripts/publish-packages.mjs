@@ -9,7 +9,8 @@ const controllerImage = process.env.CONTROLLER_IMAGE || "ghcr.io/kudeploy/contro
 const helmRegistry = process.env.HELM_OCI_REGISTRY || "oci://ghcr.io/kudeploy/helm-charts";
 const dockerPlatforms = process.env.DOCKER_PLATFORMS || "linux/amd64,linux/arm64";
 const args = new Set(process.argv.slice(2));
-const forcePublish = process.env.FORCE_PUBLISH === "true" || args.has("--all");
+const publishAll = process.env.FORCE_PUBLISH === "true" || args.has("--all");
+const overwriteExisting = process.env.OVERWRITE_EXISTING === "true" || args.has("--overwrite");
 
 const charts = [
   { name: "kudeploy-crds", env: "PUBLISH_KUDEPLOY_CRDS" },
@@ -67,7 +68,7 @@ async function publishController() {
   const version = await readVersion("apps/controller/package.json");
   const versionedImage = `${controllerImage}:${version}`;
 
-  if (!forcePublish && succeeds("docker", ["buildx", "imagetools", "inspect", versionedImage])) {
+  if (!overwriteExisting && succeeds("docker", ["buildx", "imagetools", "inspect", versionedImage])) {
     console.log(`${versionedImage} already exists; skipping Docker image publish.`);
     return;
   }
@@ -92,7 +93,7 @@ async function publishChart(chartName) {
   const version = await readVersion(`charts/${chartName}/package.json`);
   const chartRef = `${helmRegistry}/${chartName}`;
 
-  if (!forcePublish && succeeds("helm", ["show", "chart", chartRef, "--version", version])) {
+  if (!overwriteExisting && succeeds("helm", ["show", "chart", chartRef, "--version", version])) {
     console.log(`${chartRef}:${version} already exists; skipping Helm chart publish.`);
     return;
   }
@@ -101,8 +102,8 @@ async function publishChart(chartName) {
   run("helm", ["push", `${distChartsDir}/${chartName}-${version}.tgz`, helmRegistry]);
 }
 
-const publishControllerImage = forcePublish || envFlag("PUBLISH_CONTROLLER");
-const chartsToPublish = charts.filter((chart) => forcePublish || envFlag(chart.env));
+const publishControllerImage = publishAll || envFlag("PUBLISH_CONTROLLER");
+const chartsToPublish = charts.filter((chart) => publishAll || envFlag(chart.env));
 
 if (!publishControllerImage && chartsToPublish.length === 0) {
   console.log("No publish targets selected.");

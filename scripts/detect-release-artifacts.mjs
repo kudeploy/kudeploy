@@ -55,6 +55,12 @@ function commitExists(sha) {
 function getChangedFiles() {
   const baseSha = process.env.BASE_SHA;
 
+  if (!baseSha || /^0+$/.test(baseSha)) {
+    return git(["ls-tree", "-r", "--name-only", "HEAD"])
+      .split(/\r?\n/)
+      .filter(Boolean);
+  }
+
   if (commitExists(baseSha)) {
     return git(["diff", "--name-only", baseSha, "HEAD"])
       .split(/\r?\n/)
