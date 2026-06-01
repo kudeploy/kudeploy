@@ -1,0 +1,9 @@
+{
+  "extends": "@nest-boot/tsconfig/app.json",
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+    "outDir": "./dist"
+  }
+}

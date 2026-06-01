@@ -1,0 +1,185 @@
+{
+  "name": "@repo/server",
+  "version": "1.0.14",
+  "description": "",
+  "author": "",
+  "private": true,
+  "license": "UNLICENSED",
+  "scripts": {
+    "build": "nest build",
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "dev": "nest start --watch | pino-pretty",
+    "dev:debug": "nest start --debug --watch",
+    "repl": "nest start --entryFile repl",
+    "start": "node dist/main",
+    "start:e2e": "node scripts/start-e2e-server.mjs",
+    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "typedoc:check": "typedoc --treatValidationWarningsAsErrors --emit none",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:cov": "jest --coverage",
+    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "migration:create": "mikro-orm migration:create",
+    "migration:up": "mikro-orm migration:up",
+    "migration:down": "mikro-orm migration:down",
+    "seeder:create": "mikro-orm seeder:create",
+    "seeder:run": "mikro-orm seeder:run"
+  },
+  "dependencies": {
+    "@ai-sdk/google": "^3.0.55",
+    "@apollo/server": "^5.2.0",
+    "@casl/ability": "^6.7.5",
+    "@mikro-orm/core": "^6.6.3",
+    "@mikro-orm/migrations": "^6.6.3",
+    "@mikro-orm/nestjs": "^6.1.1",
+    "@mikro-orm/postgresql": "^6.6.3",
+    "@mikro-orm/reflection": "^6.6.3",
+    "@mikro-orm/seeder": "^6.6.3",
+    "@nest-boot/auth": "^7.10.0",
+    "@nest-boot/crypt": "^7.1.3",
+    "@nest-boot/graphql": "^7.1.3",
+    "@nest-boot/graphql-connection": "^7.7.2",
+    "@nest-boot/logger": "^7.0.5",
+    "@nest-boot/middleware": "^7.3.0",
+    "@nest-boot/mikro-orm": "^7.4.0",
+    "@nest-boot/permission": "^7.1.0",
+    "@nest-boot/request-context": "^7.4.3",
+    "@nest-boot/row-level-security": "^7.2.3",
+    "@nestjs/apollo": "^13.2.3",
+    "@nestjs/common": "^11.1.11",
+    "@nestjs/config": "^4.0.2",
+    "@nestjs/core": "^11.1.11",
+    "@nestjs/event-emitter": "^3.0.1",
+    "@nestjs/graphql": "^13.2.3",
+    "@nestjs/platform-express": "^11.1.11",
+    "@nestjs/serve-static": "^5.0.4",
+    "@node-rs/jieba": "^2.0.1",
+    "@types/fluent-ffmpeg": "^2.1.28",
+    "@types/ms": "^2.1.0",
+    "axios": "^1.13.2",
+    "better-auth": "^1.4.10",
+    "bytes": "^3.1.2",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.3",
+    "cookie-parser": "^1.4.7",
+    "dataloader": "^2.2.3",
+    "dayjs": "^1.11.19",
+    "dotenv": "^17.2.3",
+    "graphql": "^16.12.0",
+    "graphql-type-json": "^0.3.2",
+    "lodash": "^4.17.21",
+    "ms": "^2.1.3",
+    "p-map": "^7.0.4",
+    "pino-pretty": "^13.1.3",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2",
+    "sonyflake-js": "^1.0.1",
+    "ts-morph": "^27.0.2",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.3",
+    "@eslint/js": "^9.39.2",
+    "@mikro-orm/cli": "^6.6.3",
+    "@nest-boot/eslint-config": "^7.0.3",
+    "@nest-boot/eslint-plugin": "^7.0.6",
+    "@nest-boot/tsconfig": "^7.0.3",
+    "@nestjs/cli": "^11.0.14",
+    "@nestjs/schematics": "^11.0.9",
+    "@nestjs/testing": "^11.1.11",
+    "@swc/cli": "^0.7.9",
+    "@swc/core": "^1.15.8",
+    "@swc/jest": "^0.2.39",
+    "@types/bytes": "^3.1.5",
+    "@types/cookie-parser": "^1.4.10",
+    "@types/express": "^5.0.6",
+    "@types/jest": "^30.0.0",
+    "@types/lodash": "^4.17.21",
+    "@types/node": "^25.0.3",
+    "@types/supertest": "^6.0.3",
+    "@typescript-eslint/parser": "^8.52.0",
+    "eslint": "^9.39.2",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "globals": "^17.0.0",
+    "jest": "^30.2.0",
+    "prettier": "^3.7.4",
+    "source-map-support": "^0.5.21",
+    "supertest": "^7.1.4",
+    "ts-jest": "^29.4.6",
+    "ts-loader": "^9.5.4",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
+    "typedoc": "^0.28.19",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.52.0"
+  },
+  "jest": {
+    "moduleFileExtensions": [
+      "js",
+      "json",
+      "ts"
+    ],
+    "rootDir": "src",
+    "testRegex": ".*\\.spec\\.ts$",
+    "transform": {
+      "^.+\\.ts$": "ts-jest",
+      "^.+\\.(js|mjs)$": [
+        "@swc/jest",
+        {
+          "jsc": {
+            "target": "es2021"
+          },
+          "module": {
+            "type": "commonjs"
+          }
+        }
+      ]
+    },
+    "transformIgnorePatterns": [
+      "/node_modules/(?!.*(better-auth|@better-auth|@better-fetch|better-call|defu|jose|@noble|nanostores|zod|kysely|\\.mjs).*)"
+    ],
+    "moduleNameMapper": {
+      "^@/(.*)$": "<rootDir>/$1"
+    },
+    "collectCoverageFrom": [
+      "**/*.(t|j)s",
+      "!main.ts",
+      "!repl.ts",
+      "!mikro-orm.config.ts",
+      "!**/*.module.ts",
+      "!**/*.module-definition.ts",
+      "!**/*.connection-definition.ts",
+      "!**/*.constants.ts",
+      "!**/*.entity.ts",
+      "!**/enums/**",
+      "!**/inputs/**",
+      "!**/types/**",
+      "!**/index.ts",
+      "!database/migrations/**"
+    ],
+    "coverageDirectory": "../coverage",
+    "coveragePathIgnorePatterns": [
+      "/node_modules/"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 80,
+        "lines": 80,
+        "statements": 80
+      }
+    },
+    "testEnvironment": "node"
+  },
+  "mikro-orm": {
+    "useTsNode": true,
+    "configPaths": [
+      "./src/mikro-orm.config.ts",
+      "./dist/mikro-orm.config.js"
+    ]
+  },
+  "volta": {
+    "extends": "../../package.json"
+  }
+}

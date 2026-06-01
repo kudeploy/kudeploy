@@ -1,0 +1,38 @@
+import { PermissionGuard } from '@nest-boot/permission';
+import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
+
+import { ApiKeyModule } from '@/app/api-key/api-key.module';
+import { AuthGuard } from '@/app/auth/auth.guard';
+import { AuthModule } from '@/app/auth/auth.module';
+import { UserModule } from '@/app/user/user.module';
+import { WorkspaceModule } from '@/app/workspace/workspace.module';
+import { WorkspaceMemberModule } from '@/app/workspace-member/workspace-member.module';
+import { WorkspaceMemberGroupModule } from '@/app/workspace-member-group/workspace-member-group.module';
+import { WorkspaceMemberGroupMemberModule } from '@/app/workspace-member-group-member/workspace-member-group-member.module';
+import { CommonModule } from '@/common/common.module';
+
+/** 服务端根模块。 */
+@Module({
+  imports: [
+    CommonModule,
+    AuthModule,
+    ApiKeyModule,
+    UserModule,
+    WorkspaceModule,
+    WorkspaceMemberModule,
+    WorkspaceMemberGroupModule,
+    WorkspaceMemberGroupMemberModule,
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useExisting: AuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useExisting: PermissionGuard,
+    },
+  ],
+})
+export class AppModule {}
