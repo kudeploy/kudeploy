@@ -33,4 +33,4 @@ COPY --from=server-builder --chown=nodejs:nodejs /app .
 COPY --from=client-builder --chown=nodejs:nodejs /app/apps/client/dist/client ./apps/server/client
 RUN mv ./apps/server/client/_shell.html ./apps/server/client/index.html
 WORKDIR /app/apps/server
-CMD node dist/main.js
+CMD ["node", "dist/main.js"]
