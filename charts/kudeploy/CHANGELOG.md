@@ -1,3 +1,9 @@
+## 0.1.3 (2026-06-05)
+
+### 🧱 Updated Dependencies
+
+- Updated kudeploy-controller to 0.1.2
+
 ## 0.1.2 (2026-06-05)
 
 ### 🚀 Features
