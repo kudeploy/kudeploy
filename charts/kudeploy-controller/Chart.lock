@@ -2,5 +2,5 @@ dependencies:
 - name: common
   repository: oci://ghcr.io/community-helm-charts
   version: 0.1.0
-digest: sha256:87c7ba2338bf4ceeed68b6ec311673d46dc376f183ece3f6343806109b8f703d
-generated: "2026-05-31T23:29:23.770288+08:00"
+digest: sha256:908e62c04cdca7f85940c2bcd1e6b696753876a9cb91627744991677568689d1
+generated: "2026-06-05T22:28:41.907726+08:00"
