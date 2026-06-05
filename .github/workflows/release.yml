@@ -103,15 +103,19 @@ jobs:
       - name: Release projects
         id: release
         run: |
-          before_release="$(git rev-parse HEAD)"
-          pnpm exec nx release --skip-publish
-          after_release="$(git rev-parse HEAD)"
+          dry_run_log="$(mktemp)"
+          set +e
+          pnpm exec nx release --skip-publish --dry-run > "$dry_run_log" 2>&1
+          dry_run_status=$?
+          set -e
+          cat "$dry_run_log"
 
           release_created=false
           should_publish=true
           projects_to_publish=""
           charts_to_package=""
-          if [ "$after_release" = "$before_release" ]; then
+
+          if grep -q "No files would be changed as a result of running versioning" "$dry_run_log"; then
             if [ "$PUBLISH_EXISTING" = "true" ]; then
               echo "No release changes detected; publishing current chart versions."
               projects_to_publish="controller,kudeploy-controller,kudeploy-crds,kudeploy"
@@ -121,30 +125,43 @@ jobs:
               should_publish=false
             fi
           else
-            release_created=true
-            changed_files="$(git diff --name-only "$before_release" "$after_release")"
-            projects=()
-            charts=()
-
-            if grep -q '^charts/kudeploy-controller/' <<< "$changed_files"; then
-              projects+=(kudeploy-controller)
-              charts+=(kudeploy-controller)
-            fi
-            if git diff "$before_release" "$after_release" -- charts/kudeploy-controller/Chart.yaml | grep -q '^[+-]appVersion:'; then
-              projects+=(controller)
-            fi
-            if grep -q '^charts/kudeploy-crds/' <<< "$changed_files"; then
-              projects+=(kudeploy-crds)
-              charts+=(kudeploy-crds)
-            fi
-            if grep -q '^charts/kudeploy/' <<< "$changed_files"; then
-              projects+=(kudeploy)
-              charts+=(kudeploy)
+            if [ "$dry_run_status" -ne 0 ]; then
+              exit "$dry_run_status"
             fi
 
-            projects_to_publish="$(IFS=,; echo "${projects[*]}")"
-            charts_to_package="$(IFS=,; echo "${charts[*]}")"
-            git push --follow-tags --atomic origin main
+            before_release="$(git rev-parse HEAD)"
+            pnpm exec nx release --skip-publish
+            after_release="$(git rev-parse HEAD)"
+
+            if [ "$after_release" = "$before_release" ]; then
+              echo "No release commit was created; skipping publish."
+              should_publish=false
+            else
+              release_created=true
+              changed_files="$(git diff --name-only "$before_release" "$after_release")"
+              projects=()
+              charts=()
+
+              if grep -q '^charts/kudeploy-controller/' <<< "$changed_files"; then
+                projects+=(kudeploy-controller)
+                charts+=(kudeploy-controller)
+              fi
+              if git diff "$before_release" "$after_release" -- charts/kudeploy-controller/Chart.yaml | grep -q '^[+-]appVersion:'; then
+                projects+=(controller)
+              fi
+              if grep -q '^charts/kudeploy-crds/' <<< "$changed_files"; then
+                projects+=(kudeploy-crds)
+                charts+=(kudeploy-crds)
+              fi
+              if grep -q '^charts/kudeploy/' <<< "$changed_files"; then
+                projects+=(kudeploy)
+                charts+=(kudeploy)
+              fi
+
+              projects_to_publish="$(IFS=,; echo "${projects[*]}")"
+              charts_to_package="$(IFS=,; echo "${charts[*]}")"
+              git push --follow-tags --atomic origin main
+            fi
           fi
 
           echo "release_created=$release_created" >> "$GITHUB_OUTPUT"
