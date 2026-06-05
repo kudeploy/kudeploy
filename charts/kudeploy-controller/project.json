@@ -3,14 +3,5 @@
   "name": "kudeploy-controller",
   "root": "charts/kudeploy-controller",
   "tags": ["type:helm-chart"],
-  "implicitDependencies": ["controller"],
-  "targets": {
-    "dependency-build": {
-      "executor": "nx:run-commands",
-      "options": {
-        "command": "helm dependency build charts/kudeploy-controller"
-      },
-      "cache": false
-    }
-  }
+  "implicitDependencies": ["controller"]
 }

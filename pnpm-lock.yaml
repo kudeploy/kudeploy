@@ -15,14 +15,14 @@ importers:
         specifier: ^21.0.2
         version: 21.0.2
       '@nx/docker':
-        specifier: 22.7.5
+        specifier: ^22.7.5
         version: 22.7.5(nx@22.7.5(@swc/core@1.15.40))
       nx:
-        specifier: 22.7.5
+        specifier: ^22.7.5
         version: 22.7.5(@swc/core@1.15.40)
       nx-helm:
-        specifier: ^0.1.0
-        version: 0.1.0(nx@22.7.5(@swc/core@1.15.40))
+        specifier: ^0.1.1
+        version: 0.1.1(nx@22.7.5(@swc/core@1.15.40))
       prettier:
         specifier: ^3.7.4
         version: 3.7.4
@@ -36,7 +36,7 @@ importers:
         specifier: ^4.0.9
         version: 4.2.1(graphql-ws@6.0.8(graphql@16.14.1)(ws@8.21.0))(graphql@16.14.1)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(rxjs@7.8.2)(subscriptions-transport-ws@0.11.0(graphql@16.14.1))
       '@apollo/client-integration-tanstack-start':
-        specifier: 0.14.0-rc.0
+        specifier: ^0.14.0-rc.0
         version: 0.14.0-rc.0(@apollo/client@4.2.1(graphql-ws@6.0.8(graphql@16.14.1)(ws@8.21.0))(graphql@16.14.1)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(rxjs@7.8.2)(subscriptions-transport-ws@0.11.0(graphql@16.14.1)))(@tanstack/react-router@1.170.11(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(@tanstack/react-start@1.168.19(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(vite@7.3.5(@types/node@24.12.4)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.48.0)(yaml@2.9.0))(webpack@5.106.0(@swc/core@1.15.40)(lightningcss@1.32.0)))(@tanstack/router-core@1.171.9)(@types/react@19.2.16)(graphql@16.14.1)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(rxjs@7.8.2)
       '@base-ui/react':
         specifier: ^1.1.0
@@ -150,7 +150,7 @@ importers:
         specifier: ^17.6.0
         version: 17.6.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       recharts:
-        specifier: 2.15.4
+        specifier: ^2.15.4
         version: 2.15.4(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       sonner:
         specifier: ^2.0.7
@@ -7802,8 +7802,8 @@ packages:
     resolution: {integrity: sha512-9qny7Z9DsQU8Ou39ERsPU4OZQlSTP47ShQzuKZ6PRXpYLtIFgl/DEBYEXKlvcEa+9tHVcK8CF81Y2V72qaZhWA==}
     engines: {node: '>=18'}
 
-  nx-helm@0.1.0:
-    resolution: {integrity: sha512-UEEn8baoZpdAXHhlAGp+bY9YQ4tyEqlio/vzyPTJ4Z6YlEfB+5HN3Y52g7PjL8LFHND46OV18MR+z8Er7Mk8VA==}
+  nx-helm@0.1.1:
+    resolution: {integrity: sha512-Ek61z1ilF+1PGUNnpYSGIVimQYbKTbC+z3lEpbY9daX3ZZ8FygIRMF4ZA8ve36eDjj+Hraxw4XFkO60EYkE2lw==}
     peerDependencies:
       nx: ^22.7.5
 
@@ -10456,7 +10456,6 @@ snapshots:
     dependencies:
       '@emnapi/wasi-threads': 1.2.1
       tslib: 2.8.1
-    optional: true
 
   '@emnapi/core@1.4.5':
     dependencies:
@@ -10466,7 +10465,6 @@ snapshots:
   '@emnapi/runtime@1.10.0':
     dependencies:
       tslib: 2.8.1
-    optional: true
 
   '@emnapi/runtime@1.4.5':
     dependencies:
@@ -10479,7 +10477,6 @@ snapshots:
   '@emnapi/wasi-threads@1.2.1':
     dependencies:
       tslib: 2.8.1
-    optional: true
 
   '@envelop/core@5.5.1':
     dependencies:
@@ -11896,8 +11893,8 @@ snapshots:
 
   '@napi-rs/wasm-runtime@0.2.4':
     dependencies:
-      '@emnapi/core': 1.4.5
-      '@emnapi/runtime': 1.4.5
+      '@emnapi/core': 1.10.0
+      '@emnapi/runtime': 1.10.0
       '@tybys/wasm-util': 0.9.0
 
   '@napi-rs/wasm-runtime@1.1.4(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)':
@@ -12316,7 +12313,7 @@ snapshots:
       enquirer: 2.3.6
       minimatch: 10.2.5
       nx: 22.7.5(@swc/core@1.15.40)
-      semver: 7.7.3
+      semver: 7.8.1
       tslib: 2.8.1
       yargs-parser: 21.1.1
 
@@ -14428,7 +14425,7 @@ snapshots:
       '@typescript-eslint/visitor-keys': 8.60.1
       debug: 4.4.3
       minimatch: 10.2.5
-      semver: 7.7.3
+      semver: 7.8.1
       tinyglobby: 0.2.17
       ts-api-utils: 2.5.0(typescript@5.9.3)
       typescript: 5.9.3
@@ -15206,7 +15203,7 @@ snapshots:
   bin-version-check@5.1.0:
     dependencies:
       bin-version: 6.0.0
-      semver: 7.7.3
+      semver: 7.8.1
       semver-truncate: 3.0.0
 
   bin-version@6.0.0:
@@ -15898,7 +15895,7 @@ snapshots:
       es-errors: 1.3.0
       get-intrinsic: 1.3.0
       has-tostringtag: 1.0.2
-      hasown: 2.0.2
+      hasown: 2.0.4
 
   es-toolkit@1.47.0: {}
 
@@ -15944,7 +15941,7 @@ snapshots:
   eslint-compat-utils@0.5.1(eslint@9.39.4(jiti@2.7.0)):
     dependencies:
       eslint: 9.39.4(jiti@2.7.0)
-      semver: 7.7.3
+      semver: 7.8.1
 
   eslint-config-prettier@10.1.8(eslint@9.39.4(jiti@2.7.0)):
     dependencies:
@@ -15974,7 +15971,7 @@ snapshots:
       eslint-import-context: 0.1.9(unrs-resolver@1.12.2)
       is-glob: 4.0.3
       minimatch: 10.2.5
-      semver: 7.7.3
+      semver: 7.8.1
       stable-hash-x: 0.2.0
       unrs-resolver: 1.12.2
     optionalDependencies:
@@ -15992,7 +15989,7 @@ snapshots:
       globals: 15.15.0
       globrex: 0.1.2
       ignore: 5.3.2
-      semver: 7.7.3
+      semver: 7.8.1
       ts-declaration-location: 1.0.7(typescript@5.9.3)
     transitivePeerDependencies:
       - typescript
@@ -16401,7 +16398,7 @@ snapshots:
       minimatch: 3.1.5
       node-abort-controller: 3.1.1
       schema-utils: 3.3.0
-      semver: 7.7.3
+      semver: 7.8.1
       tapable: 2.3.3
       typescript: 5.9.3
       webpack: 5.106.0(@swc/core@1.15.40)(lightningcss@1.32.0)
@@ -16413,7 +16410,7 @@ snapshots:
       asynckit: 0.4.0
       combined-stream: 1.0.8
       es-set-tostringtag: 2.1.0
-      hasown: 2.0.2
+      hasown: 2.0.4
       mime-types: 2.1.35
 
   formdata-polyfill@4.0.10:
@@ -16472,7 +16469,7 @@ snapshots:
       get-proto: 1.0.1
       gopd: 1.2.0
       has-symbols: 1.1.0
-      hasown: 2.0.2
+      hasown: 2.0.4
       math-intrinsics: 1.1.0
 
   get-nonce@1.0.1: {}
@@ -17286,7 +17283,7 @@ snapshots:
       jest-message-util: 30.4.1
       jest-util: 30.4.1
       pretty-format: 30.4.1
-      semver: 7.7.3
+      semver: 7.8.1
       synckit: 0.11.13
     transitivePeerDependencies:
       - supports-color
@@ -17843,7 +17840,7 @@ snapshots:
       path-key: 4.0.0
       unicorn-magic: 0.3.0
 
-  nx-helm@0.1.0(nx@22.7.5(@swc/core@1.15.40)):
+  nx-helm@0.1.1(nx@22.7.5(@swc/core@1.15.40)):
     dependencies:
       '@nx/devkit': 22.7.5(nx@22.7.5(@swc/core@1.15.40))
       nx: 22.7.5(@swc/core@1.15.40)
@@ -18028,7 +18025,7 @@ snapshots:
       bl: 4.1.0
       chalk: 4.1.2
       cli-cursor: 3.1.0
-      cli-spinners: 2.6.1
+      cli-spinners: 2.9.2
       is-interactive: 1.0.0
       log-symbols: 4.1.0
       strip-ansi: 6.0.1
@@ -19706,7 +19703,7 @@ snapshots:
       eslint-visitor-keys: 5.0.1
       espree: 11.2.0
       esquery: 1.7.0
-      semver: 7.7.3
+      semver: 7.8.1
     transitivePeerDependencies:
       - supports-color
 
