@@ -9,7 +9,6 @@
       "versionActions": "./apps/controller/scripts/version-file.cjs"
     },
     "docker": {
-      "preVersionCommand": "[ \"$NX_DRY_RUN\" = \"true\" ] || pnpm nx run controller:docker:build",
       "versionSchemes": {
         "production": "{versionActionsVersion}"
       },

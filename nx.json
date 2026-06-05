@@ -77,6 +77,9 @@
     "releaseTag": {
       "preferDockerVersion": false
     },
+    "docker": {
+      "preVersionCommand": "[ \"$NX_DRY_RUN\" = \"true\" ] || pnpm nx run controller:docker:build"
+    },
     "version": {
       "conventionalCommits": true,
       "fallbackCurrentVersionResolver": "disk",
