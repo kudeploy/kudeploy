@@ -144,24 +144,24 @@ const AuthenticatedWorkspacesWorkspaceIdMemberGroupsMemberGroupIdPageRoute =
   )
 
 export interface FileRoutesByFullPath {
-  '/auth': typeof AuthLayoutRouteWithChildren
   '/': typeof AuthenticatedPageRoute
-  '/invite': typeof InvitePageRoute
+  '/auth': typeof AuthLayoutRouteWithChildren
+  '/invite/': typeof InvitePageRoute
   '/workspaces/$workspaceId': typeof AuthenticatedWorkspacesWorkspaceIdLayoutRouteWithChildren
-  '/workspaces': typeof AuthenticatedWorkspacesPageRoute
-  '/auth/login': typeof AuthLoginPageRoute
+  '/workspaces/': typeof AuthenticatedWorkspacesPageRoute
+  '/auth/login/': typeof AuthLoginPageRoute
   '/workspaces/$workspaceId/api-keys': typeof AuthenticatedWorkspacesWorkspaceIdApiKeysLayoutRouteWithChildren
   '/workspaces/$workspaceId/member-groups': typeof AuthenticatedWorkspacesWorkspaceIdMemberGroupsLayoutRouteWithChildren
   '/workspaces/$workspaceId/members': typeof AuthenticatedWorkspacesWorkspaceIdMembersLayoutRouteWithChildren
   '/workspaces/$workspaceId/': typeof AuthenticatedWorkspacesWorkspaceIdPageRoute
-  '/workspaces/create': typeof AuthenticatedWorkspacesCreatePageRoute
+  '/workspaces/create/': typeof AuthenticatedWorkspacesCreatePageRoute
   '/workspaces/$workspaceId/api-keys/': typeof AuthenticatedWorkspacesWorkspaceIdApiKeysPageRoute
   '/workspaces/$workspaceId/member-groups/': typeof AuthenticatedWorkspacesWorkspaceIdMemberGroupsPageRoute
   '/workspaces/$workspaceId/members/': typeof AuthenticatedWorkspacesWorkspaceIdMembersPageRoute
-  '/workspaces/$workspaceId/settings': typeof AuthenticatedWorkspacesWorkspaceIdSettingsPageRoute
-  '/workspaces/$workspaceId/member-groups/$memberGroupId': typeof AuthenticatedWorkspacesWorkspaceIdMemberGroupsMemberGroupIdPageRoute
-  '/workspaces/$workspaceId/member-groups/create': typeof AuthenticatedWorkspacesWorkspaceIdMemberGroupsCreatePageRoute
-  '/workspaces/$workspaceId/members/$memberId': typeof AuthenticatedWorkspacesWorkspaceIdMembersMemberIdPageRoute
+  '/workspaces/$workspaceId/settings/': typeof AuthenticatedWorkspacesWorkspaceIdSettingsPageRoute
+  '/workspaces/$workspaceId/member-groups/$memberGroupId/': typeof AuthenticatedWorkspacesWorkspaceIdMemberGroupsMemberGroupIdPageRoute
+  '/workspaces/$workspaceId/member-groups/create/': typeof AuthenticatedWorkspacesWorkspaceIdMemberGroupsCreatePageRoute
+  '/workspaces/$workspaceId/members/$memberId/': typeof AuthenticatedWorkspacesWorkspaceIdMembersMemberIdPageRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthLayoutRouteWithChildren
@@ -204,24 +204,24 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/auth'
     | '/'
-    | '/invite'
+    | '/auth'
+    | '/invite/'
     | '/workspaces/$workspaceId'
-    | '/workspaces'
-    | '/auth/login'
+    | '/workspaces/'
+    | '/auth/login/'
     | '/workspaces/$workspaceId/api-keys'
     | '/workspaces/$workspaceId/member-groups'
     | '/workspaces/$workspaceId/members'
     | '/workspaces/$workspaceId/'
-    | '/workspaces/create'
+    | '/workspaces/create/'
     | '/workspaces/$workspaceId/api-keys/'
     | '/workspaces/$workspaceId/member-groups/'
     | '/workspaces/$workspaceId/members/'
-    | '/workspaces/$workspaceId/settings'
-    | '/workspaces/$workspaceId/member-groups/$memberGroupId'
-    | '/workspaces/$workspaceId/member-groups/create'
-    | '/workspaces/$workspaceId/members/$memberId'
+    | '/workspaces/$workspaceId/settings/'
+    | '/workspaces/$workspaceId/member-groups/$memberGroupId/'
+    | '/workspaces/$workspaceId/member-groups/create/'
+    | '/workspaces/$workspaceId/members/$memberId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
@@ -279,14 +279,14 @@ declare module '@tanstack/react-router' {
     '/_authenticated': {
       id: '/_authenticated'
       path: ''
-      fullPath: ''
+      fullPath: '/'
       preLoaderRoute: typeof AuthenticatedLayoutRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/invite/': {
       id: '/invite/'
       path: '/invite'
-      fullPath: '/invite'
+      fullPath: '/invite/'
       preLoaderRoute: typeof InvitePageRouteImport
       parentRoute: typeof rootRouteImport
     }
@@ -300,14 +300,14 @@ declare module '@tanstack/react-router' {
     '/auth/login/': {
       id: '/auth/login/'
       path: '/login'
-      fullPath: '/auth/login'
+      fullPath: '/auth/login/'
       preLoaderRoute: typeof AuthLoginPageRouteImport
       parentRoute: typeof AuthLayoutRoute
     }
     '/_authenticated/workspaces/': {
       id: '/_authenticated/workspaces/'
       path: '/workspaces'
-      fullPath: '/workspaces'
+      fullPath: '/workspaces/'
       preLoaderRoute: typeof AuthenticatedWorkspacesPageRouteImport
       parentRoute: typeof AuthenticatedLayoutRoute
     }
@@ -321,7 +321,7 @@ declare module '@tanstack/react-router' {
     '/_authenticated/workspaces/create/': {
       id: '/_authenticated/workspaces/create/'
       path: '/workspaces/create'
-      fullPath: '/workspaces/create'
+      fullPath: '/workspaces/create/'
       preLoaderRoute: typeof AuthenticatedWorkspacesCreatePageRouteImport
       parentRoute: typeof AuthenticatedLayoutRoute
     }
@@ -356,7 +356,7 @@ declare module '@tanstack/react-router' {
     '/_authenticated/workspaces/$workspaceId/settings/': {
       id: '/_authenticated/workspaces/$workspaceId/settings/'
       path: '/settings'
-      fullPath: '/workspaces/$workspaceId/settings'
+      fullPath: '/workspaces/$workspaceId/settings/'
       preLoaderRoute: typeof AuthenticatedWorkspacesWorkspaceIdSettingsPageRouteImport
       parentRoute: typeof AuthenticatedWorkspacesWorkspaceIdLayoutRoute
     }
@@ -384,21 +384,21 @@ declare module '@tanstack/react-router' {
     '/_authenticated/workspaces/$workspaceId/members/$memberId/': {
       id: '/_authenticated/workspaces/$workspaceId/members/$memberId/'
       path: '/$memberId'
-      fullPath: '/workspaces/$workspaceId/members/$memberId'
+      fullPath: '/workspaces/$workspaceId/members/$memberId/'
       preLoaderRoute: typeof AuthenticatedWorkspacesWorkspaceIdMembersMemberIdPageRouteImport
       parentRoute: typeof AuthenticatedWorkspacesWorkspaceIdMembersLayoutRoute
     }
     '/_authenticated/workspaces/$workspaceId/member-groups/create/': {
       id: '/_authenticated/workspaces/$workspaceId/member-groups/create/'
       path: '/create'
-      fullPath: '/workspaces/$workspaceId/member-groups/create'
+      fullPath: '/workspaces/$workspaceId/member-groups/create/'
       preLoaderRoute: typeof AuthenticatedWorkspacesWorkspaceIdMemberGroupsCreatePageRouteImport
       parentRoute: typeof AuthenticatedWorkspacesWorkspaceIdMemberGroupsLayoutRoute
     }
     '/_authenticated/workspaces/$workspaceId/member-groups/$memberGroupId/': {
       id: '/_authenticated/workspaces/$workspaceId/member-groups/$memberGroupId/'
       path: '/$memberGroupId'
-      fullPath: '/workspaces/$workspaceId/member-groups/$memberGroupId'
+      fullPath: '/workspaces/$workspaceId/member-groups/$memberGroupId/'
       preLoaderRoute: typeof AuthenticatedWorkspacesWorkspaceIdMemberGroupsMemberGroupIdPageRouteImport
       parentRoute: typeof AuthenticatedWorkspacesWorkspaceIdMemberGroupsLayoutRoute
     }
