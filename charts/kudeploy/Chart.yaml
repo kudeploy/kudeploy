@@ -2,16 +2,16 @@ apiVersion: v2
 name: kudeploy
 description: Kudeploy aggregate chart.
 type: application
-version: 0.1.1
+version: 0.1.2
 appVersion: latest
 dependencies:
   - name: kudeploy-crds
     alias: crds
-    version: 0.1.0
+    version: 0.1.1
     repository: file://../kudeploy-crds
     condition: crds.enabled
   - name: kudeploy-controller
     alias: controller
-    version: 0.1.0
+    version: 0.1.1
     repository: file://../kudeploy-controller
     condition: controller.enabled
