@@ -200,4 +200,4 @@ jobs:
 
       - name: Publish release artifacts
         if: steps.release.outputs.should_publish == 'true'
-        run: pnpm exec nx release publish --yes --projects="${{ steps.release.outputs.projects_to_publish }}"
+        run: pnpm exec nx release publish --yes --parallel=1 --projects="${{ steps.release.outputs.projects_to_publish }}"
