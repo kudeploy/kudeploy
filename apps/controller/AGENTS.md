@@ -271,7 +271,7 @@ kubectl apply -f https://raw.githubusercontent.com/<org>/<repo>/<tag>/dist/insta
 
 ```bash
 kubebuilder edit --plugins=helm/v2-alpha                      # Generates dist/chart/ (default)
-kubebuilder edit --plugins=helm/v2-alpha --output-dir=charts  # Generates charts/chart/
+kubebuilder edit --plugins=helm/v2-alpha --output-dir=helm-charts  # Generates helm-charts/chart/
 ```
 
 **For development:**

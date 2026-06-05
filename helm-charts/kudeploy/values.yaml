@@ -7,3 +7,10 @@ controller:
     registry: ghcr.io
     repository: kudeploy/controller
     tag: ""
+
+server:
+  enabled: true
+  image:
+    registry: ghcr.io
+    repository: kudeploy/server
+    tag: ""

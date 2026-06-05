@@ -1,0 +1,74 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "crds-helm-chart",
+  "root": "helm-charts/kudeploy-crds",
+  "projectType": "application",
+  "tags": ["type:helm-chart"],
+  "metadata": {
+    "description": "CustomResourceDefinitions for Kudeploy."
+  },
+  "release": {
+    "version": {
+      "currentVersionResolver": "git-tag",
+      "fallbackCurrentVersionResolver": "disk",
+      "versionActions": "nx-helm/release"
+    }
+  },
+  "targets": {
+    "dependency-build": {
+      "executor": "nx-helm:dependency-build",
+      "options": {
+        "chartRoot": "helm-charts/kudeploy-crds",
+        "distDir": "dist"
+      },
+      "cache": false,
+      "inputs": ["default", "{workspaceRoot}/pnpm-lock.yaml"],
+      "dependsOn": [
+        { "dependencies": true, "target": "package", "params": "ignore" }
+      ]
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "helm lint helm-charts/kudeploy-crds"
+      },
+      "cache": true,
+      "inputs": ["default", "^default", "{workspaceRoot}/pnpm-lock.yaml"],
+      "dependsOn": ["dependency-build"]
+    },
+    "package": {
+      "executor": "nx-helm:package",
+      "options": {
+        "chartRoot": "helm-charts/kudeploy-crds",
+        "distDir": "dist",
+        "repository": "oci://ghcr.io/kudeploy/helm-charts"
+      },
+      "cache": true,
+      "inputs": ["default", "^default", "{workspaceRoot}/pnpm-lock.yaml"],
+      "outputs": ["{workspaceRoot}/dist/kudeploy-crds-*.tgz"],
+      "dependsOn": [
+        { "dependencies": true, "target": "package", "params": "ignore" },
+        "dependency-build"
+      ]
+    },
+    "publish": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "helm push dist/kudeploy-crds-*.tgz oci://ghcr.io/kudeploy/helm-charts"
+      },
+      "cache": false,
+      "dependsOn": ["package"]
+    },
+    "nx-release-publish": {
+      "executor": "nx-helm:release-publish",
+      "options": {
+        "chartName": "kudeploy-crds",
+        "chartRoot": "helm-charts/kudeploy-crds",
+        "distDir": "dist",
+        "repository": "oci://ghcr.io/kudeploy/helm-charts"
+      },
+      "cache": false,
+      "dependsOn": ["lint", "package"]
+    }
+  }
+}

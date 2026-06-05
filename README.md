@@ -8,9 +8,10 @@ CRDs, Helm charts, and release tooling together.
 
 ```text
 apps/controller/              Kubebuilder controller
-charts/kudeploy-crds/         CRD-only Helm chart
-charts/kudeploy-controller/   Controller Helm chart
-charts/kudeploy/              Aggregate chart for CRDs + controller
+helm-charts/kudeploy-crds/         CRD-only Helm chart
+helm-charts/kudeploy-controller/   Controller Helm chart
+helm-charts/kudeploy-server/       Server Helm chart
+helm-charts/kudeploy/              Aggregate chart for CRDs + controller + server
 ```
 
 The controller currently defines the `kudeploy.com/v1alpha1` APIs for
@@ -51,7 +52,7 @@ GOTOOLCHAIN=auto make manifests
 
 `make manifests` writes controller-gen output to
 `apps/controller/config/crd/bases` and copies those files into
-`charts/kudeploy-crds/templates`.
+`helm-charts/kudeploy-crds/templates`.
 
 Build a local controller image:
 
@@ -62,11 +63,12 @@ make docker-build IMG=ghcr.io/kudeploy/controller:dev
 
 ## Helm Charts
 
-Kudeploy publishes three Helm OCI charts:
+Kudeploy publishes four Helm OCI charts:
 
 - `ghcr.io/kudeploy/helm-charts/kudeploy`
 - `ghcr.io/kudeploy/helm-charts/kudeploy-controller`
 - `ghcr.io/kudeploy/helm-charts/kudeploy-crds`
+- `ghcr.io/kudeploy/helm-charts/kudeploy-server`
 
 Install or upgrade the aggregate chart from GHCR:
 
@@ -82,13 +84,14 @@ Verify the controller is running:
 kubectl get pods -n kudeploy-system
 ```
 
-Use a specific controller image tag when needed:
+Use specific image tags when needed:
 
 ```bash
 helm upgrade --install kudeploy oci://ghcr.io/kudeploy/helm-charts/kudeploy \
   --namespace kudeploy-system \
   --create-namespace \
-  --set controller.image.tag=0.1.0
+  --set controller.image.tag=0.1.0 \
+  --set server.image.tag=1.0.14
 ```
 
 If GHCR requires authentication in your environment:
@@ -100,8 +103,8 @@ helm registry login ghcr.io
 For local chart validation:
 
 ```bash
-pnpm nx run-many -t lint --projects=kudeploy,kudeploy-controller,kudeploy-crds
-helm template kudeploy charts/kudeploy
+pnpm nx run-many -t lint --projects=helm-chart,controller-helm-chart,crds-helm-chart,server-helm-chart
+helm template kudeploy helm-charts/kudeploy
 ```
 
 The aggregate `kudeploy` chart uses local `file://` dependencies during
@@ -117,9 +120,12 @@ crds:
 
 controller:
   enabled: true
+
+server:
+  enabled: true
 ```
 
-Controller chart values are passed through the subchart name:
+Controller and server chart values are passed through their subchart names:
 
 ```yaml
 controller:
@@ -128,32 +134,44 @@ controller:
     registry: ghcr.io
     repository: kudeploy/controller
     tag: ""
+
+server:
+  enabled: true
+  image:
+    registry: ghcr.io
+    repository: kudeploy/server
+    tag: ""
 ```
 
-The aggregate chart aliases `kudeploy-controller` as `controller`, so
-controller values are set with `controller.*`. When `image.tag` is empty, the
-controller chart uses the `kudeploy-controller` chart `appVersion`.
+The aggregate chart aliases `kudeploy-controller` as `controller` and
+`kudeploy-server` as `server`, so values are set with `controller.*` and
+`server.*`. When `image.tag` is empty, each chart uses its own `appVersion`.
 
 ## Versioning
 
 Nx Release and `nx-helm` manage Helm chart versions and local chart dependency
 versions. The controller is a Go/Kubebuilder Nx project, not a Node package;
-its release version comes from `charts/kudeploy-controller/Chart.yaml`
-`appVersion`.
+its release version comes from `helm-charts/kudeploy-controller/Chart.yaml`
+`appVersion`. The server image release keeps `apps/server/package.json`
+`version` and `helm-charts/kudeploy-server/Chart.yaml` `appVersion` in sync.
 
 Version bumps are derived from conventional commit messages. Use commit scopes
 that map to the affected chart or project, for example:
 
 ```text
 feat(controller): add queued rollout reconciliation
-feat(kudeploy-controller): add service rollout status
-fix(kudeploy-crds): correct buildrun schema validation
+feat(controller-helm-chart): add service rollout status
+feat(server): add workspace usage endpoint
+feat(server-helm-chart): add ingress values
+fix(crds-helm-chart): correct buildrun schema validation
 ```
 
 Run `pnpm run release` to generate release commits and tags locally without
 publishing. This uses the external `nx-helm` package to update Helm chart
 versions and local chart dependency versions, and updates the
 `kudeploy-controller` chart `appVersion` for controller image releases.
+Server image releases update `apps/server/package.json` and the
+`kudeploy-server` chart `appVersion`.
 
 ## Release
 
@@ -164,11 +182,13 @@ The workflow validates conventional commit messages, runs `nx release
 
 - `ghcr.io/kudeploy/controller:<controller version>`
 - `ghcr.io/kudeploy/controller:latest`
+- `ghcr.io/kudeploy/server:<server version>`
+- `ghcr.io/kudeploy/server:latest`
 - Helm OCI charts under `ghcr.io/kudeploy/helm-charts`
 
 The workflow can also be run manually with `publish_existing=true` to publish
-the current controller image and chart versions even when no release commit is
-generated.
+the current controller image, server image, and chart versions even when no
+release commit is generated.
 
 ## Useful Commands
 
@@ -179,7 +199,9 @@ pnpm run commitlint
 pnpm run release
 pnpm run release:publish
 pnpm nx run controller:docker:build
+pnpm nx run server:docker:build
 pnpm nx release publish --projects=controller --dry-run --yes
-pnpm nx run-many -t lint --projects=kudeploy,kudeploy-controller,kudeploy-crds
-pnpm nx run kudeploy:package
+pnpm nx release publish --projects=server --dry-run --yes
+pnpm nx run-many -t lint --projects=helm-chart,controller-helm-chart,crds-helm-chart,server-helm-chart
+pnpm nx run helm-chart:package
 ```

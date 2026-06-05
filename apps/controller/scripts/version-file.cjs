@@ -1,7 +1,7 @@
 const { VersionActions } = require("nx/src/command-line/release/version/version-actions");
 const { parseDocument } = require("yaml");
 
-const CONTROLLER_CHART = "charts/kudeploy-controller/Chart.yaml";
+const CONTROLLER_CHART = "helm-charts/kudeploy-controller/Chart.yaml";
 
 function readText(tree, filePath) {
   const content = tree.read(filePath, "utf-8");
