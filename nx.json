@@ -1,0 +1,92 @@
+{
+  "$schema": "./node_modules/nx/schemas/nx-schema.json",
+  "plugins": [
+    {
+      "plugin": "@nx/docker",
+      "options": {
+        "buildTarget": "docker:build",
+        "runTarget": "docker:run"
+      }
+    },
+    {
+      "plugin": "nx-helm",
+      "options": {
+        "repository": "oci://ghcr.io/kudeploy/helm-charts"
+      }
+    }
+  ],
+  "namedInputs": {
+    "default": ["{projectRoot}/**/*", "sharedGlobals"],
+    "production": [
+      "default",
+      "!{projectRoot}/**/*.spec.ts",
+      "!{projectRoot}/**/*.test.ts",
+      "!{projectRoot}/e2e/**",
+      "!{projectRoot}/coverage/**"
+    ],
+    "sharedGlobals": [
+      "{workspaceRoot}/package.json",
+      "{workspaceRoot}/nx.json",
+      "{workspaceRoot}/pnpm-lock.yaml",
+      "{workspaceRoot}/pnpm-workspace.yaml",
+      "{workspaceRoot}/tsconfig.base.json"
+    ]
+  },
+  "targetDefaults": {
+    "build": {
+      "dependsOn": ["^build"],
+      "inputs": ["production", "^production", "{workspaceRoot}/.env*"],
+      "outputs": ["{projectRoot}/dist", "{projectRoot}/.next"]
+    },
+    "lint": {
+      "cache": true
+    },
+    "check-types": {
+      "dependsOn": ["^check-types"],
+      "inputs": ["production", "^production"]
+    },
+    "test": {
+      "inputs": ["default", "^production"],
+      "outputs": ["{projectRoot}/coverage"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "dependency-build": {
+      "cache": false
+    },
+    "package": {
+      "cache": true
+    },
+    "publish": {
+      "cache": false
+    }
+  },
+  "release": {
+    "projects": [
+      "tag:type:helm-chart",
+      "tag:type:docker-image"
+    ],
+    "projectsRelationship": "independent",
+    "git": {
+      "commit": true,
+      "tag": true,
+      "push": false
+    },
+    "releaseTag": {
+      "preferDockerVersion": false
+    },
+    "version": {
+      "conventionalCommits": true,
+      "fallbackCurrentVersionResolver": "disk",
+      "updateDependents": "auto",
+      "versionActions": "nx-helm/release"
+    },
+    "changelog": {
+      "workspaceChangelog": false,
+      "projectChangelogs": true,
+      "automaticFromRef": true
+    }
+  }
+}

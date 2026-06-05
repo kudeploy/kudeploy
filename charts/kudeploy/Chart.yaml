@@ -7,11 +7,11 @@ appVersion: latest
 dependencies:
   - name: kudeploy-crds
     alias: crds
-    version: 0.x.x
-    repository: oci://ghcr.io/kudeploy/helm-charts
+    version: 0.1.0
+    repository: file://../kudeploy-crds
     condition: crds.enabled
   - name: kudeploy-controller
     alias: controller
-    version: 0.x.x
-    repository: oci://ghcr.io/kudeploy/helm-charts
+    version: 0.1.0
+    repository: file://../kudeploy-controller
     condition: controller.enabled

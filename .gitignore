@@ -95,6 +95,10 @@ web_modules/
 # Optional eslint cache
 .eslintcache
 
+# Nx cache and workspace data
+.nx/
+tmp/
+
 # Optional stylelint cache
 .stylelintcache
 

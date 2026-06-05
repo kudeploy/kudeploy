@@ -1,9 +1,0 @@
-{
-  "name": "@kudeploy/chart-kudeploy",
-  "version": "0.1.1",
-  "private": true,
-  "dependencies": {
-    "@kudeploy/chart-kudeploy-controller": "workspace:*",
-    "@kudeploy/chart-kudeploy-crds": "workspace:*"
-  }
-}

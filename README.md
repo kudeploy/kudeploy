@@ -11,7 +11,6 @@ apps/controller/              Kubebuilder controller
 charts/kudeploy-crds/         CRD-only Helm chart
 charts/kudeploy-controller/   Controller Helm chart
 charts/kudeploy/              Aggregate chart for CRDs + controller
-scripts/                      Version and publish helpers
 ```
 
 The controller currently defines the `kudeploy.com/v1alpha1` APIs for
@@ -88,7 +87,8 @@ Use a specific controller image tag when needed:
 ```bash
 helm upgrade --install kudeploy oci://ghcr.io/kudeploy/helm-charts/kudeploy \
   --namespace kudeploy-system \
-  --create-namespace
+  --create-namespace \
+  --set controller.image.tag=0.1.0
 ```
 
 If GHCR requires authentication in your environment:
@@ -100,15 +100,14 @@ helm registry login ghcr.io
 For local chart validation:
 
 ```bash
-helm dependency update charts/kudeploy-controller
-helm dependency update charts/kudeploy
-helm lint charts/kudeploy-crds charts/kudeploy-controller charts/kudeploy
+pnpm nx run-many -t lint --projects=kudeploy,kudeploy-controller,kudeploy-crds
 helm template kudeploy charts/kudeploy
 ```
 
-The aggregate `kudeploy` chart depends on the CRD and controller charts from
-`oci://ghcr.io/kudeploy/helm-charts`, so `helm dependency update charts/kudeploy`
-requires the selected child chart versions to already exist in GHCR.
+The aggregate `kudeploy` chart uses local `file://` dependencies during
+development. The `nx-helm` package rewrites those internal dependency
+repositories to `oci://ghcr.io/kudeploy/helm-charts` when packaging charts for
+publication.
 
 ### Aggregate Chart Values
 
@@ -133,50 +132,54 @@ controller:
 
 The aggregate chart aliases `kudeploy-controller` as `controller`, so
 controller values are set with `controller.*`. When `image.tag` is empty, the
-controller chart uses `Chart.appVersion`.
+controller chart uses the `kudeploy-controller` chart `appVersion`.
 
 ## Versioning
 
-Changesets is used for version management only. The workspace packages are
-private and are not published to npm.
+Nx Release and `nx-helm` manage Helm chart versions and local chart dependency
+versions. The controller is a Go/Kubebuilder Nx project, not a Node package;
+its release version comes from `charts/kudeploy-controller/Chart.yaml`
+`appVersion`.
 
-Create a changeset for user-visible changes:
+Version bumps are derived from conventional commit messages. Use commit scopes
+that map to the affected chart or project, for example:
 
-```bash
-pnpm changeset
+```text
+feat(controller): add queued rollout reconciliation
+feat(kudeploy-controller): add service rollout status
+fix(kudeploy-crds): correct buildrun schema validation
 ```
 
-Apply pending changesets and sync chart metadata:
-
-```bash
-pnpm run version-packages
-```
-
-This runs `changeset version`, syncs chart versions with chart package versions,
-syncs `charts/kudeploy-controller/Chart.yaml` `appVersion` from
-`apps/controller/package.json`, and refreshes the controller chart dependency on
-`common`. The aggregate chart dependencies are refreshed during publishing after
-the child charts are available in GHCR.
+Run `pnpm run release` to generate release commits and tags locally without
+publishing. This uses the external `nx-helm` package to update Helm chart
+versions and local chart dependency versions, and updates the
+`kudeploy-controller` chart `appVersion` for controller image releases.
 
 ## Release
 
 The `Release` GitHub Actions workflow handles publishing on `main`.
 
-When unreleased changesets exist, the workflow opens or updates a
-`Version Packages` pull request. After that PR is merged, the workflow publishes:
+The workflow validates conventional commit messages, runs `nx release
+--skip-publish` to create release commits and tags, then publishes:
 
-- `ghcr.io/kudeploy/controller:<app version>`
+- `ghcr.io/kudeploy/controller:<controller version>`
 - `ghcr.io/kudeploy/controller:latest`
-- changed Helm OCI charts under `ghcr.io/kudeploy/helm-charts`
+- Helm OCI charts under `ghcr.io/kudeploy/helm-charts`
 
-The workflow can also be run manually with `force=true` to publish the current
-versions. Existing controller image tags are skipped by the workflow image
-check, and existing Helm chart versions are skipped by the publish script.
+The workflow can also be run manually with `publish_existing=true` to publish
+the current controller image and chart versions even when no release commit is
+generated.
 
 ## Useful Commands
 
 ```bash
 pnpm install --frozen-lockfile
-pnpm run version-packages
-helm lint charts/kudeploy-crds charts/kudeploy-controller charts/kudeploy
+pnpm nx show projects
+pnpm run commitlint
+pnpm run release
+pnpm run release:publish
+pnpm nx run controller:docker:build
+pnpm nx release publish --projects=controller --dry-run --yes
+pnpm nx run-many -t lint --projects=kudeploy,kudeploy-controller,kudeploy-crds
+pnpm nx run kudeploy:package
 ```

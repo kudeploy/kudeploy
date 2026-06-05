@@ -1,0 +1,50 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "controller",
+  "root": "apps/controller",
+  "projectType": "application",
+  "tags": ["type:controller", "type:docker-image", "language:go"],
+  "release": {
+    "version": {
+      "versionActions": "./apps/controller/scripts/version-file.cjs"
+    },
+    "docker": {
+      "preVersionCommand": "[ \"$NX_DRY_RUN\" = \"true\" ] || pnpm nx run controller:docker:build",
+      "versionSchemes": {
+        "production": "{versionActionsVersion}"
+      },
+      "repositoryName": "kudeploy/controller",
+      "registryUrl": "ghcr.io"
+    }
+  },
+  "targets": {
+    "docker:build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "apps/controller",
+        "command": "docker build --tag apps-controller ."
+      },
+      "inputs": ["production", "^production"],
+      "cache": true
+    },
+    "docker:run": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "apps/controller",
+        "command": "docker run {args} apps-controller"
+      },
+      "dependsOn": ["docker:build"],
+      "inputs": ["production", "^production"],
+      "cache": false
+    },
+    "nx-release-publish": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "dry_run=\"{args.dryRun}\"; version=$(node -e \"const fs = require('node:fs'); const { parse } = require('yaml'); const chart = parse(fs.readFileSync('charts/kudeploy-controller/Chart.yaml', 'utf8')); if (!chart.appVersion) throw new Error('Missing charts/kudeploy-controller/Chart.yaml appVersion'); process.stdout.write(String(chart.appVersion));\"); if [ \"$dry_run\" = \"true\" ] || [ \"$NX_DRY_RUN\" = \"true\" ]; then echo \"[dry-run] docker buildx build --platform linux/amd64,linux/arm64 --push --tag ghcr.io/kudeploy/controller:$version --tag ghcr.io/kudeploy/controller:latest apps/controller\"; else docker buildx build --platform linux/amd64,linux/arm64 --push --tag ghcr.io/kudeploy/controller:$version --tag ghcr.io/kudeploy/controller:latest apps/controller; fi"
+      },
+      "dependsOn": [],
+      "cache": false
+    }
+  }
+}

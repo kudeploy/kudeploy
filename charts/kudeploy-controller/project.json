@@ -1,0 +1,7 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "kudeploy-controller",
+  "root": "charts/kudeploy-controller",
+  "tags": ["type:helm-chart"],
+  "implicitDependencies": ["controller"]
+}

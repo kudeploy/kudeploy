@@ -43,5 +43,12 @@ Resolve the service account name.
 Resolve the controller image reference.
 */}}
 {{- define "kudeploy-controller.image" -}}
-{{- include "common.images.image" (dict "imageRoot" .Values.image "global" .Values.global "chart" .Chart) -}}
+{{- $registry := default .Values.image.registry .Values.global.imageRegistry -}}
+{{- $repository := .Values.image.repository -}}
+{{- $image := ternary (printf "%s/%s" $registry $repository) $repository (ne $registry "") -}}
+{{- if .Values.image.digest -}}
+{{- printf "%s@%s" $image .Values.image.digest -}}
+{{- else -}}
+{{- printf "%s:%s" $image (default .Chart.AppVersion .Values.image.tag) -}}
+{{- end -}}
 {{- end -}}

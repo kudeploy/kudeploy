@@ -1,0 +1,9 @@
+.git
+.nx
+node_modules
+**/node_modules
+**/dist
+**/coverage
+**/test-results
+.DS_Store
+*.log

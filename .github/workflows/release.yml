@@ -4,18 +4,18 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
   workflow_dispatch:
     inputs:
-      force:
-        description: Publish the current app and chart versions.
+      publish_existing:
+        description: Publish the current chart versions even when no release commit is generated.
         required: false
         type: boolean
         default: false
-
-permissions:
-  contents: write
-  pull-requests: write
-  packages: write
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -25,8 +25,47 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  release:
+  commitlint:
+    name: Commitlint
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate current commit with commitlint
+        if: github.event_name != 'pull_request'
+        run: pnpm exec commitlint --last --verbose
+
+      - name: Validate PR commits with commitlint
+        if: github.event_name == 'pull_request'
+        run: pnpm exec commitlint --from "$COMMITLINT_FROM" --to "$COMMITLINT_TO" --verbose
+        env:
+          COMMITLINT_FROM: ${{ github.event.pull_request.base.sha }}
+          COMMITLINT_TO: ${{ github.event.pull_request.head.sha }}
+
+  release:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: commitlint
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
 
     steps:
       - name: Checkout
@@ -48,72 +87,93 @@ jobs:
       - name: Setup Helm
         uses: azure/setup-helm@v5
 
-      - name: Create version pull request
-        id: changesets
-        uses: changesets/action@v1
-        with:
-          version: pnpm run version-packages
-          title: Version Packages
-          commit: Version Packages
+      - name: Lint Helm charts
+        run: pnpm nx run-many -t lint --projects=kudeploy,kudeploy-controller,kudeploy-crds
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Login to GHCR for Helm
+        run: echo "$GITHUB_TOKEN" | helm registry login ghcr.io --username "${{ github.actor }}" --password-stdin
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Detect release artifacts
-        if: steps.changesets.outputs.hasChangesets == 'false'
+      - name: Release projects
         id: release
-        run: node scripts/detect-release-artifacts.mjs
+        run: |
+          before_release="$(git rev-parse HEAD)"
+          pnpm exec nx release --skip-publish
+          after_release="$(git rev-parse HEAD)"
+
+          release_created=false
+          should_publish=true
+          projects_to_publish=""
+          charts_to_package=""
+          if [ "$after_release" = "$before_release" ]; then
+            if [ "$PUBLISH_EXISTING" = "true" ]; then
+              echo "No release changes detected; publishing current chart versions."
+              projects_to_publish="controller,kudeploy-controller,kudeploy-crds,kudeploy"
+              charts_to_package="kudeploy-controller,kudeploy-crds,kudeploy"
+            else
+              echo "No release changes detected; skipping publish."
+              should_publish=false
+            fi
+          else
+            release_created=true
+            changed_files="$(git diff --name-only "$before_release" "$after_release")"
+            projects=()
+            charts=()
+
+            if grep -q '^charts/kudeploy-controller/' <<< "$changed_files"; then
+              projects+=(kudeploy-controller)
+              charts+=(kudeploy-controller)
+            fi
+            if git diff "$before_release" "$after_release" -- charts/kudeploy-controller/Chart.yaml | grep -q '^[+-]appVersion:'; then
+              projects+=(controller)
+            fi
+            if grep -q '^charts/kudeploy-crds/' <<< "$changed_files"; then
+              projects+=(kudeploy-crds)
+              charts+=(kudeploy-crds)
+            fi
+            if grep -q '^charts/kudeploy/' <<< "$changed_files"; then
+              projects+=(kudeploy)
+              charts+=(kudeploy)
+            fi
+
+            projects_to_publish="$(IFS=,; echo "${projects[*]}")"
+            charts_to_package="$(IFS=,; echo "${charts[*]}")"
+            git push --follow-tags --atomic origin main
+          fi
+
+          echo "release_created=$release_created" >> "$GITHUB_OUTPUT"
+          echo "should_publish=$should_publish" >> "$GITHUB_OUTPUT"
+          echo "projects_to_publish=$projects_to_publish" >> "$GITHUB_OUTPUT"
+          echo "charts_to_package=$charts_to_package" >> "$GITHUB_OUTPUT"
         env:
-          BASE_SHA: ${{ github.event_name == 'push' && github.event.before || github.sha }}
-          FORCE_PUBLISH: ${{ github.event_name == 'workflow_dispatch' && inputs.force && 'true' || 'false' }}
+          PUBLISH_EXISTING: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_existing == true }}
 
       - name: Setup QEMU
-        if: steps.release.outputs.controller_changed == 'true' || steps.release.outputs.kudeploy_controller_changed == 'true'
+        if: steps.release.outputs.should_publish == 'true'
         uses: docker/setup-qemu-action@v4
 
       - name: Setup Docker Buildx
-        if: steps.release.outputs.controller_changed == 'true' || steps.release.outputs.kudeploy_controller_changed == 'true'
+        if: steps.release.outputs.should_publish == 'true'
         uses: docker/setup-buildx-action@v4
 
       - name: Login to GHCR for Docker
-        if: steps.release.outputs.controller_changed == 'true' || steps.release.outputs.kudeploy_controller_changed == 'true'
+        if: steps.release.outputs.should_publish == 'true'
         uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Check controller image
-        id: controller_image
-        if: steps.release.outputs.controller_changed == 'true' || steps.release.outputs.kudeploy_controller_changed == 'true'
-        run: |
-          image="ghcr.io/kudeploy/controller:${{ steps.release.outputs.controller_version }}"
-          if docker buildx imagetools inspect "$image" >/dev/null 2>&1; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-          fi
+      - name: Package Helm charts
+        if: steps.release.outputs.should_publish == 'true' && steps.release.outputs.charts_to_package != ''
+        run: pnpm nx run-many -t package --projects="${{ steps.release.outputs.charts_to_package }}"
 
-      - name: Build and push controller image
-        if: >-
-          (steps.release.outputs.controller_changed == 'true' ||
-          steps.release.outputs.kudeploy_controller_changed == 'true') &&
-          steps.controller_image.outputs.exists != 'true'
-        uses: docker/build-push-action@v7
-        with:
-          context: apps/controller
-          file: apps/controller/Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: |
-            ghcr.io/kudeploy/controller:${{ steps.release.outputs.controller_version }}
-            ghcr.io/kudeploy/controller:latest
-
-      - name: Publish Helm OCI charts
-        if: steps.release.outputs.any_changed == 'true'
-        run: pnpm run publish-packages
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PUBLISH_KUDEPLOY: ${{ steps.release.outputs.kudeploy_changed }}
-          PUBLISH_KUDEPLOY_CONTROLLER: ${{ steps.release.outputs.kudeploy_controller_changed }}
-          PUBLISH_KUDEPLOY_CRDS: ${{ steps.release.outputs.kudeploy_crds_changed }}
-          FORCE_PUBLISH: ${{ github.event_name == 'workflow_dispatch' && inputs.force && 'true' || 'false' }}
+      - name: Publish release artifacts
+        if: steps.release.outputs.should_publish == 'true'
+        run: pnpm exec nx release publish --yes --projects="${{ steps.release.outputs.projects_to_publish }}"
