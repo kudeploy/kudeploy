@@ -2,13 +2,6 @@
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
   "plugins": [
     {
-      "plugin": "@nx/docker",
-      "options": {
-        "buildTarget": "docker:build",
-        "runTarget": "docker:run"
-      }
-    },
-    {
       "plugin": "nx-helm",
       "options": {
         "repository": "oci://ghcr.io/kudeploy/helm-charts"
@@ -76,9 +69,6 @@
     },
     "releaseTag": {
       "preferDockerVersion": false
-    },
-    "docker": {
-      "preVersionCommand": "[ \"$NX_DRY_RUN\" = \"true\" ] || pnpm nx run controller:docker:build"
     },
     "version": {
       "conventionalCommits": true,
