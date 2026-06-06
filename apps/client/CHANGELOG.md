@@ -1,3 +1,13 @@
+## 0.2.2 (2026-06-06)
+
+### 🩹 Fixes
+
+- **client:** configure nginx access logging ([dbc7289](https://github.com/kudeploy/kudeploy/commit/dbc7289))
+
+### ❤️ Thank You
+
+- Xudong Huang @xudongcc
+
 ## 0.2.1 (2026-06-06)
 
 ### 🩹 Fixes
