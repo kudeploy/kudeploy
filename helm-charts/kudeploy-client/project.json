@@ -1,18 +1,12 @@
 {
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "name": "helm-chart",
-  "root": "helm-charts/kudeploy",
+  "name": "client-helm-chart",
+  "root": "helm-charts/kudeploy-client",
   "projectType": "application",
   "tags": ["type:helm-chart"],
   "metadata": {
-    "description": "Kudeploy aggregate chart."
+    "description": "Kudeploy web client."
   },
-  "implicitDependencies": [
-    "crds-helm-chart",
-    "controller-helm-chart",
-    "client-helm-chart",
-    "server-helm-chart"
-  ],
   "release": {
     "version": {
       "currentVersionResolver": "git-tag",
@@ -20,11 +14,12 @@
       "versionActions": "nx-helm/release"
     }
   },
+  "implicitDependencies": ["client"],
   "targets": {
     "dependency-build": {
       "executor": "nx-helm:dependency-build",
       "options": {
-        "chartRoot": "helm-charts/kudeploy",
+        "chartRoot": "helm-charts/kudeploy-client",
         "distDir": "dist"
       },
       "cache": false,
@@ -36,7 +31,7 @@
     "lint": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "helm lint helm-charts/kudeploy"
+        "command": "helm lint helm-charts/kudeploy-client"
       },
       "cache": true,
       "inputs": ["default", "^default", "{workspaceRoot}/pnpm-lock.yaml"],
@@ -45,13 +40,13 @@
     "package": {
       "executor": "nx-helm:package",
       "options": {
-        "chartRoot": "helm-charts/kudeploy",
+        "chartRoot": "helm-charts/kudeploy-client",
         "distDir": "dist",
         "repository": "oci://ghcr.io/kudeploy/helm-charts"
       },
       "cache": true,
       "inputs": ["default", "^default", "{workspaceRoot}/pnpm-lock.yaml"],
-      "outputs": ["{workspaceRoot}/dist/kudeploy-*.tgz"],
+      "outputs": ["{workspaceRoot}/dist/kudeploy-client-*.tgz"],
       "dependsOn": [
         { "dependencies": true, "target": "package", "params": "ignore" },
         "dependency-build"
@@ -60,7 +55,7 @@
     "publish": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "helm push dist/kudeploy-*.tgz oci://ghcr.io/kudeploy/helm-charts"
+        "command": "helm push dist/kudeploy-client-*.tgz oci://ghcr.io/kudeploy/helm-charts"
       },
       "cache": false,
       "dependsOn": ["package"]
@@ -68,8 +63,8 @@
     "nx-release-publish": {
       "executor": "nx-helm:release-publish",
       "options": {
-        "chartName": "kudeploy",
-        "chartRoot": "helm-charts/kudeploy",
+        "chartName": "kudeploy-client",
+        "chartRoot": "helm-charts/kudeploy-client",
         "distDir": "dist",
         "repository": "oci://ghcr.io/kudeploy/helm-charts"
       },

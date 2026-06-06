@@ -15,6 +15,11 @@ dependencies:
     version: 0.2.0
     repository: file://../kudeploy-controller
     condition: controller.enabled
+  - name: kudeploy-client
+    alias: client
+    version: 0.1.0
+    repository: file://../kudeploy-client
+    condition: client.enabled
   - name: kudeploy-server
     alias: server
     version: 0.3.1

@@ -1,10 +1,11 @@
 # kudeploy
 
-Installs Kudeploy CRDs, the Kudeploy controller, and the Kudeploy server
-together.
+Installs Kudeploy CRDs, the Kudeploy controller, the Kudeploy server, and the
+Kudeploy web client together.
 
 ```bash
 helm dependency update helm-charts/kudeploy-controller
+helm dependency update helm-charts/kudeploy-client
 helm dependency update helm-charts/kudeploy-server
 helm dependency update helm-charts/kudeploy
 helm install kudeploy helm-charts/kudeploy
@@ -21,15 +22,34 @@ controller:
   image:
     registry: ghcr.io
     repository: kudeploy/controller
-    tag: ""
+    tag: ''
+
+client:
+  enabled: true
+  image:
+    registry: ghcr.io
+    repository: kudeploy/client
+    tag: ''
 
 server:
   enabled: true
   image:
     registry: ghcr.io
     repository: kudeploy/server
-    tag: ""
+    tag: ''
+
+ingress:
+  enabled: false
+  hosts:
+    - host: ''
+      paths:
+        server:
+          - path: /api
+            pathType: Prefix
+        client:
+          - path: /
+            pathType: Prefix
 ```
 
-The aggregate chart aliases subcharts as `controller` and `server`, so values
-are set with `controller.*` and `server.*`.
+The aggregate chart aliases subcharts as `controller`, `client`, and `server`,
+so values are set with `controller.*`, `client.*`, and `server.*`.

@@ -1,0 +1,51 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "kudeploy.fullname" . }}
+  labels:
+    {{- include "kudeploy.labels" . | nindent 4 }}
+  {{- with .Values.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- with .Values.ingress.className }}
+  ingressClassName: {{ . | quote }}
+  {{- end }}
+  {{- with .Values.ingress.tls }}
+  tls:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  rules:
+    {{- range .Values.ingress.hosts }}
+    {{- $paths := default (dict) .paths }}
+    {{- $serverPaths := default (list (dict "path" "/api" "pathType" "Prefix")) $paths.server }}
+    {{- $clientPaths := default (list (dict "path" "/" "pathType" "Prefix")) $paths.client }}
+    {{- if .host }}
+    - host: {{ .host | quote }}
+      http:
+    {{- else }}
+    - http:
+    {{- end }}
+        paths:
+          {{- range $serverPaths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType }}
+            backend:
+              service:
+                name: {{ include "kudeploy.serverServiceName" $ }}
+                port:
+                  number: {{ $.Values.ingress.server.servicePort }}
+          {{- end }}
+          {{- range $clientPaths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType }}
+            backend:
+              service:
+                name: {{ include "kudeploy.clientServiceName" $ }}
+                port:
+                  number: {{ $.Values.ingress.client.servicePort }}
+          {{- end }}
+    {{- end }}
+{{- end }}

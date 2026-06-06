@@ -3,5 +3,54 @@
   "name": "client",
   "root": "apps/client",
   "projectType": "application",
-  "tags": ["type:client", "language:typescript"]
+  "tags": ["type:client", "type:docker-image", "language:typescript"],
+  "release": {
+    "version": {
+      "versionActions": "./apps/client/scripts/version-file.cjs"
+    },
+    "docker": {
+      "versionSchemes": {
+        "production": "{versionActionsVersion}"
+      },
+      "repositoryName": "kudeploy/client",
+      "registryUrl": "ghcr.io"
+    }
+  },
+  "targets": {
+    "docker:build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "docker build --tag apps-client --file apps/client/Dockerfile ."
+      },
+      "inputs": [
+        "production",
+        "{workspaceRoot}/package.json",
+        "{workspaceRoot}/pnpm-lock.yaml",
+        "{workspaceRoot}/pnpm-workspace.yaml",
+        "{workspaceRoot}/nx.json",
+        "{workspaceRoot}/tsconfig.base.json"
+      ],
+      "cache": true
+    },
+    "docker:run": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "docker run {args} apps-client"
+      },
+      "dependsOn": ["docker:build"],
+      "inputs": ["production"],
+      "cache": false
+    },
+    "nx-release-publish": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "node apps/client/scripts/publish-image.cjs \"{args.dryRun}\""
+      },
+      "dependsOn": [],
+      "cache": false
+    }
+  }
 }
