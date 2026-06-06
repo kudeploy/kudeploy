@@ -4,14 +4,14 @@ const { spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const { parse } = require('yaml');
 
-const chartPath = 'helm-charts/kudeploy-server/Chart.yaml';
-const chart = parse(fs.readFileSync(chartPath, 'utf8'));
+const valuesPath = 'helm-charts/kudeploy/values.yaml';
+const values = parse(fs.readFileSync(valuesPath, 'utf8'));
 
-if (!chart.appVersion) {
-  throw new Error(`Missing ${chartPath} appVersion`);
+if (!values?.server?.image?.tag) {
+  throw new Error(`Missing server.image.tag in ${valuesPath}`);
 }
 
-const version = String(chart.appVersion);
+const version = String(values.server.image.tag);
 const dryRun =
   process.argv[2] === 'true' ||
   process.env.NX_DRY_RUN === 'true' ||

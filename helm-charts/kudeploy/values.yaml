@@ -1,47 +1,310 @@
+global:
+  imageRegistry: ''
+  imagePullSecrets: []
+  postgresql:
+    fullnameOverride: ''
+    auth:
+      username: ''
+      password: ''
+      database: ''
+      existingSecret: ''
+      existingSecretPasswordKey: postgresql-password
+    service:
+      ports:
+        postgresql: ''
+
 nameOverride: ''
 fullnameOverride: ''
+namespaceOverride: ''
+
+commonLabels: {}
 
 crds:
   enabled: true
 
 controller:
   enabled: true
+  nameOverride: ''
+  fullnameOverride: ''
+  namespaceOverride: ''
+  commonLabels: {}
+  commonAnnotations: {}
+  replicaCount: 1
   image:
     registry: ghcr.io
     repository: kudeploy/controller
-    tag: ''
+    tag: '0.2.1'
+    digest: ''
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+  command:
+    - /manager
+  extraArgs: []
+  leaderElection:
+    enabled: true
+  healthProbe:
+    bindAddress: ':8081'
+    port: 8081
+    liveness:
+      initialDelaySeconds: 15
+      periodSeconds: 20
+    readiness:
+      initialDelaySeconds: 5
+      periodSeconds: 10
+  metrics:
+    enabled: true
+    bindAddress: ':8443'
+    port: 8443
+    service:
+      enabled: true
+      type: ClusterIP
+      port: 8443
+      annotations: {}
+    serviceMonitor:
+      enabled: false
+      namespace: ''
+      additionalLabels: {}
+      interval: ''
+      scrapeTimeout: ''
+      path: /metrics
+      scheme: https
+      bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+      tlsConfig:
+        insecureSkipVerify: true
+  networkPolicy:
+    enabled: false
+    namespaceSelector:
+      matchLabels:
+        metrics: enabled
+  serviceAccount:
+    create: true
+    name: ''
+    annotations: {}
+  rbac:
+    create: true
+    userRoles:
+      create: true
+  podAnnotations:
+    kubectl.kubernetes.io/default-container: manager
+  podLabels: {}
+  podSecurityContext:
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  securityContext:
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+  resources:
+    limits:
+      cpu: 500m
+      memory: 128Mi
+    requests:
+      cpu: 10m
+      memory: 64Mi
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  priorityClassName: ''
+  extraEnv: []
+  extraVolumeMounts: []
+  extraVolumes: []
+  terminationGracePeriodSeconds: 10
 
 client:
   enabled: true
+  nameOverride: ''
+  fullnameOverride: ''
+  namespaceOverride: ''
+  commonLabels: {}
+  commonAnnotations: {}
+  replicaCount: 1
   image:
     registry: ghcr.io
     repository: kudeploy/client
-    tag: ''
+    tag: '0.2.2'
+    digest: ''
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+  port: 8080
+  service:
+    enabled: true
+    type: ClusterIP
+    port: 80
+    annotations: {}
+  healthProbe:
+    path: /health
+    liveness:
+      initialDelaySeconds: 10
+      periodSeconds: 20
+    readiness:
+      initialDelaySeconds: 5
+      periodSeconds: 10
+  serviceAccount:
+    create: true
+    name: ''
+    annotations: {}
+  podAnnotations: {}
+  podLabels: {}
+  podSecurityContext:
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  securityContext:
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+  resources:
+    limits:
+      cpu: 500m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  priorityClassName: ''
+  extraEnv: []
+  envFrom: []
+  extraVolumeMounts: []
+  extraVolumes: []
+  terminationGracePeriodSeconds: 30
 
 server:
   enabled: true
+  nameOverride: ''
+  fullnameOverride: ''
+  namespaceOverride: ''
+  commonLabels: {}
+  commonAnnotations: {}
+  replicaCount: 1
   image:
     registry: ghcr.io
     repository: kudeploy/server
-    tag: ''
+    tag: '1.3.2'
+    digest: ''
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+  port: 4000
+  appUrl: ''
+  service:
+    enabled: true
+    type: ClusterIP
+    port: 4000
+    annotations: {}
+  healthProbe:
+    path: /api/auth/ok
+    liveness:
+      initialDelaySeconds: 30
+      periodSeconds: 20
+    readiness:
+      initialDelaySeconds: 10
+      periodSeconds: 10
+  serviceAccount:
+    create: true
+    name: ''
+    annotations: {}
+  podAnnotations: {}
+  podLabels: {}
+  podSecurityContext:
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  securityContext:
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  priorityClassName: ''
+  extraEnv: []
+  envFrom: []
+  extraVolumeMounts: []
+  extraVolumes: []
+  terminationGracePeriodSeconds: 30
 
 ingress:
   enabled: false
+  hostname: ''
+  pathType: Prefix
   className: ''
+  ingressClassName: ''
   annotations: {}
   client:
     serviceName: ''
     servicePort: 80
+    paths:
+      - path: /
+        pathType: Prefix
   server:
     serviceName: ''
     servicePort: 4000
-  hosts:
-    - host: ''
-      paths:
-        server:
-          - path: /api
-            pathType: Prefix
-        client:
-          - path: /
-            pathType: Prefix
-  tls: []
+    paths:
+      - path: /api
+        pathType: Prefix
+  tls: false
+  extraHosts: []
+  extraTls: []
+  extraRules: []
+
+postgresql:
+  enabled: true
+  fullnameOverride: ''
+  auth:
+    username: kudeploy
+    password: ''
+    database: kudeploy
+    existingSecret: ''
+    existingSecretPasswordKey: postgresql-password
+  service:
+    ports:
+      postgresql: 5432
+  persistence:
+    enabled: true
+    size: 8Gi
+
+externalDatabase:
+  host: ''
+  port: 5432
+  user: kudeploy
+  password: ''
+  database: kudeploy
+  existingSecret: ''
+  existingSecretPasswordKey: postgresql-password
+
+valkey:
+  enabled: true
+  fullnameOverride: ''
+  auth:
+    enabled: true
+    password: ''
+    existingSecret: ''
+    existingSecretPasswordKey: valkey-password
+  service:
+    ports:
+      valkey: 6379
+  persistence:
+    enabled: true
+    size: 8Gi
+
+externalValkey:
+  host: ''
+  port: 6379
+  password: ''
+  existingSecret: ''
+  existingSecretPasswordKey: valkey-password

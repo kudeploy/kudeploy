@@ -1,27 +1,22 @@
 apiVersion: v2
 name: kudeploy
-description: Kudeploy aggregate chart.
+description: Kudeploy chart.
 type: application
 version: 0.3.6
-appVersion: latest
 dependencies:
   - name: kudeploy-crds
     alias: crds
     version: 0.2.1
     repository: file://../kudeploy-crds
     condition: crds.enabled
-  - name: kudeploy-controller
-    alias: controller
-    version: 0.2.1
-    repository: file://../kudeploy-controller
-    condition: controller.enabled
-  - name: kudeploy-client
-    alias: client
-    version: 0.2.2
-    repository: file://../kudeploy-client
-    condition: client.enabled
-  - name: kudeploy-server
-    alias: server
-    version: 0.3.4
-    repository: file://../kudeploy-server
-    condition: server.enabled
+  - name: common
+    version: 0.1.0
+    repository: oci://ghcr.io/community-helm-charts
+  - name: postgresql
+    version: 2.0.1
+    repository: oci://ghcr.io/community-helm-charts
+    condition: postgresql.enabled
+  - name: valkey
+    version: 2.0.1
+    repository: oci://ghcr.io/community-helm-charts
+    condition: valkey.enabled

@@ -3,7 +3,8 @@ const {
 } = require('nx/src/command-line/release/version/version-actions');
 const { parseDocument } = require('yaml');
 
-const CLIENT_CHART = 'helm-charts/kudeploy-client/Chart.yaml';
+const CHART_VALUES = 'helm-charts/kudeploy/values.yaml';
+const IMAGE_TAG_PATH = ['client', 'image', 'tag'];
 
 function readText(tree, filePath) {
   const content = tree.read(filePath, 'utf-8');
@@ -16,7 +17,7 @@ function readText(tree, filePath) {
 function scalarValueRange(node, source, description) {
   const range = node?.range;
   if (!range) {
-    throw new Error(`Could not locate ${description} in ${CLIENT_CHART}`);
+    throw new Error(`Could not locate ${description} in ${CHART_VALUES}`);
   }
 
   const [start, end] = range;
@@ -27,9 +28,7 @@ function scalarValueRange(node, source, description) {
     end < start ||
     end > source.length
   ) {
-    throw new Error(
-      `Invalid source range for ${description} in ${CLIENT_CHART}`,
-    );
+    throw new Error(`Invalid source range for ${description} in ${CHART_VALUES}`);
   }
 
   return [start, end];
@@ -39,35 +38,39 @@ function replaceRange(source, start, end, value) {
   return `${source.slice(0, start)}${value}${source.slice(end)}`;
 }
 
-function readChart(tree) {
-  const chartSource = readText(tree, CLIENT_CHART);
+function quotedVersion(version) {
+  return `'${version}'`;
+}
+
+function readValues(tree) {
+  const valuesSource = readText(tree, CHART_VALUES);
   return {
-    chartSource,
-    chart: parseDocument(chartSource),
+    valuesSource,
+    values: parseDocument(valuesSource),
   };
 }
 
-function readChartAppVersion(tree) {
-  const { chartSource, chart } = readChart(tree);
-  const appVersionNode = chart.get('appVersion', true);
-  scalarValueRange(appVersionNode, chartSource, 'client chart appVersion');
+function readClientImageTag(tree) {
+  const { valuesSource, values } = readValues(tree);
+  const tagNode = values.getIn(IMAGE_TAG_PATH, true);
+  scalarValueRange(tagNode, valuesSource, 'client image tag');
 
-  const currentVersion = String(appVersionNode.value ?? '').trim();
+  const currentVersion = String(tagNode.value ?? '').trim();
   if (!currentVersion) {
-    throw new Error(`Missing appVersion in ${CLIENT_CHART}`);
+    throw new Error(`Missing client.image.tag in ${CHART_VALUES}`);
   }
 
   return {
     currentVersion,
-    manifestPath: CLIENT_CHART,
+    manifestPath: CHART_VALUES,
   };
 }
 
 class VersionFileActions extends VersionActions {
-  validManifestFilenames = ['Chart.yaml'];
+  validManifestFilenames = ['values.yaml'];
 
   async readCurrentVersionFromSourceManifest(tree) {
-    return readChartAppVersion(tree);
+    return readClientImageTag(tree);
   }
 
   async readCurrentVersionFromRegistry() {
@@ -82,16 +85,12 @@ class VersionFileActions extends VersionActions {
   }
 
   async updateProjectVersion(tree, newVersion) {
-    const { chartSource, chart } = readChart(tree);
-    const appVersionNode = chart.get('appVersion', true);
-    const [start, end] = scalarValueRange(
-      appVersionNode,
-      chartSource,
-      'client chart appVersion',
-    );
-    tree.write(CLIENT_CHART, replaceRange(chartSource, start, end, newVersion));
+    const { valuesSource, values } = readValues(tree);
+    const tagNode = values.getIn(IMAGE_TAG_PATH, true);
+    const [start, end] = scalarValueRange(tagNode, valuesSource, 'client image tag');
+    tree.write(CHART_VALUES, replaceRange(valuesSource, start, end, quotedVersion(newVersion)));
 
-    return [`Updated ${CLIENT_CHART} appVersion to ${newVersion}`];
+    return [`Updated ${CHART_VALUES} client.image.tag to ${newVersion}`];
   }
 
   async updateProjectDependencies() {

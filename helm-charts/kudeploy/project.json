@@ -7,12 +7,7 @@
   "metadata": {
     "description": "Kudeploy aggregate chart."
   },
-  "implicitDependencies": [
-    "crds-helm-chart",
-    "controller-helm-chart",
-    "client-helm-chart",
-    "server-helm-chart"
-  ],
+  "implicitDependencies": ["crds-helm-chart"],
   "release": {
     "version": {
       "currentVersionResolver": "git-tag",

@@ -5,7 +5,8 @@ const {
 const { parseDocument } = require('yaml');
 
 const SERVER_PACKAGE = 'apps/server/package.json';
-const SERVER_CHART = 'helm-charts/kudeploy-server/Chart.yaml';
+const CHART_VALUES = 'helm-charts/kudeploy/values.yaml';
+const IMAGE_TAG_PATH = ['server', 'image', 'tag'];
 
 function readText(tree, filePath) {
   const content = tree.read(filePath, 'utf-8');
@@ -18,7 +19,7 @@ function readText(tree, filePath) {
 function scalarValueRange(node, source, description) {
   const range = node?.range;
   if (!range) {
-    throw new Error(`Could not locate ${description} in ${SERVER_CHART}`);
+    throw new Error(`Could not locate ${description} in ${CHART_VALUES}`);
   }
 
   const [start, end] = range;
@@ -29,9 +30,7 @@ function scalarValueRange(node, source, description) {
     end < start ||
     end > source.length
   ) {
-    throw new Error(
-      `Invalid source range for ${description} in ${SERVER_CHART}`,
-    );
+    throw new Error(`Invalid source range for ${description} in ${CHART_VALUES}`);
   }
 
   return [start, end];
@@ -39,6 +38,10 @@ function scalarValueRange(node, source, description) {
 
 function replaceRange(source, start, end, value) {
   return `${source.slice(0, start)}${value}${source.slice(end)}`;
+}
+
+function quotedVersion(version) {
+  return `'${version}'`;
 }
 
 function readPackageVersion(tree) {
@@ -50,37 +53,37 @@ function readPackageVersion(tree) {
   return version;
 }
 
-function readChart(tree) {
-  const chartSource = readText(tree, SERVER_CHART);
+function readValues(tree) {
+  const valuesSource = readText(tree, CHART_VALUES);
   return {
-    chartSource,
-    chart: parseDocument(chartSource),
+    valuesSource,
+    values: parseDocument(valuesSource),
   };
 }
 
-function readChartAppVersion(tree) {
-  const { chartSource, chart } = readChart(tree);
-  const appVersionNode = chart.get('appVersion', true);
-  scalarValueRange(appVersionNode, chartSource, 'server chart appVersion');
+function readServerImageTag(tree) {
+  const { valuesSource, values } = readValues(tree);
+  const tagNode = values.getIn(IMAGE_TAG_PATH, true);
+  scalarValueRange(tagNode, valuesSource, 'server image tag');
 
-  const appVersion = String(appVersionNode.value ?? '').trim();
-  if (!appVersion) {
-    throw new Error(`Missing appVersion in ${SERVER_CHART}`);
+  const imageTag = String(tagNode.value ?? '').trim();
+  if (!imageTag) {
+    throw new Error(`Missing server.image.tag in ${CHART_VALUES}`);
   }
 
-  return appVersion;
+  return imageTag;
 }
 
 class VersionFileActions extends VersionActions {
-  validManifestFilenames = ['package.json', 'Chart.yaml'];
+  validManifestFilenames = ['package.json', 'values.yaml'];
 
   async readCurrentVersionFromSourceManifest(tree) {
     const currentVersion = readPackageVersion(tree);
-    const chartAppVersion = readChartAppVersion(tree);
+    const imageTag = readServerImageTag(tree);
 
-    if (chartAppVersion !== currentVersion) {
+    if (imageTag !== currentVersion) {
       throw new Error(
-        `${SERVER_CHART} appVersion (${chartAppVersion}) must match ${SERVER_PACKAGE} version (${currentVersion})`,
+        `${CHART_VALUES} server.image.tag (${imageTag}) must match ${SERVER_PACKAGE} version (${currentVersion})`,
       );
     }
 
@@ -107,18 +110,14 @@ class VersionFileActions extends VersionActions {
       return json;
     });
 
-    const { chartSource, chart } = readChart(tree);
-    const appVersionNode = chart.get('appVersion', true);
-    const [start, end] = scalarValueRange(
-      appVersionNode,
-      chartSource,
-      'server chart appVersion',
-    );
-    tree.write(SERVER_CHART, replaceRange(chartSource, start, end, newVersion));
+    const { valuesSource, values } = readValues(tree);
+    const tagNode = values.getIn(IMAGE_TAG_PATH, true);
+    const [start, end] = scalarValueRange(tagNode, valuesSource, 'server image tag');
+    tree.write(CHART_VALUES, replaceRange(valuesSource, start, end, quotedVersion(newVersion)));
 
     return [
       `Updated ${SERVER_PACKAGE} version to ${newVersion}`,
-      `Updated ${SERVER_CHART} appVersion to ${newVersion}`,
+      `Updated ${CHART_VALUES} server.image.tag to ${newVersion}`,
     ];
   }
 

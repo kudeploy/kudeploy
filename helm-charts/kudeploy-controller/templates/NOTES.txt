@@ -1,4 +1,0 @@
-Kudeploy controller has been installed.
-
-Install the CRDs first if they are not already present:
-  helm install {{ .Release.Name }}-crds ../kudeploy-crds

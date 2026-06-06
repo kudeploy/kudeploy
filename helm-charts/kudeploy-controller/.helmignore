@@ -1,9 +1,0 @@
-.DS_Store
-.git/
-.gitignore
-.helmignore
-Chart.lock
-node_modules/
-package.json
-*.swp
-*.tmp

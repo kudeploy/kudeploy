@@ -88,7 +88,7 @@ jobs:
         uses: azure/setup-helm@v5
 
       - name: Lint Helm charts
-        run: pnpm nx run-many -t lint --projects=helm-chart,controller-helm-chart,crds-helm-chart,client-helm-chart,server-helm-chart
+        run: pnpm nx run-many -t lint --projects=helm-chart,crds-helm-chart
 
       - name: Configure Git
         run: |
@@ -130,19 +130,16 @@ jobs:
               fi
             }
 
-            if grep -qE '^(apps/controller/|helm-charts/kudeploy-controller/)' <<< "$changed_files_for_version"; then
+            if grep -q '^apps/controller/' <<< "$changed_files_for_version"; then
               add_version_project controller
-              add_version_project controller-helm-chart
               add_version_project helm-chart
             fi
-            if grep -qE '^(apps/client/|helm-charts/kudeploy-client/)' <<< "$changed_files_for_version"; then
+            if grep -q '^apps/client/' <<< "$changed_files_for_version"; then
               add_version_project client
-              add_version_project client-helm-chart
               add_version_project helm-chart
             fi
-            if grep -qE '^(apps/server/|helm-charts/kudeploy-server/)' <<< "$changed_files_for_version"; then
+            if grep -q '^apps/server/' <<< "$changed_files_for_version"; then
               add_version_project server
-              add_version_project server-helm-chart
               add_version_project helm-chart
             fi
             if grep -q '^helm-charts/kudeploy-crds/' <<< "$changed_files_for_version"; then
@@ -181,8 +178,8 @@ jobs:
           if [ "$should_publish" = "true" ] && grep -q "No files would be changed as a result of running versioning" "$dry_run_log"; then
             if [ "$PUBLISH_EXISTING" = "true" ]; then
               echo "No release changes detected; publishing current chart versions."
-              projects_to_publish="controller,client,server,controller-helm-chart,crds-helm-chart,client-helm-chart,server-helm-chart,helm-chart"
-              charts_to_package="controller-helm-chart,crds-helm-chart,client-helm-chart,server-helm-chart,helm-chart"
+              projects_to_publish="controller,client,server,crds-helm-chart,helm-chart"
+              charts_to_package="crds-helm-chart,helm-chart"
             else
               echo "No release changes detected; skipping publish."
               should_publish=false
@@ -217,26 +214,34 @@ jobs:
                     charts+=("$chart")
                   fi
                 }
+                image_tag_changed() {
+                  local component="$1"
+                  node - "$before_release" "$after_release" "$component" <<'NODE'
+const { execFileSync } = require('node:child_process');
+const { parse } = require('yaml');
 
-                if grep -q '^helm-charts/kudeploy-controller/' <<< "$changed_files"; then
-                  add_project controller-helm-chart
-                  add_chart controller-helm-chart
-                fi
-                if git diff "$before_release" "$after_release" -- helm-charts/kudeploy-controller/Chart.yaml | grep -q '^[+-]appVersion:'; then
+const [before, after, component] = process.argv.slice(2);
+
+function readTag(ref) {
+  const source = execFileSync(
+    'git',
+    ['show', `${ref}:helm-charts/kudeploy/values.yaml`],
+    { encoding: 'utf8' },
+  );
+  return String(parse(source)?.[component]?.image?.tag ?? '');
+}
+
+process.exit(readTag(before) === readTag(after) ? 1 : 0);
+NODE
+                }
+
+                if image_tag_changed controller; then
                   add_project controller
                 fi
-                if grep -q '^helm-charts/kudeploy-client/' <<< "$changed_files"; then
-                  add_project client-helm-chart
-                  add_chart client-helm-chart
-                fi
-                if git diff "$before_release" "$after_release" -- helm-charts/kudeploy-client/Chart.yaml | grep -q '^[+-]appVersion:'; then
+                if image_tag_changed client; then
                   add_project client
                 fi
-                if grep -q '^helm-charts/kudeploy-server/' <<< "$changed_files"; then
-                  add_project server-helm-chart
-                  add_chart server-helm-chart
-                fi
-                if git diff "$before_release" "$after_release" -- apps/server/package.json helm-charts/kudeploy-server/Chart.yaml | grep -q '^[+-].*\("version"\|appVersion\)'; then
+                if image_tag_changed server; then
                   add_project server
                 fi
                 if grep -q '^helm-charts/kudeploy-crds/' <<< "$changed_files"; then

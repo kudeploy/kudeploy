@@ -10,28 +10,54 @@ metadata:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-  {{- with .Values.ingress.className }}
+  {{- with (default .Values.ingress.className .Values.ingress.ingressClassName) }}
   ingressClassName: {{ . | quote }}
   {{- end }}
-  {{- with .Values.ingress.tls }}
+  {{- if or .Values.ingress.tls .Values.ingress.extraTls }}
   tls:
-    {{- toYaml . | nindent 4 }}
+    {{- if and .Values.ingress.tls .Values.ingress.hostname }}
+    - hosts:
+        - {{ tpl .Values.ingress.hostname $ | quote }}
+      secretName: {{ printf "%s-tls" (tpl .Values.ingress.hostname $) }}
+    {{- end }}
+    {{- with .Values.ingress.extraTls }}
+    {{- include "common.tplvalues.render" (dict "value" . "context" $) | nindent 4 }}
+    {{- end }}
   {{- end }}
   rules:
-    {{- range .Values.ingress.hosts }}
-    {{- $paths := default (dict) .paths }}
-    {{- $serverPaths := default (list (dict "path" "/api" "pathType" "Prefix")) $paths.server }}
-    {{- $clientPaths := default (list (dict "path" "/" "pathType" "Prefix")) $paths.client }}
-    {{- if .host }}
-    - host: {{ .host | quote }}
+    {{- if .Values.ingress.hostname }}
+    - host: {{ tpl .Values.ingress.hostname $ | quote }}
       http:
-    {{- else }}
-    - http:
+        paths:
+          {{- range .Values.ingress.server.paths }}
+          - path: {{ default "/api" .path }}
+            pathType: {{ default $.Values.ingress.pathType .pathType }}
+            backend:
+              service:
+                name: {{ include "kudeploy.serverServiceName" $ }}
+                port:
+                  number: {{ $.Values.ingress.server.servicePort }}
+          {{- end }}
+          {{- range .Values.ingress.client.paths }}
+          - path: {{ default "/" .path }}
+            pathType: {{ default $.Values.ingress.pathType .pathType }}
+            backend:
+              service:
+                name: {{ include "kudeploy.clientServiceName" $ }}
+                port:
+                  number: {{ $.Values.ingress.client.servicePort }}
+          {{- end }}
     {{- end }}
+    {{- range .Values.ingress.extraHosts }}
+    {{- $paths := default (dict) .paths }}
+    {{- $serverPaths := default $.Values.ingress.server.paths $paths.server }}
+    {{- $clientPaths := default $.Values.ingress.client.paths $paths.client }}
+    - host: {{ tpl .name $ | quote }}
+      http:
         paths:
           {{- range $serverPaths }}
-          - path: {{ .path }}
-            pathType: {{ .pathType }}
+          - path: {{ default "/api" .path }}
+            pathType: {{ default $.Values.ingress.pathType .pathType }}
             backend:
               service:
                 name: {{ include "kudeploy.serverServiceName" $ }}
@@ -39,13 +65,16 @@ spec:
                   number: {{ $.Values.ingress.server.servicePort }}
           {{- end }}
           {{- range $clientPaths }}
-          - path: {{ .path }}
-            pathType: {{ .pathType }}
+          - path: {{ default "/" .path }}
+            pathType: {{ default $.Values.ingress.pathType .pathType }}
             backend:
               service:
                 name: {{ include "kudeploy.clientServiceName" $ }}
                 port:
                   number: {{ $.Values.ingress.client.servicePort }}
           {{- end }}
+    {{- end }}
+    {{- with .Values.ingress.extraRules }}
+    {{- include "common.tplvalues.render" (dict "value" . "context" $) | nindent 4 }}
     {{- end }}
 {{- end }}

@@ -1,0 +1,35 @@
+{{- if .Values.controller.enabled }}
+{{- $values := .Values.controller }}
+{{- if and $values.metrics.enabled $values.metrics.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "kudeploy.controller.fullname" . }}-metrics
+  namespace: {{ default (include "kudeploy.controller.namespace" .) $values.metrics.serviceMonitor.namespace }}
+  labels:
+    {{- include "kudeploy.controller.labels" . | nindent 4 }}
+    {{- with $values.metrics.serviceMonitor.additionalLabels }}
+    {{- include "common.tplvalues.render" (dict "value" . "context" $) | nindent 4 }}
+    {{- end }}
+spec:
+  endpoints:
+    - path: {{ $values.metrics.serviceMonitor.path }}
+      port: https
+      scheme: {{ $values.metrics.serviceMonitor.scheme }}
+      {{- with $values.metrics.serviceMonitor.interval }}
+      interval: {{ . }}
+      {{- end }}
+      {{- with $values.metrics.serviceMonitor.scrapeTimeout }}
+      scrapeTimeout: {{ . }}
+      {{- end }}
+      bearerTokenFile: {{ $values.metrics.serviceMonitor.bearerTokenFile }}
+      {{- with $values.metrics.serviceMonitor.tlsConfig }}
+      tlsConfig:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+  selector:
+    matchLabels:
+      {{- include "kudeploy.controller.selectorLabels" . | nindent 6 }}
+{{- end }}
+
+{{- end }}

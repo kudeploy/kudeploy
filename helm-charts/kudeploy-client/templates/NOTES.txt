@@ -1,4 +1,0 @@
-Kudeploy client has been installed.
-
-Service:
-  {{ include "kudeploy-client.fullname" . }}:{{ .Values.service.port }}
