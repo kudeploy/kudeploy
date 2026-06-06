@@ -18,6 +18,6 @@ RUN pnpm --filter @kudeploy/client build && \
     mv apps/client/dist/client/_shell.html apps/client/dist/client/index.html; \
     fi
 
-FROM nginxinc/nginx-unprivileged:1.29-alpine AS runner
+FROM nginxinc/nginx-unprivileged:1-alpine AS runner
 COPY apps/client/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=builder /app/apps/client/dist/client /usr/share/nginx/html

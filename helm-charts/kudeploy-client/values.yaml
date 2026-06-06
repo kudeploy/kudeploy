@@ -29,7 +29,7 @@ service:
   annotations: {}
 
 healthProbe:
-  path: /healthz
+  path: /health
   liveness:
     initialDelaySeconds: 10
     periodSeconds: 20
