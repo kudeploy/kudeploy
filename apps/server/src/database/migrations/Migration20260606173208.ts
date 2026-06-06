@@ -1,6 +1,6 @@
 import { RowLevelSecurityMigration } from '@nest-boot/row-level-security';
 
-export class Migration20260601153226 extends RowLevelSecurityMigration {
+export class Migration20260606173208 extends RowLevelSecurityMigration {
 
   override async up(): Promise<void> {
     this.addSql(`create table "user" ("id" bigserial primary key, "email_verified" boolean not null default false, "image" text null, "name" varchar(255) not null, "email" varchar(255) not null, "created_at" timestamptz not null default now(), "updated_at" timestamptz not null default now());`);
@@ -64,19 +64,11 @@ export class Migration20260601153226 extends RowLevelSecurityMigration {
     this.addSql(`alter table "workspace_member_group_member" add constraint "workspace_member_group_member_workspace_id_foreign" foreign key ("workspace_id") references "workspace" ("id") on update cascade on delete cascade;`);
     this.addSql(`alter table "workspace_member_group_member" add constraint "workspace_member_group_member_group_id_foreign" foreign key ("group_id") references "workspace_member_group" ("id") on update cascade on delete cascade;`);
     this.addSql(`alter table "workspace_member_group_member" add constraint "workspace_member_group_member_member_id_foreign" foreign key ("member_id") references "workspace_member" ("id") on update cascade on delete cascade;`);
-    this.addSql(`create schema if not exists app;`);
-    this.addSql(`create or replace function app.get_context(context_key text, context_type anyelement) returns anyelement as \$\$ declare context_value text; begin context_value := current_setting('app.' || context_key, true); if context_value is null or context_value = '' then return null; end if; execute format('select \$1::%s', pg_typeof(context_type)::text) using context_value into context_type; return context_type; end; \$\$ language plpgsql stable;`);
-    this.addSql(`do \$\$ begin if not exists (select 1 from pg_roles where rolname = 'anonymous') then create role anonymous nologin; end if; end \$\$;`);
-    this.addSql(`grant anonymous to current_user;`);
-    this.addSql(`grant usage on schema app to anonymous;`);
-    this.addSql(`do \$\$ begin if not exists (select 1 from pg_roles where rolname = 'authenticated') then create role authenticated nologin; end if; end \$\$;`);
-    this.addSql(`grant authenticated to current_user;`);
-    this.addSql(`grant usage on schema app to authenticated;`);
     this.addSql(`alter table "public"."api_key" enable row level security;`);
     this.addSql(`grant select, insert, update, delete on table "public"."api_key" to authenticated;`);
     this.addSql(`do \$\$ declare sequence_identifier text; begin for sequence_identifier in select pg_get_serial_sequence('"public"."api_key"', columns.column_name) from information_schema.columns where columns.table_schema = 'public' and columns.table_name = 'api_key' and pg_get_serial_sequence('"public"."api_key"', columns.column_name) is not null loop execute format('grant usage, select on sequence %s to authenticated', sequence_identifier); end loop; end \$\$;`);
     this.addSql(`drop policy if exists api_key_workspace_all_authenticated_policy on "public"."api_key";`);
-    this.addSql(`create policy api_key_workspace_all_authenticated_policy on "public"."api_key" as permissive for all to authenticated using (( SELECT app.get_context('workspace_id'::text, NULL::bigint) AS get_context) = workspace_id) with check (( SELECT app.get_context('workspace_id'::text, NULL::bigint) AS get_context) = workspace_id);`);
+    this.addSql(`create policy api_key_workspace_all_authenticated_policy on "public"."api_key" as permissive for all to authenticated using ((select current_setting('app.workspace_id', true)::bigint) = workspace_id) with check ((select current_setting('app.workspace_id', true)::bigint) = workspace_id);`);
     this.addSql(`alter table "public"."user" enable row level security;`);
     this.addSql(`grant select on table "public"."user" to authenticated;`);
     this.addSql(`drop policy if exists user_select_policy on "public"."user";`);
@@ -84,27 +76,27 @@ export class Migration20260601153226 extends RowLevelSecurityMigration {
     this.addSql(`alter table "public"."user" enable row level security;`);
     this.addSql(`grant select, update on table "public"."user" to authenticated;`);
     this.addSql(`drop policy if exists user_update_policy on "public"."user";`);
-    this.addSql(`create policy user_update_policy on "public"."user" as permissive for update to authenticated using (( SELECT app.get_context('user_id'::text, NULL::bigint) AS get_context) = id) with check (( SELECT app.get_context('user_id'::text, NULL::bigint) AS get_context) = id);`);
+    this.addSql(`create policy user_update_policy on "public"."user" as permissive for update to authenticated using ((select current_setting('app.user_id', true)::bigint) = id) with check ((select current_setting('app.user_id', true)::bigint) = id);`);
     this.addSql(`alter table "public"."workspace_member_group_member" enable row level security;`);
     this.addSql(`grant select, insert, update, delete on table "public"."workspace_member_group_member" to authenticated;`);
     this.addSql(`do \$\$ declare sequence_identifier text; begin for sequence_identifier in select pg_get_serial_sequence('"public"."workspace_member_group_member"', columns.column_name) from information_schema.columns where columns.table_schema = 'public' and columns.table_name = 'workspace_member_group_member' and pg_get_serial_sequence('"public"."workspace_member_group_member"', columns.column_name) is not null loop execute format('grant usage, select on sequence %s to authenticated', sequence_identifier); end loop; end \$\$;`);
     this.addSql(`drop policy if exists workspace_member_group_member_workspace_all_authe_b7fb1_policy on "public"."workspace_member_group_member";`);
-    this.addSql(`create policy workspace_member_group_member_workspace_all_authe_b7fb1_policy on "public"."workspace_member_group_member" as permissive for all to authenticated using (( SELECT app.get_context('workspace_id'::text, NULL::bigint) AS get_context) = workspace_id) with check (( SELECT app.get_context('workspace_id'::text, NULL::bigint) AS get_context) = workspace_id);`);
+    this.addSql(`create policy workspace_member_group_member_workspace_all_authe_b7fb1_policy on "public"."workspace_member_group_member" as permissive for all to authenticated using ((select current_setting('app.workspace_id', true)::bigint) = workspace_id) with check ((select current_setting('app.workspace_id', true)::bigint) = workspace_id);`);
     this.addSql(`alter table "public"."workspace_member_group" enable row level security;`);
     this.addSql(`grant select, insert, update, delete on table "public"."workspace_member_group" to authenticated, anonymous;`);
     this.addSql(`do \$\$ declare sequence_identifier text; begin for sequence_identifier in select pg_get_serial_sequence('"public"."workspace_member_group"', columns.column_name) from information_schema.columns where columns.table_schema = 'public' and columns.table_name = 'workspace_member_group' and pg_get_serial_sequence('"public"."workspace_member_group"', columns.column_name) is not null loop execute format('grant usage, select on sequence %s to authenticated, anonymous', sequence_identifier); end loop; end \$\$;`);
     this.addSql(`drop policy if exists workspace_member_group_workspace_all_anonymous_au_a816c_policy on "public"."workspace_member_group";`);
-    this.addSql(`create policy workspace_member_group_workspace_all_anonymous_au_a816c_policy on "public"."workspace_member_group" as permissive for all to authenticated, anonymous using (( SELECT app.get_context('workspace_id'::text, NULL::bigint) AS get_context) = workspace_id) with check (( SELECT app.get_context('workspace_id'::text, NULL::bigint) AS get_context) = workspace_id);`);
+    this.addSql(`create policy workspace_member_group_workspace_all_anonymous_au_a816c_policy on "public"."workspace_member_group" as permissive for all to authenticated, anonymous using ((select current_setting('app.workspace_id', true)::bigint) = workspace_id) with check ((select current_setting('app.workspace_id', true)::bigint) = workspace_id);`);
     this.addSql(`alter table "public"."workspace_member" enable row level security;`);
     this.addSql(`grant select, insert, update, delete on table "public"."workspace_member" to authenticated;`);
     this.addSql(`do \$\$ declare sequence_identifier text; begin for sequence_identifier in select pg_get_serial_sequence('"public"."workspace_member"', columns.column_name) from information_schema.columns where columns.table_schema = 'public' and columns.table_name = 'workspace_member' and pg_get_serial_sequence('"public"."workspace_member"', columns.column_name) is not null loop execute format('grant usage, select on sequence %s to authenticated', sequence_identifier); end loop; end \$\$;`);
     this.addSql(`drop policy if exists workspace_member_user_all_authenticated_policy on "public"."workspace_member";`);
-    this.addSql(`create policy workspace_member_user_all_authenticated_policy on "public"."workspace_member" as permissive for all to authenticated using (( SELECT app.get_context('user_id'::text, NULL::bigint) AS get_context) = user_id) with check (( SELECT app.get_context('user_id'::text, NULL::bigint) AS get_context) = user_id);`);
+    this.addSql(`create policy workspace_member_user_all_authenticated_policy on "public"."workspace_member" as permissive for all to authenticated using ((select current_setting('app.user_id', true)::bigint) = user_id) with check ((select current_setting('app.user_id', true)::bigint) = user_id);`);
     this.addSql(`alter table "public"."workspace_member" enable row level security;`);
     this.addSql(`grant select, insert, update, delete on table "public"."workspace_member" to authenticated;`);
     this.addSql(`do \$\$ declare sequence_identifier text; begin for sequence_identifier in select pg_get_serial_sequence('"public"."workspace_member"', columns.column_name) from information_schema.columns where columns.table_schema = 'public' and columns.table_name = 'workspace_member' and pg_get_serial_sequence('"public"."workspace_member"', columns.column_name) is not null loop execute format('grant usage, select on sequence %s to authenticated', sequence_identifier); end loop; end \$\$;`);
     this.addSql(`drop policy if exists workspace_member_workspace_all_authenticated_policy on "public"."workspace_member";`);
-    this.addSql(`create policy workspace_member_workspace_all_authenticated_policy on "public"."workspace_member" as permissive for all to authenticated using (( SELECT app.get_context('workspace_id'::text, NULL::bigint) AS get_context) = workspace_id) with check (( SELECT app.get_context('workspace_id'::text, NULL::bigint) AS get_context) = workspace_id);`);
+    this.addSql(`create policy workspace_member_workspace_all_authenticated_policy on "public"."workspace_member" as permissive for all to authenticated using ((select current_setting('app.workspace_id', true)::bigint) = workspace_id) with check ((select current_setting('app.workspace_id', true)::bigint) = workspace_id);`);
     this.addSql(`alter table "public"."workspace" enable row level security;`);
     this.addSql(`drop policy if exists soft_delete_delete_policy on "public"."workspace";`);
     this.addSql(`create policy soft_delete_delete_policy on "public"."workspace" as restrictive for delete using (false);`);
@@ -126,7 +118,7 @@ export class Migration20260601153226 extends RowLevelSecurityMigration {
     this.addSql(`alter table "public"."workspace" enable row level security;`);
     this.addSql(`grant select, update on table "public"."workspace" to authenticated;`);
     this.addSql(`drop policy if exists workspace_update_policy on "public"."workspace";`);
-    this.addSql(`create policy workspace_update_policy on "public"."workspace" as permissive for update to authenticated using (( SELECT app.get_context('workspace_id'::text, NULL::bigint) AS get_context) = id) with check (( SELECT app.get_context('workspace_id'::text, NULL::bigint) AS get_context) = id);`);
+    this.addSql(`create policy workspace_update_policy on "public"."workspace" as permissive for update to authenticated using ((select current_setting('app.workspace_id', true)::bigint) = id) with check ((select current_setting('app.workspace_id', true)::bigint) = id);`);
   }
 
   override async down(): Promise<void> {
@@ -367,49 +359,6 @@ end
     this.addSql(`do \$\$ declare sequence_identifier text; begin for sequence_identifier in select pg_get_serial_sequence('"public"."workspace"', columns.column_name) from information_schema.columns where columns.table_schema = 'public' and columns.table_name = 'workspace' and pg_get_serial_sequence('"public"."workspace"', columns.column_name) is not null loop execute format('revoke usage, select on sequence %s from authenticated', sequence_identifier); end loop; end \$\$;`);
     this.addSql(`revoke select on table "public"."workspace" from authenticated, anonymous;`);
     this.addSql(`revoke select, update on table "public"."workspace" from authenticated;`);
-    this.addSql(`revoke usage on schema app from anonymous;`);
-    this.addSql(`revoke anonymous from current_user;`);
-    this.addSql(`revoke usage on schema app from authenticated;`);
-    this.addSql(`revoke authenticated from current_user;`);
-    this.addSql(`alter table "session" drop constraint "session_user_id_foreign";`);
-
-    this.addSql(`alter table "account" drop constraint "account_user_id_foreign";`);
-
-    this.addSql(`alter table "workspace_member" drop constraint "workspace_member_invited_by_id_foreign";`);
-
-    this.addSql(`alter table "workspace_member" drop constraint "workspace_member_user_id_foreign";`);
-
-    this.addSql(`alter table "workspace_member" drop constraint "workspace_member_workspace_id_foreign";`);
-
-    this.addSql(`alter table "api_key" drop constraint "api_key_workspace_id_foreign";`);
-
-    this.addSql(`alter table "workspace_member_group" drop constraint "workspace_member_group_workspace_id_foreign";`);
-
-    this.addSql(`alter table "workspace_member_group_member" drop constraint "workspace_member_group_member_workspace_id_foreign";`);
-
-    this.addSql(`alter table "api_key" drop constraint "api_key_member_id_foreign";`);
-
-    this.addSql(`alter table "workspace_member_group_member" drop constraint "workspace_member_group_member_member_id_foreign";`);
-
-    this.addSql(`alter table "workspace_member_group_member" drop constraint "workspace_member_group_member_group_id_foreign";`);
-
-    this.addSql(`drop table if exists "user" cascade;`);
-
-    this.addSql(`drop table if exists "session" cascade;`);
-
-    this.addSql(`drop table if exists "account" cascade;`);
-
-    this.addSql(`drop table if exists "verification" cascade;`);
-
-    this.addSql(`drop table if exists "workspace" cascade;`);
-
-    this.addSql(`drop table if exists "workspace_member" cascade;`);
-
-    this.addSql(`drop table if exists "api_key" cascade;`);
-
-    this.addSql(`drop table if exists "workspace_member_group" cascade;`);
-
-    this.addSql(`drop table if exists "workspace_member_group_member" cascade;`);
   }
 
 }

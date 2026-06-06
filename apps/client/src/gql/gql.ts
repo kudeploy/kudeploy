@@ -40,6 +40,18 @@ type Documents = {
   "\n  query getWorkspaceMembersFromMembersRoute(\n    $after: String\n    $before: String\n    $first: Int\n    $last: Int\n    $filter: WorkspaceMemberFilter\n    $orderBy: WorkspaceMemberOrder\n    $query: String\n  ) {\n    workspaceMembers(\n      after: $after\n      before: $before\n      first: $first\n      last: $last\n      orderBy: $orderBy\n      filter: $filter\n      query: $query\n    ) {\n      edges {\n        node {\n          id\n          name\n          email\n          role\n          status\n          createdAt\n          user {\n            id\n            name\n            email\n          }\n        }\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n        hasPreviousPage\n        startCursor\n      }\n    }\n  }\n": typeof types.GetWorkspaceMembersFromMembersRouteDocument;
   "\n  mutation removeWorkspaceMemberFromMembersRoute($id: ID!) {\n    removeWorkspaceMember(id: $id) {\n      id\n    }\n  }\n": typeof types.RemoveWorkspaceMemberFromMembersRouteDocument;
   "\n  mutation updateWorkspaceMemberStatusFromMembersRoute(\n    $id: ID!\n    $input: UpdateWorkspaceMemberInput!\n  ) {\n    updateWorkspaceMember(id: $id, input: $input) {\n      id\n      status\n    }\n  }\n": typeof types.UpdateWorkspaceMemberStatusFromMembersRouteDocument;
+  "\n  query getProjectFromProjectRoute($id: ID!) {\n    project(id: $id) {\n      id\n      name\n      status\n      createdAt\n      updatedAt\n    }\n  }\n": typeof types.GetProjectFromProjectRouteDocument;
+  "\n  mutation updateProjectFromProjectRoute(\n    $id: ID!\n    $input: UpdateProjectInput!\n  ) {\n    updateProject(id: $id, input: $input) {\n      id\n      name\n      status\n      updatedAt\n    }\n  }\n": typeof types.UpdateProjectFromProjectRouteDocument;
+  "\n  mutation deleteProjectFromProjectRoute($id: ID!) {\n    deleteProject(id: $id) {\n      id\n    }\n  }\n": typeof types.DeleteProjectFromProjectRouteDocument;
+  "\n  query getServiceFromServiceRoute($projectId: ID!, $id: ID!) {\n    service(projectId: $projectId, id: $id) {\n      id\n      projectId\n      name\n      image\n      replicas\n      status\n      createdAt\n      updatedAt\n      ports {\n        port\n        targetPort\n      }\n      env {\n        key\n        value\n      }\n    }\n  }\n": typeof types.GetServiceFromServiceRouteDocument;
+  "\n  mutation updateServiceFromServiceRoute(\n    $projectId: ID!\n    $id: ID!\n    $input: UpdateServiceInput!\n  ) {\n    updateService(projectId: $projectId, id: $id, input: $input) {\n      id\n      projectId\n      name\n      image\n      replicas\n      status\n      updatedAt\n      ports {\n        port\n        targetPort\n      }\n      env {\n        key\n        value\n      }\n    }\n  }\n": typeof types.UpdateServiceFromServiceRouteDocument;
+  "\n  mutation deleteServiceFromServiceRoute($projectId: ID!, $id: ID!) {\n    deleteService(projectId: $projectId, id: $id) {\n      id\n    }\n  }\n": typeof types.DeleteServiceFromServiceRouteDocument;
+  "\n  query getServicesFromServicesRoute(\n    $projectId: ID!\n    $after: String\n    $before: String\n    $first: Int\n    $last: Int\n    $filter: ServiceFilter\n    $orderBy: ServiceOrder\n    $query: String\n  ) {\n    project(id: $projectId) {\n      id\n      name\n    }\n    services(\n      projectId: $projectId\n      after: $after\n      before: $before\n      first: $first\n      last: $last\n      filter: $filter\n      orderBy: $orderBy\n      query: $query\n    ) {\n      edges {\n        node {\n          id\n          projectId\n          name\n          image\n          replicas\n          status\n          createdAt\n          ports {\n            port\n            targetPort\n          }\n          env {\n            key\n            value\n          }\n        }\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n        hasPreviousPage\n        startCursor\n      }\n    }\n  }\n": typeof types.GetServicesFromServicesRouteDocument;
+  "\n  mutation createServiceFromServicesRoute($input: CreateServiceInput!) {\n    createService(input: $input) {\n      id\n      projectId\n      name\n      image\n      replicas\n      status\n      createdAt\n      ports {\n        port\n        targetPort\n      }\n      env {\n        key\n        value\n      }\n    }\n  }\n": typeof types.CreateServiceFromServicesRouteDocument;
+  "\n  mutation deleteServiceFromServicesRoute($projectId: ID!, $id: ID!) {\n    deleteService(projectId: $projectId, id: $id) {\n      id\n    }\n  }\n": typeof types.DeleteServiceFromServicesRouteDocument;
+  "\n  query getProjectsFromProjectsRoute(\n    $after: String\n    $before: String\n    $first: Int\n    $last: Int\n    $filter: ProjectFilter\n    $orderBy: ProjectOrder\n    $query: String\n  ) {\n    projects(\n      after: $after\n      before: $before\n      first: $first\n      last: $last\n      filter: $filter\n      orderBy: $orderBy\n      query: $query\n    ) {\n      edges {\n        node {\n          id\n          name\n          status\n          createdAt\n          updatedAt\n        }\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n        hasPreviousPage\n        startCursor\n      }\n    }\n  }\n": typeof types.GetProjectsFromProjectsRouteDocument;
+  "\n  mutation createProjectFromProjectsRoute($input: CreateProjectInput!) {\n    createProject(input: $input) {\n      id\n      name\n      status\n      createdAt\n      updatedAt\n    }\n  }\n": typeof types.CreateProjectFromProjectsRouteDocument;
+  "\n  mutation deleteProjectFromProjectsRoute($id: ID!) {\n    deleteProject(id: $id) {\n      id\n    }\n  }\n": typeof types.DeleteProjectFromProjectsRouteDocument;
   "\n  mutation updateWorkspaceFromSettingsRoute($input: UpdateWorkspaceInput!) {\n    updateWorkspace(input: $input) {\n      id\n      name\n    }\n  }\n": typeof types.UpdateWorkspaceFromSettingsRouteDocument;
   "\n  mutation deleteWorkspaceFromSettingsRoute {\n    deleteWorkspace {\n      id\n    }\n  }\n": typeof types.DeleteWorkspaceFromSettingsRouteDocument;
   "\n  mutation createWorkspaceFromCreateWorkspaceForm(\n    $input: CreateWorkspaceInput!\n  ) {\n    createWorkspace(input: $input) {\n      id\n    }\n  }\n": typeof types.CreateWorkspaceFromCreateWorkspaceFormDocument;
@@ -103,6 +115,30 @@ const documents: Documents = {
     types.RemoveWorkspaceMemberFromMembersRouteDocument,
   "\n  mutation updateWorkspaceMemberStatusFromMembersRoute(\n    $id: ID!\n    $input: UpdateWorkspaceMemberInput!\n  ) {\n    updateWorkspaceMember(id: $id, input: $input) {\n      id\n      status\n    }\n  }\n":
     types.UpdateWorkspaceMemberStatusFromMembersRouteDocument,
+  "\n  query getProjectFromProjectRoute($id: ID!) {\n    project(id: $id) {\n      id\n      name\n      status\n      createdAt\n      updatedAt\n    }\n  }\n":
+    types.GetProjectFromProjectRouteDocument,
+  "\n  mutation updateProjectFromProjectRoute(\n    $id: ID!\n    $input: UpdateProjectInput!\n  ) {\n    updateProject(id: $id, input: $input) {\n      id\n      name\n      status\n      updatedAt\n    }\n  }\n":
+    types.UpdateProjectFromProjectRouteDocument,
+  "\n  mutation deleteProjectFromProjectRoute($id: ID!) {\n    deleteProject(id: $id) {\n      id\n    }\n  }\n":
+    types.DeleteProjectFromProjectRouteDocument,
+  "\n  query getServiceFromServiceRoute($projectId: ID!, $id: ID!) {\n    service(projectId: $projectId, id: $id) {\n      id\n      projectId\n      name\n      image\n      replicas\n      status\n      createdAt\n      updatedAt\n      ports {\n        port\n        targetPort\n      }\n      env {\n        key\n        value\n      }\n    }\n  }\n":
+    types.GetServiceFromServiceRouteDocument,
+  "\n  mutation updateServiceFromServiceRoute(\n    $projectId: ID!\n    $id: ID!\n    $input: UpdateServiceInput!\n  ) {\n    updateService(projectId: $projectId, id: $id, input: $input) {\n      id\n      projectId\n      name\n      image\n      replicas\n      status\n      updatedAt\n      ports {\n        port\n        targetPort\n      }\n      env {\n        key\n        value\n      }\n    }\n  }\n":
+    types.UpdateServiceFromServiceRouteDocument,
+  "\n  mutation deleteServiceFromServiceRoute($projectId: ID!, $id: ID!) {\n    deleteService(projectId: $projectId, id: $id) {\n      id\n    }\n  }\n":
+    types.DeleteServiceFromServiceRouteDocument,
+  "\n  query getServicesFromServicesRoute(\n    $projectId: ID!\n    $after: String\n    $before: String\n    $first: Int\n    $last: Int\n    $filter: ServiceFilter\n    $orderBy: ServiceOrder\n    $query: String\n  ) {\n    project(id: $projectId) {\n      id\n      name\n    }\n    services(\n      projectId: $projectId\n      after: $after\n      before: $before\n      first: $first\n      last: $last\n      filter: $filter\n      orderBy: $orderBy\n      query: $query\n    ) {\n      edges {\n        node {\n          id\n          projectId\n          name\n          image\n          replicas\n          status\n          createdAt\n          ports {\n            port\n            targetPort\n          }\n          env {\n            key\n            value\n          }\n        }\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n        hasPreviousPage\n        startCursor\n      }\n    }\n  }\n":
+    types.GetServicesFromServicesRouteDocument,
+  "\n  mutation createServiceFromServicesRoute($input: CreateServiceInput!) {\n    createService(input: $input) {\n      id\n      projectId\n      name\n      image\n      replicas\n      status\n      createdAt\n      ports {\n        port\n        targetPort\n      }\n      env {\n        key\n        value\n      }\n    }\n  }\n":
+    types.CreateServiceFromServicesRouteDocument,
+  "\n  mutation deleteServiceFromServicesRoute($projectId: ID!, $id: ID!) {\n    deleteService(projectId: $projectId, id: $id) {\n      id\n    }\n  }\n":
+    types.DeleteServiceFromServicesRouteDocument,
+  "\n  query getProjectsFromProjectsRoute(\n    $after: String\n    $before: String\n    $first: Int\n    $last: Int\n    $filter: ProjectFilter\n    $orderBy: ProjectOrder\n    $query: String\n  ) {\n    projects(\n      after: $after\n      before: $before\n      first: $first\n      last: $last\n      filter: $filter\n      orderBy: $orderBy\n      query: $query\n    ) {\n      edges {\n        node {\n          id\n          name\n          status\n          createdAt\n          updatedAt\n        }\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n        hasPreviousPage\n        startCursor\n      }\n    }\n  }\n":
+    types.GetProjectsFromProjectsRouteDocument,
+  "\n  mutation createProjectFromProjectsRoute($input: CreateProjectInput!) {\n    createProject(input: $input) {\n      id\n      name\n      status\n      createdAt\n      updatedAt\n    }\n  }\n":
+    types.CreateProjectFromProjectsRouteDocument,
+  "\n  mutation deleteProjectFromProjectsRoute($id: ID!) {\n    deleteProject(id: $id) {\n      id\n    }\n  }\n":
+    types.DeleteProjectFromProjectsRouteDocument,
   "\n  mutation updateWorkspaceFromSettingsRoute($input: UpdateWorkspaceInput!) {\n    updateWorkspace(input: $input) {\n      id\n      name\n    }\n  }\n":
     types.UpdateWorkspaceFromSettingsRouteDocument,
   "\n  mutation deleteWorkspaceFromSettingsRoute {\n    deleteWorkspace {\n      id\n    }\n  }\n":
@@ -293,6 +329,78 @@ export function graphql(
 export function graphql(
   source: "\n  mutation updateWorkspaceMemberStatusFromMembersRoute(\n    $id: ID!\n    $input: UpdateWorkspaceMemberInput!\n  ) {\n    updateWorkspaceMember(id: $id, input: $input) {\n      id\n      status\n    }\n  }\n",
 ): (typeof documents)["\n  mutation updateWorkspaceMemberStatusFromMembersRoute(\n    $id: ID!\n    $input: UpdateWorkspaceMemberInput!\n  ) {\n    updateWorkspaceMember(id: $id, input: $input) {\n      id\n      status\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(
+  source: "\n  query getProjectFromProjectRoute($id: ID!) {\n    project(id: $id) {\n      id\n      name\n      status\n      createdAt\n      updatedAt\n    }\n  }\n",
+): (typeof documents)["\n  query getProjectFromProjectRoute($id: ID!) {\n    project(id: $id) {\n      id\n      name\n      status\n      createdAt\n      updatedAt\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(
+  source: "\n  mutation updateProjectFromProjectRoute(\n    $id: ID!\n    $input: UpdateProjectInput!\n  ) {\n    updateProject(id: $id, input: $input) {\n      id\n      name\n      status\n      updatedAt\n    }\n  }\n",
+): (typeof documents)["\n  mutation updateProjectFromProjectRoute(\n    $id: ID!\n    $input: UpdateProjectInput!\n  ) {\n    updateProject(id: $id, input: $input) {\n      id\n      name\n      status\n      updatedAt\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(
+  source: "\n  mutation deleteProjectFromProjectRoute($id: ID!) {\n    deleteProject(id: $id) {\n      id\n    }\n  }\n",
+): (typeof documents)["\n  mutation deleteProjectFromProjectRoute($id: ID!) {\n    deleteProject(id: $id) {\n      id\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(
+  source: "\n  query getServiceFromServiceRoute($projectId: ID!, $id: ID!) {\n    service(projectId: $projectId, id: $id) {\n      id\n      projectId\n      name\n      image\n      replicas\n      status\n      createdAt\n      updatedAt\n      ports {\n        port\n        targetPort\n      }\n      env {\n        key\n        value\n      }\n    }\n  }\n",
+): (typeof documents)["\n  query getServiceFromServiceRoute($projectId: ID!, $id: ID!) {\n    service(projectId: $projectId, id: $id) {\n      id\n      projectId\n      name\n      image\n      replicas\n      status\n      createdAt\n      updatedAt\n      ports {\n        port\n        targetPort\n      }\n      env {\n        key\n        value\n      }\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(
+  source: "\n  mutation updateServiceFromServiceRoute(\n    $projectId: ID!\n    $id: ID!\n    $input: UpdateServiceInput!\n  ) {\n    updateService(projectId: $projectId, id: $id, input: $input) {\n      id\n      projectId\n      name\n      image\n      replicas\n      status\n      updatedAt\n      ports {\n        port\n        targetPort\n      }\n      env {\n        key\n        value\n      }\n    }\n  }\n",
+): (typeof documents)["\n  mutation updateServiceFromServiceRoute(\n    $projectId: ID!\n    $id: ID!\n    $input: UpdateServiceInput!\n  ) {\n    updateService(projectId: $projectId, id: $id, input: $input) {\n      id\n      projectId\n      name\n      image\n      replicas\n      status\n      updatedAt\n      ports {\n        port\n        targetPort\n      }\n      env {\n        key\n        value\n      }\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(
+  source: "\n  mutation deleteServiceFromServiceRoute($projectId: ID!, $id: ID!) {\n    deleteService(projectId: $projectId, id: $id) {\n      id\n    }\n  }\n",
+): (typeof documents)["\n  mutation deleteServiceFromServiceRoute($projectId: ID!, $id: ID!) {\n    deleteService(projectId: $projectId, id: $id) {\n      id\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(
+  source: "\n  query getServicesFromServicesRoute(\n    $projectId: ID!\n    $after: String\n    $before: String\n    $first: Int\n    $last: Int\n    $filter: ServiceFilter\n    $orderBy: ServiceOrder\n    $query: String\n  ) {\n    project(id: $projectId) {\n      id\n      name\n    }\n    services(\n      projectId: $projectId\n      after: $after\n      before: $before\n      first: $first\n      last: $last\n      filter: $filter\n      orderBy: $orderBy\n      query: $query\n    ) {\n      edges {\n        node {\n          id\n          projectId\n          name\n          image\n          replicas\n          status\n          createdAt\n          ports {\n            port\n            targetPort\n          }\n          env {\n            key\n            value\n          }\n        }\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n        hasPreviousPage\n        startCursor\n      }\n    }\n  }\n",
+): (typeof documents)["\n  query getServicesFromServicesRoute(\n    $projectId: ID!\n    $after: String\n    $before: String\n    $first: Int\n    $last: Int\n    $filter: ServiceFilter\n    $orderBy: ServiceOrder\n    $query: String\n  ) {\n    project(id: $projectId) {\n      id\n      name\n    }\n    services(\n      projectId: $projectId\n      after: $after\n      before: $before\n      first: $first\n      last: $last\n      filter: $filter\n      orderBy: $orderBy\n      query: $query\n    ) {\n      edges {\n        node {\n          id\n          projectId\n          name\n          image\n          replicas\n          status\n          createdAt\n          ports {\n            port\n            targetPort\n          }\n          env {\n            key\n            value\n          }\n        }\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n        hasPreviousPage\n        startCursor\n      }\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(
+  source: "\n  mutation createServiceFromServicesRoute($input: CreateServiceInput!) {\n    createService(input: $input) {\n      id\n      projectId\n      name\n      image\n      replicas\n      status\n      createdAt\n      ports {\n        port\n        targetPort\n      }\n      env {\n        key\n        value\n      }\n    }\n  }\n",
+): (typeof documents)["\n  mutation createServiceFromServicesRoute($input: CreateServiceInput!) {\n    createService(input: $input) {\n      id\n      projectId\n      name\n      image\n      replicas\n      status\n      createdAt\n      ports {\n        port\n        targetPort\n      }\n      env {\n        key\n        value\n      }\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(
+  source: "\n  mutation deleteServiceFromServicesRoute($projectId: ID!, $id: ID!) {\n    deleteService(projectId: $projectId, id: $id) {\n      id\n    }\n  }\n",
+): (typeof documents)["\n  mutation deleteServiceFromServicesRoute($projectId: ID!, $id: ID!) {\n    deleteService(projectId: $projectId, id: $id) {\n      id\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(
+  source: "\n  query getProjectsFromProjectsRoute(\n    $after: String\n    $before: String\n    $first: Int\n    $last: Int\n    $filter: ProjectFilter\n    $orderBy: ProjectOrder\n    $query: String\n  ) {\n    projects(\n      after: $after\n      before: $before\n      first: $first\n      last: $last\n      filter: $filter\n      orderBy: $orderBy\n      query: $query\n    ) {\n      edges {\n        node {\n          id\n          name\n          status\n          createdAt\n          updatedAt\n        }\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n        hasPreviousPage\n        startCursor\n      }\n    }\n  }\n",
+): (typeof documents)["\n  query getProjectsFromProjectsRoute(\n    $after: String\n    $before: String\n    $first: Int\n    $last: Int\n    $filter: ProjectFilter\n    $orderBy: ProjectOrder\n    $query: String\n  ) {\n    projects(\n      after: $after\n      before: $before\n      first: $first\n      last: $last\n      filter: $filter\n      orderBy: $orderBy\n      query: $query\n    ) {\n      edges {\n        node {\n          id\n          name\n          status\n          createdAt\n          updatedAt\n        }\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n        hasPreviousPage\n        startCursor\n      }\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(
+  source: "\n  mutation createProjectFromProjectsRoute($input: CreateProjectInput!) {\n    createProject(input: $input) {\n      id\n      name\n      status\n      createdAt\n      updatedAt\n    }\n  }\n",
+): (typeof documents)["\n  mutation createProjectFromProjectsRoute($input: CreateProjectInput!) {\n    createProject(input: $input) {\n      id\n      name\n      status\n      createdAt\n      updatedAt\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(
+  source: "\n  mutation deleteProjectFromProjectsRoute($id: ID!) {\n    deleteProject(id: $id) {\n      id\n    }\n  }\n",
+): (typeof documents)["\n  mutation deleteProjectFromProjectsRoute($id: ID!) {\n    deleteProject(id: $id) {\n      id\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

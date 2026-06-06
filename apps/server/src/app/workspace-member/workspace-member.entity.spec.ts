@@ -48,8 +48,10 @@ describe('WorkspaceMember', () => {
           name: 'workspace_member_workspace_all_authenticated_policy',
           command: PolicyCommand.ALL,
           roles: ['authenticated'],
-          using: expect.stringContaining('"workspace_id"'),
-          withCheck: expect.stringContaining('"workspace_id"'),
+          using:
+            "((select current_setting('app.workspace_id', true)::bigint) = workspace_id)",
+          withCheck:
+            "((select current_setting('app.workspace_id', true)::bigint) = workspace_id)",
         }),
       ]),
     );

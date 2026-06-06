@@ -186,6 +186,29 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/component: server
 {{- end -}}
 
+{{- define "kudeploy.server.migration.labels" -}}
+helm.sh/chart: {{ printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" }}
+app.kubernetes.io/name: {{ default "server" .Values.server.nameOverride }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+app.kubernetes.io/component: server-migration
+{{- with .Values.server.image.tag }}
+app.kubernetes.io/version: {{ . | quote }}
+{{- end }}
+{{- with .Values.commonLabels }}
+{{ toYaml . }}
+{{- end }}
+{{- with .Values.server.commonLabels }}
+{{ toYaml . }}
+{{- end }}
+{{- end -}}
+
+{{- define "kudeploy.server.migration.selectorLabels" -}}
+app.kubernetes.io/name: {{ default "server" .Values.server.nameOverride }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+app.kubernetes.io/component: server-migration
+{{- end -}}
+
 {{- define "kudeploy.server.serviceAccountName" -}}
 {{- if .Values.server.serviceAccount.create -}}
 {{- default (include "kudeploy.server.fullname" .) .Values.server.serviceAccount.name -}}
@@ -215,6 +238,80 @@ app.kubernetes.io/component: server
 {{- printf "%s://%s" $scheme $host -}}
 {{- end -}}
 {{- end -}}
+{{- end -}}
+
+{{- define "kudeploy.server.env" -}}
+{{- $values := .Values.server -}}
+- name: PORT
+  value: {{ $values.port | quote }}
+{{- $appUrl := include "kudeploy.server.appUrl" . }}
+{{- if $appUrl }}
+- name: APP_URL
+  value: {{ $appUrl | quote }}
+{{- end }}
+{{- $postgresqlEnabled := .Values.postgresql.enabled }}
+{{- $externalDatabaseEnabled := and (not $postgresqlEnabled) .Values.externalDatabase.host }}
+{{- if or $postgresqlEnabled $externalDatabaseEnabled }}
+{{- $databaseHost := ternary (include "kudeploy.server.postgresql.fullname" .) .Values.externalDatabase.host $postgresqlEnabled }}
+{{- $databasePort := ternary (default .Values.postgresql.service.ports.postgresql .Values.global.postgresql.service.ports.postgresql) .Values.externalDatabase.port $postgresqlEnabled }}
+{{- $databaseUser := ternary (default .Values.postgresql.auth.username .Values.global.postgresql.auth.username) .Values.externalDatabase.user $postgresqlEnabled }}
+{{- $databaseName := ternary (default .Values.postgresql.auth.database .Values.global.postgresql.auth.database) .Values.externalDatabase.database $postgresqlEnabled }}
+{{- $databaseSecretName := ternary (include "kudeploy.server.postgresql.secretName" .) .Values.externalDatabase.existingSecret $postgresqlEnabled }}
+{{- $databasePasswordKey := ternary (default .Values.postgresql.auth.existingSecretPasswordKey .Values.global.postgresql.auth.existingSecretPasswordKey) .Values.externalDatabase.existingSecretPasswordKey $postgresqlEnabled }}
+{{- $databasePassword := ternary "" .Values.externalDatabase.password $postgresqlEnabled }}
+{{- if or $databaseSecretName $databasePassword }}
+- name: KUDEPLOY_SERVER_POSTGRESQL_PASSWORD
+  {{- if $databaseSecretName }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ $databaseSecretName }}
+      key: {{ $databasePasswordKey }}
+  {{- else }}
+  value: {{ $databasePassword | quote }}
+  {{- end }}
+{{- end }}
+- name: DATABASE_URL
+  {{- if or $databaseSecretName $databasePassword }}
+  value: {{ printf "postgresql://%s:$(KUDEPLOY_SERVER_POSTGRESQL_PASSWORD)@%s:%v/%s" $databaseUser $databaseHost $databasePort $databaseName | quote }}
+  {{- else }}
+  value: {{ printf "postgresql://%s@%s:%v/%s" $databaseUser $databaseHost $databasePort $databaseName | quote }}
+  {{- end }}
+{{- end }}
+{{- $valkeyEnabled := .Values.valkey.enabled }}
+{{- $externalValkeyEnabled := and (not $valkeyEnabled) .Values.externalValkey.host }}
+{{- if or $valkeyEnabled $externalValkeyEnabled }}
+{{- $valkeyHost := ternary (include "kudeploy.server.valkey.fullname" .) .Values.externalValkey.host $valkeyEnabled }}
+{{- $valkeyPort := ternary .Values.valkey.service.ports.valkey .Values.externalValkey.port $valkeyEnabled }}
+{{- $valkeySecretName := ternary (include "kudeploy.server.valkey.secretName" .) .Values.externalValkey.existingSecret $valkeyEnabled }}
+{{- $valkeyPasswordKey := ternary .Values.valkey.auth.existingSecretPasswordKey .Values.externalValkey.existingSecretPasswordKey $valkeyEnabled }}
+{{- $valkeyPassword := ternary "" .Values.externalValkey.password $valkeyEnabled }}
+{{- $valkeyAuthEnabled := ternary .Values.valkey.auth.enabled (or .Values.externalValkey.existingSecret .Values.externalValkey.password) $valkeyEnabled }}
+{{- if $valkeyAuthEnabled }}
+- name: KUDEPLOY_SERVER_VALKEY_PASSWORD
+  {{- if $valkeySecretName }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ $valkeySecretName }}
+      key: {{ $valkeyPasswordKey }}
+  {{- else }}
+  value: {{ $valkeyPassword | quote }}
+  {{- end }}
+- name: REDIS_URL
+  value: {{ printf "redis://:$(KUDEPLOY_SERVER_VALKEY_PASSWORD)@%s:%v" $valkeyHost $valkeyPort | quote }}
+{{- else }}
+- name: REDIS_URL
+  value: {{ printf "redis://%s:%v" $valkeyHost $valkeyPort | quote }}
+{{- end }}
+{{- end }}
+{{- with $values.extraEnv }}
+{{- include "common.tplvalues.render" (dict "value" . "context" $) }}
+{{- end }}
+{{- end -}}
+
+{{- define "kudeploy.server.envFrom" -}}
+{{- with .Values.server.envFrom }}
+{{- include "common.tplvalues.render" (dict "value" . "context" $) }}
+{{- end }}
 {{- end -}}
 
 {{- define "kudeploy.server.postgresql.fullname" -}}

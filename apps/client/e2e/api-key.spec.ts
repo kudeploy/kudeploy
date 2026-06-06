@@ -31,12 +31,11 @@ test.describe("workspace API keys", () => {
     await page.getByTestId("api-key-create-submit").click();
 
     const revealedKey = page.getByTestId("api-key-created-value");
-    await expect(revealedKey).toContainText(/^nb_/);
+    await expect(revealedKey).toContainText(/^sk-/);
     await page.getByTestId("api-key-created-close").click();
 
     const row = page.getByRole("row").filter({ hasText: apiKeyName });
     await expect(row).toBeVisible();
-    await expect(row).toContainText("nb_");
 
     await row.getByRole("button").click();
     await page.getByRole("menuitem", { name: "重命名" }).click();

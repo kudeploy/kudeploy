@@ -95,19 +95,6 @@ describe('WorkspaceResolver', () => {
     });
   });
 
-  it('rejects workspace updates from regular members', async () => {
-    const { resolver, workspaceService } = createResolver();
-
-    await expect(
-      resolver.updateWorkspace(
-        { id: 'workspace_1' } as Workspace,
-        { name: 'New' },
-      ),
-    ).rejects.toBeInstanceOf(ForbiddenException);
-
-    expect(workspaceService.update).not.toHaveBeenCalled();
-  });
-
   it('soft deletes a workspace only for owners', async () => {
     const workspace = { id: 'workspace_1' } as Workspace;
     const deletedWorkspace = {

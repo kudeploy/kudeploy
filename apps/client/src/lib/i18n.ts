@@ -27,6 +27,8 @@ i18n
       "sidebar",
       "api-key",
       "permission",
+      "project",
+      "service",
       "workspace",
       "workspace-member",
       "workspace-member-group",

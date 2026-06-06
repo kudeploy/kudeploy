@@ -24,12 +24,18 @@ describe('WorkspaceService', () => {
   it('creates a workspace and an owner member for the creator', async () => {
     const persisted: unknown[] = [];
     const em = {
-      create: jest.fn((entity, data) => ({ entity, ...data })),
+      create: jest.fn((entity, data) => {
+        expect(RowLevelSecurity.getMode()).toBe(RowLevelSecurityMode.DISABLED);
+
+        return { entity, ...data };
+      }),
       persist: jest.fn((entity) => {
         persisted.push(entity);
         return em;
       }),
-      flush: jest.fn(),
+      flush: jest.fn(async () => {
+        expect(RowLevelSecurity.getMode()).toBe(RowLevelSecurityMode.DISABLED);
+      }),
     } as unknown as EntityManager;
     const service = new WorkspaceService(em);
     const user = {
@@ -38,15 +44,23 @@ describe('WorkspaceService', () => {
       email: 'alice@example.com',
     } as User;
 
-    const workspace = await service.createWorkspace(user, {
-      name: 'Acme',
+    let workspace: Workspace | undefined;
+
+    await RequestContext.run(new RequestContext({ type: 'test' }), async () => {
+      RowLevelSecurity.setMode(RowLevelSecurityMode.ENABLED);
+
+      workspace = await service.createWorkspace(user, {
+        name: 'Acme',
+      });
+
+      expect(RowLevelSecurity.getMode()).toBe(RowLevelSecurityMode.ENABLED);
     });
 
     expect(em.create).toHaveBeenCalledWith(Workspace, { name: 'Acme' });
     expect(em.create).toHaveBeenCalledWith(
       WorkspaceMember,
       expect.objectContaining({
-        workspace,
+        workspace: workspace!,
         user,
         name: 'Alice',
         email: 'alice@example.com',
@@ -55,7 +69,7 @@ describe('WorkspaceService', () => {
     );
     expect(persisted).toHaveLength(2);
     expect(em.flush).toHaveBeenCalledTimes(1);
-    expect(workspace).toMatchObject({
+    expect(workspace!).toMatchObject({
       entity: Workspace,
       name: 'Acme',
     });

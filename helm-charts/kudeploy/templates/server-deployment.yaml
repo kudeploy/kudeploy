@@ -37,6 +37,46 @@ spec:
       {{- with $values.priorityClassName }}
       priorityClassName: {{ . | quote }}
       {{- end }}
+      {{- if and $values.migration.enabled $values.migration.waitForMigrations.enabled }}
+      initContainers:
+        - name: wait-for-migrations
+          image: {{ include "kudeploy.server.image" . | quote }}
+          imagePullPolicy: {{ $values.image.pullPolicy }}
+          {{- with $values.migration.waitForMigrations.command }}
+          command:
+            {{- include "common.tplvalues.render" (dict "value" . "context" $) | nindent 12 }}
+          {{- end }}
+          args:
+            {{- if $values.migration.waitForMigrations.args }}
+            {{- include "common.tplvalues.render" (dict "value" $values.migration.waitForMigrations.args "context" $) | nindent 12 }}
+            {{- else }}
+            - dist/scripts/wait-for-migrations.js
+            - --migration-wait-timeout={{ $values.migration.waitForMigrations.timeoutSeconds }}
+            {{- end }}
+          env:
+            {{- include "kudeploy.server.env" . | nindent 12 }}
+            {{- with $values.migration.waitForMigrations.env }}
+            {{- include "common.tplvalues.render" (dict "value" . "context" $) | nindent 12 }}
+            {{- end }}
+          {{- $serverEnvFrom := include "kudeploy.server.envFrom" . | trim }}
+          {{- if or $serverEnvFrom $values.migration.waitForMigrations.envFrom }}
+          envFrom:
+            {{- if $serverEnvFrom }}
+            {{- $serverEnvFrom | nindent 12 }}
+            {{- end }}
+            {{- with $values.migration.waitForMigrations.envFrom }}
+            {{- include "common.tplvalues.render" (dict "value" . "context" $) | nindent 12 }}
+            {{- end }}
+          {{- end }}
+          {{- with (default $values.securityContext $values.migration.waitForMigrations.securityContext) }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $values.migration.waitForMigrations.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- end }}
       containers:
         - name: server
           image: {{ include "kudeploy.server.image" . | quote }}
@@ -46,73 +86,11 @@ spec:
               containerPort: {{ $values.port }}
               protocol: TCP
           env:
-            - name: PORT
-              value: {{ $values.port | quote }}
-            {{- $appUrl := include "kudeploy.server.appUrl" . }}
-            {{- if $appUrl }}
-            - name: APP_URL
-              value: {{ $appUrl | quote }}
-            {{- end }}
-            {{- $postgresqlEnabled := .Values.postgresql.enabled }}
-            {{- $externalDatabaseEnabled := and (not $postgresqlEnabled) .Values.externalDatabase.host }}
-            {{- if or $postgresqlEnabled $externalDatabaseEnabled }}
-            {{- $databaseHost := ternary (include "kudeploy.server.postgresql.fullname" .) .Values.externalDatabase.host $postgresqlEnabled }}
-            {{- $databasePort := ternary (default .Values.postgresql.service.ports.postgresql .Values.global.postgresql.service.ports.postgresql) .Values.externalDatabase.port $postgresqlEnabled }}
-            {{- $databaseUser := ternary (default .Values.postgresql.auth.username .Values.global.postgresql.auth.username) .Values.externalDatabase.user $postgresqlEnabled }}
-            {{- $databaseName := ternary (default .Values.postgresql.auth.database .Values.global.postgresql.auth.database) .Values.externalDatabase.database $postgresqlEnabled }}
-            {{- $databaseSecretName := ternary (include "kudeploy.server.postgresql.secretName" .) .Values.externalDatabase.existingSecret $postgresqlEnabled }}
-            {{- $databasePasswordKey := ternary (default .Values.postgresql.auth.existingSecretPasswordKey .Values.global.postgresql.auth.existingSecretPasswordKey) .Values.externalDatabase.existingSecretPasswordKey $postgresqlEnabled }}
-            {{- $databasePassword := ternary "" .Values.externalDatabase.password $postgresqlEnabled }}
-            {{- if or $databaseSecretName $databasePassword }}
-            - name: KUDEPLOY_SERVER_POSTGRESQL_PASSWORD
-              {{- if $databaseSecretName }}
-              valueFrom:
-                secretKeyRef:
-                  name: {{ $databaseSecretName }}
-                  key: {{ $databasePasswordKey }}
-              {{- else }}
-              value: {{ $databasePassword | quote }}
-              {{- end }}
-            {{- end }}
-            - name: DATABASE_URL
-              {{- if or $databaseSecretName $databasePassword }}
-              value: {{ printf "postgresql://%s:$(KUDEPLOY_SERVER_POSTGRESQL_PASSWORD)@%s:%v/%s" $databaseUser $databaseHost $databasePort $databaseName | quote }}
-              {{- else }}
-              value: {{ printf "postgresql://%s@%s:%v/%s" $databaseUser $databaseHost $databasePort $databaseName | quote }}
-              {{- end }}
-            {{- end }}
-            {{- $valkeyEnabled := .Values.valkey.enabled }}
-            {{- $externalValkeyEnabled := and (not $valkeyEnabled) .Values.externalValkey.host }}
-            {{- if or $valkeyEnabled $externalValkeyEnabled }}
-            {{- $valkeyHost := ternary (include "kudeploy.server.valkey.fullname" .) .Values.externalValkey.host $valkeyEnabled }}
-            {{- $valkeyPort := ternary .Values.valkey.service.ports.valkey .Values.externalValkey.port $valkeyEnabled }}
-            {{- $valkeySecretName := ternary (include "kudeploy.server.valkey.secretName" .) .Values.externalValkey.existingSecret $valkeyEnabled }}
-            {{- $valkeyPasswordKey := ternary .Values.valkey.auth.existingSecretPasswordKey .Values.externalValkey.existingSecretPasswordKey $valkeyEnabled }}
-            {{- $valkeyPassword := ternary "" .Values.externalValkey.password $valkeyEnabled }}
-            {{- $valkeyAuthEnabled := ternary .Values.valkey.auth.enabled (or .Values.externalValkey.existingSecret .Values.externalValkey.password) $valkeyEnabled }}
-            {{- if $valkeyAuthEnabled }}
-            - name: KUDEPLOY_SERVER_VALKEY_PASSWORD
-              {{- if $valkeySecretName }}
-              valueFrom:
-                secretKeyRef:
-                  name: {{ $valkeySecretName }}
-                  key: {{ $valkeyPasswordKey }}
-              {{- else }}
-              value: {{ $valkeyPassword | quote }}
-              {{- end }}
-            - name: REDIS_URL
-              value: {{ printf "redis://:$(KUDEPLOY_SERVER_VALKEY_PASSWORD)@%s:%v" $valkeyHost $valkeyPort | quote }}
-            {{- else }}
-            - name: REDIS_URL
-              value: {{ printf "redis://%s:%v" $valkeyHost $valkeyPort | quote }}
-            {{- end }}
-            {{- end }}
-            {{- with $values.extraEnv }}
-            {{- include "common.tplvalues.render" (dict "value" . "context" $) | nindent 12 }}
-            {{- end }}
-          {{- with $values.envFrom }}
+            {{- include "kudeploy.server.env" . | nindent 12 }}
+          {{- $serverEnvFrom := include "kudeploy.server.envFrom" . | trim }}
+          {{- if $serverEnvFrom }}
           envFrom:
-            {{- include "common.tplvalues.render" (dict "value" . "context" $) | nindent 12 }}
+            {{- $serverEnvFrom | nindent 12 }}
           {{- end }}
           {{- with $values.securityContext }}
           securityContext:

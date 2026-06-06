@@ -1,0 +1,109 @@
+{{- if and .Values.server.enabled .Values.server.migration.enabled }}
+{{- $values := .Values.server }}
+{{- $migration := $values.migration }}
+{{- $serverEnvFrom := include "kudeploy.server.envFrom" . | trim }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "kudeploy.server.fullname" . }}-migrate-database
+  namespace: {{ include "kudeploy.server.namespace" . }}
+  labels:
+    {{- include "kudeploy.server.migration.labels" . | nindent 4 }}
+    {{- with $migration.podLabels }}
+    {{- include "common.tplvalues.render" (dict "value" . "context" $) | nindent 4 }}
+    {{- end }}
+  {{- $annotations := dict }}
+  {{- if $migration.useHelmHooks }}
+  {{- $_ := set $annotations "helm.sh/hook" $migration.hook }}
+  {{- $_ := set $annotations "helm.sh/hook-weight" (printf "%v" $migration.hookWeight) }}
+  {{- $_ := set $annotations "helm.sh/hook-delete-policy" $migration.hookDeletePolicy }}
+  {{- end }}
+  {{- $annotations = merge $annotations $migration.jobAnnotations }}
+  {{- if $annotations }}
+  annotations:
+    {{- toYaml $annotations | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if not (kindIs "invalid" $migration.backoffLimit) }}
+  backoffLimit: {{ $migration.backoffLimit }}
+  {{- end }}
+  {{- if not (kindIs "invalid" $migration.activeDeadlineSeconds) }}
+  activeDeadlineSeconds: {{ $migration.activeDeadlineSeconds }}
+  {{- end }}
+  {{- if not (kindIs "invalid" $migration.ttlSecondsAfterFinished) }}
+  ttlSecondsAfterFinished: {{ $migration.ttlSecondsAfterFinished }}
+  {{- end }}
+  template:
+    metadata:
+      labels:
+        {{- include "kudeploy.server.migration.selectorLabels" . | nindent 8 }}
+        {{- with $migration.podLabels }}
+        {{- include "common.tplvalues.render" (dict "value" . "context" $) | nindent 8 }}
+        {{- end }}
+      {{- if or $migration.annotations $migration.podAnnotations }}
+      annotations:
+        {{- with $migration.annotations }}
+        {{- include "common.tplvalues.render" (dict "value" . "context" $) | nindent 8 }}
+        {{- end }}
+        {{- with $migration.podAnnotations }}
+        {{- include "common.tplvalues.render" (dict "value" . "context" $) | nindent 8 }}
+        {{- end }}
+      {{- end }}
+    spec:
+      serviceAccountName: {{ include "kudeploy.server.serviceAccountName" . }}
+      restartPolicy: {{ $migration.restartPolicy }}
+      {{- include "common.images.renderPullSecrets" (dict "images" (list $values.image) "context" $) | nindent 6 }}
+      {{- with (default $values.podSecurityContext $migration.podSecurityContext) }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with (or $migration.nodeSelector $values.nodeSelector) }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with (or $migration.affinity $values.affinity) }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with (or $migration.tolerations $values.tolerations) }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with (or $migration.priorityClassName $values.priorityClassName) }}
+      priorityClassName: {{ . | quote }}
+      {{- end }}
+      containers:
+        - name: migrate-database
+          image: {{ include "kudeploy.server.image" . | quote }}
+          imagePullPolicy: {{ $values.image.pullPolicy }}
+          {{- with $migration.command }}
+          command:
+            {{- include "common.tplvalues.render" (dict "value" . "context" $) | nindent 12 }}
+          {{- end }}
+          {{- with $migration.args }}
+          args:
+            {{- include "common.tplvalues.render" (dict "value" . "context" $) | nindent 12 }}
+          {{- end }}
+          env:
+            {{- include "kudeploy.server.env" . | nindent 12 }}
+            {{- with $migration.env }}
+            {{- include "common.tplvalues.render" (dict "value" . "context" $) | nindent 12 }}
+            {{- end }}
+          {{- if or $serverEnvFrom $migration.envFrom }}
+          envFrom:
+            {{- if $serverEnvFrom }}
+            {{- $serverEnvFrom | nindent 12 }}
+            {{- end }}
+            {{- with $migration.envFrom }}
+            {{- include "common.tplvalues.render" (dict "value" . "context" $) | nindent 12 }}
+            {{- end }}
+          {{- end }}
+          {{- with (default $values.securityContext $migration.securityContext) }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $migration.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+{{- end }}

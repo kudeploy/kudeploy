@@ -1,0 +1,69 @@
+{
+  "title": "服务",
+  "description": "服务保存后会直接写入 Kubernetes Service CRD。",
+  "create": {
+    "button": "创建服务",
+    "title": "创建服务",
+    "description": "保存会创建 Service CRD，并由 controller 发布。"
+  },
+  "detail": {
+    "title": "服务",
+    "description": "保存会更新 Service CRD，并发布新的 Deployment 版本。"
+  },
+  "form": {
+    "env": "环境变量",
+    "image": {
+      "label": "镜像",
+      "placeholder": "ghcr.io/acme/api:latest",
+      "required": "请输入镜像"
+    },
+    "key": "键",
+    "name": {
+      "label": "名称",
+      "placeholder": "api",
+      "required": "请输入名称"
+    },
+    "ports": "端口",
+    "port": "端口",
+    "replicas": "副本数",
+    "target_port": "目标端口",
+    "value": "值"
+  },
+  "filter": {
+    "search": {
+      "placeholder": "搜索服务"
+    },
+    "name": {
+      "label": "名称",
+      "placeholder": "服务名称"
+    }
+  },
+  "table": {
+    "created_at": "创建时间",
+    "image": "镜像",
+    "name": "名称",
+    "ports": "端口",
+    "replicas": "副本数",
+    "status": "状态"
+  },
+  "delete": {
+    "title": "删除服务",
+    "description": "确认删除服务「{{name}}」？"
+  },
+  "status": {
+    "FAILED": "失败",
+    "PENDING": "等待中",
+    "PROGRESSING": "处理中",
+    "READY": "就绪",
+    "UNKNOWN": "未知"
+  },
+  "toast": {
+    "created": "服务已创建",
+    "updated": "服务已保存",
+    "deleted": "服务已删除"
+  },
+  "actions": {
+    "add_env": "添加环境变量",
+    "add_port": "添加端口"
+  }
+}

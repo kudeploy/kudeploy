@@ -1,0 +1,51 @@
+{
+  "title": "项目",
+  "description": "项目由当前集群中的 Kubernetes Project CRD 驱动。",
+  "create": {
+    "button": "创建项目",
+    "title": "创建项目",
+    "description": "会立即创建一个 Project CRD。"
+  },
+  "detail": {
+    "title": "项目",
+    "description": "保存会直接更新 Project CRD。",
+    "services_action": "服务"
+  },
+  "form": {
+    "name": {
+      "label": "名称",
+      "placeholder": "payments",
+      "required": "请输入名称"
+    }
+  },
+  "filter": {
+    "search": {
+      "placeholder": "搜索项目"
+    },
+    "name": {
+      "label": "名称",
+      "placeholder": "项目名称"
+    }
+  },
+  "table": {
+    "created_at": "创建时间",
+    "name": "名称",
+    "status": "状态"
+  },
+  "delete": {
+    "title": "删除项目",
+    "description": "确认删除项目「{{name}}」？相关 Kubernetes 资源可能会被 controller 清理。"
+  },
+  "status": {
+    "FAILED": "失败",
+    "PENDING": "等待中",
+    "PROGRESSING": "处理中",
+    "READY": "就绪",
+    "UNKNOWN": "未知"
+  },
+  "toast": {
+    "created": "项目已创建",
+    "updated": "项目已保存",
+    "deleted": "项目已删除"
+  }
+}

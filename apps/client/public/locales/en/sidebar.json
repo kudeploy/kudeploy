@@ -3,6 +3,8 @@
     "api_keys": "API Keys",
     "member_groups": "Member Groups",
     "members": "Members",
+    "projects": "Projects",
+    "resources": "Resources",
     "settings": "Settings"
   },
   "switcher": {

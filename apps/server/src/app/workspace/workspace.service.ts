@@ -39,20 +39,26 @@ export class WorkspaceService extends EntityService<Workspace> {
     user: User,
     input: CreateWorkspaceInput,
   ): Promise<Workspace> {
-    const workspace = this.em.create(Workspace, {
-      name: input.name,
-    });
+    const workspace = await RequestContext.child(async () => {
+      RowLevelSecurity.setMode(RowLevelSecurityMode.DISABLED);
 
-    // 创建 workspace 的同时创建一个 owner 成员
-    const workspaceMember = this.em.create(WorkspaceMember, {
-      workspace,
-      user,
-      name: user.name,
-      email: user.email,
-      role: WorkspaceMemberRole.OWNER,
-    });
+      const workspace = this.em.create(Workspace, {
+        name: input.name,
+      });
 
-    await this.em.persist(workspace).persist(workspaceMember).flush();
+      // 创建 workspace 的同时创建一个 owner 成员
+      const workspaceMember = this.em.create(WorkspaceMember, {
+        workspace,
+        user,
+        name: user.name,
+        email: user.email,
+        role: WorkspaceMemberRole.OWNER,
+      });
+
+      await this.em.persist(workspace).persist(workspaceMember).flush();
+
+      return workspace;
+    });
 
     return workspace;
   }

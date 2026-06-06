@@ -232,6 +232,44 @@ server:
   tolerations: []
   affinity: {}
   priorityClassName: ''
+  migration:
+    enabled: true
+    useHelmHooks: true
+    hook: post-install,post-upgrade
+    hookWeight: 1
+    hookDeletePolicy: before-hook-creation,hook-succeeded
+    backoffLimit: 6
+    activeDeadlineSeconds: 600
+    ttlSecondsAfterFinished: 300
+    restartPolicy: OnFailure
+    command:
+      - npm
+    args:
+      - run
+      - migration:up
+    annotations: {}
+    jobAnnotations: {}
+    podLabels: {}
+    podAnnotations: {}
+    securityContext: {}
+    podSecurityContext: {}
+    resources: {}
+    nodeSelector: {}
+    tolerations: []
+    affinity: {}
+    priorityClassName: ''
+    env: []
+    envFrom: []
+    waitForMigrations:
+      enabled: true
+      timeoutSeconds: 60
+      command:
+        - node
+      args: []
+      env: []
+      envFrom: []
+      securityContext: {}
+      resources: {}
   extraEnv: []
   envFrom: []
   extraVolumeMounts: []
@@ -271,6 +309,25 @@ postgresql:
     database: kudeploy
     existingSecret: ''
     existingSecretPasswordKey: postgresql-password
+  initdb:
+    scripts:
+      00-init-database.sql: |
+        do $$
+        declare
+          application_user text := '{{ include "postgresql.username" . | trim | replace "'" "''" }}';
+        begin
+          if not exists (select 1 from pg_roles where rolname = 'anonymous') then
+            create role anonymous nologin;
+          end if;
+
+          if not exists (select 1 from pg_roles where rolname = 'authenticated') then
+            create role authenticated nologin;
+          end if;
+
+          execute format('grant anonymous to %I', application_user);
+          execute format('grant authenticated to %I', application_user);
+        end
+        $$;
   service:
     ports:
       postgresql: 5432

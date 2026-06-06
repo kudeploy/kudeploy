@@ -3,9 +3,24 @@ import { graphqlRequest } from "./graphql";
 import type { Page } from "@playwright/test";
 
 export async function createFirstWorkspace(page: Page, name: string) {
+  const submitButton = page.getByTestId("workspace-create-submit");
+
   await expect(page.getByTestId("workspace-empty-state")).toBeVisible();
+  await expect(submitButton).toBeEnabled();
   await page.getByTestId("workspace-create-name-input").fill(name);
-  await page.getByTestId("workspace-create-submit").click();
+  const createWorkspaceResponse = page.waitForResponse((response) => {
+    return (
+      response.url().endsWith("/api/graphql") &&
+      (response.request().postData() ?? "").includes(
+        "createWorkspaceFromCreateWorkspaceForm",
+      )
+    );
+  });
+
+  await submitButton.click();
+  const response = await createWorkspaceResponse;
+
+  expect(response.ok()).toBeTruthy();
   await expect(page).toHaveURL(/\/workspaces\/\d+\/settings$/);
 
   return currentWorkspaceId(page);

@@ -80,10 +80,23 @@ type CreateApiKeyResult {
   entity: ApiKey!
 }
 
+input CreateProjectInput {
+  name: String!
+}
+
 input CreateServiceAccountWorkspaceMemberInput {
   name: String!
   permissions: [WorkspacePermission!]
   role: WorkspaceMemberRole
+}
+
+input CreateServiceInput {
+  env: [ServiceEnvVarInput!]
+  image: String!
+  name: String!
+  ports: [ServicePortInput!]!
+  projectId: ID!
+  replicas: Int
 }
 
 input CreateWorkspaceInput {
@@ -112,17 +125,23 @@ type Mutation {
   addMembersToWorkspaceMemberGroup(id: ID!, memberIds: [ID!]!): WorkspaceMemberGroup!
   addWorkspaceMember(input: AddWorkspaceMemberInput!): WorkspaceMember!
   createApiKey(input: CreateApiKeyInput!): CreateApiKeyResult!
+  createProject(input: CreateProjectInput!): Project!
+  createService(input: CreateServiceInput!): Service!
   createServiceAccountWorkspaceMember(input: CreateServiceAccountWorkspaceMemberInput!): WorkspaceMember!
   createWorkspace(input: CreateWorkspaceInput!): Workspace!
   createWorkspaceInvite(input: CreateWorkspaceInviteInput!): WorkspaceMember!
   createWorkspaceMemberGroup(input: CreateWorkspaceMemberGroupInput!): WorkspaceMemberGroup!
   deleteApiKey(id: ID!): ApiKey!
+  deleteProject(id: ID!): Project!
+  deleteService(id: ID!, projectId: ID!): Service!
   deleteWorkspace: Workspace!
   deleteWorkspaceMemberGroup(id: ID!): WorkspaceMemberGroup!
   removeMembersFromWorkspaceMemberGroup(id: ID!, memberIds: [ID!]!): WorkspaceMemberGroup!
   removeWorkspace: Workspace! @deprecated(reason: "Use deleteWorkspace instead")
   removeWorkspaceMember(id: ID!): WorkspaceMember!
   updateApiKey(id: ID!, input: UpdateApiKeyInput!): ApiKey!
+  updateProject(id: ID!, input: UpdateProjectInput!): Project!
+  updateService(id: ID!, input: UpdateServiceInput!, projectId: ID!): Service!
   updateWorkspace(input: UpdateWorkspaceInput!): Workspace!
   updateWorkspaceMember(id: ID!, input: UpdateWorkspaceMemberInput!): WorkspaceMember
   updateWorkspaceMemberGroup(id: ID!, input: UpdateWorkspaceMemberGroupInput!): WorkspaceMemberGroup!
@@ -145,6 +164,65 @@ type PageInfo {
   """Whether there are any pages prior to the current page."""
   hasPreviousPage: Boolean!
   startCursor: String
+}
+
+type Project {
+  createdAt: DateTime!
+  id: ID!
+  name: String!
+  status: ProjectStatus!
+  updatedAt: DateTime!
+}
+
+type ProjectConnection {
+  """A list of edges."""
+  edges: [ProjectEdge!]!
+
+  """Information to aid in pagination."""
+  pageInfo: PageInfo!
+
+  """Identifies the total count of items in the connection."""
+  totalCount: Int!
+}
+
+"""
+An auto-generated type which holds one Project and a cursor during pagination.
+"""
+type ProjectEdge {
+  """A cursor for use in pagination."""
+  cursor: String!
+
+  """The item at the end of ProjectEdge."""
+  node: Project!
+}
+
+"""
+A filter for Project that accepts MongoDB query syntax.
+Supported fields: name, createdAt
+"""
+scalar ProjectFilter
+
+"""Ordering options for project connections"""
+input ProjectOrder {
+  """The ordering direction."""
+  direction: OrderDirection!
+
+  """The field to order projects by."""
+  field: ProjectOrderField!
+}
+
+"""Properties by which project connections can be ordered."""
+enum ProjectOrderField {
+  CREATED_AT
+  ID
+}
+
+enum ProjectStatus {
+  FAILED
+  PENDING
+  PROGRESSING
+  READY
+  UNKNOWN
 }
 
 type Query {
@@ -178,6 +256,61 @@ type Query {
   currentUser: User!
   currentWorkspace: Workspace
   currentWorkspaceMember: WorkspaceMember
+  project(id: ID!): Project
+  projects(
+    """Returns the elements that come after the specified cursor."""
+    after: String
+
+    """Returns the elements that come before the specified cursor."""
+    before: String
+
+    """Filter projects using MongoDB query syntax."""
+    filter: ProjectFilter
+
+    """Returns up to the first `n` elements from the list."""
+    first: Int
+
+    """Returns up to the last `n` elements from the list."""
+    last: Int
+
+    """Ordering options for the returned projects."""
+    orderBy: ProjectOrder
+
+    """
+    Apply one or multiple filters to the query.
+    Supported filter parameters:
+    `name`, `createdAt`
+    """
+    query: String
+  ): ProjectConnection!
+  service(id: ID!, projectId: ID!): Service
+  services(
+    """Returns the elements that come after the specified cursor."""
+    after: String
+
+    """Returns the elements that come before the specified cursor."""
+    before: String
+
+    """Filter services using MongoDB query syntax."""
+    filter: ServiceFilter
+
+    """Returns up to the first `n` elements from the list."""
+    first: Int
+
+    """Returns up to the last `n` elements from the list."""
+    last: Int
+
+    """Ordering options for the returned services."""
+    orderBy: ServiceOrder
+    projectId: ID!
+
+    """
+    Apply one or multiple filters to the query.
+    Supported filter parameters:
+    `name`, `createdAt`
+    """
+    query: String
+  ): ServiceConnection!
   workspace(id: ID!): Workspace
   workspaceMember(id: ID!): WorkspaceMember
   workspaceMemberByToken(token: String!): WorkspaceMember
@@ -262,8 +395,104 @@ type Query {
   ): WorkspaceConnection!
 }
 
+type Service {
+  createdAt: DateTime!
+  env: [ServiceEnvVar!]!
+  id: ID!
+  image: String!
+  name: String!
+  ports: [ServicePort!]!
+  projectId: ID!
+  replicas: Int
+  status: ServiceStatus!
+  updatedAt: DateTime!
+}
+
+type ServiceConnection {
+  """A list of edges."""
+  edges: [ServiceEdge!]!
+
+  """Information to aid in pagination."""
+  pageInfo: PageInfo!
+
+  """Identifies the total count of items in the connection."""
+  totalCount: Int!
+}
+
+"""
+An auto-generated type which holds one Service and a cursor during pagination.
+"""
+type ServiceEdge {
+  """A cursor for use in pagination."""
+  cursor: String!
+
+  """The item at the end of ServiceEdge."""
+  node: Service!
+}
+
+type ServiceEnvVar {
+  key: String!
+  value: String!
+}
+
+input ServiceEnvVarInput {
+  key: String!
+  value: String!
+}
+
+"""
+A filter for Service that accepts MongoDB query syntax.
+Supported fields: name, createdAt
+"""
+scalar ServiceFilter
+
+"""Ordering options for service connections"""
+input ServiceOrder {
+  """The ordering direction."""
+  direction: OrderDirection!
+
+  """The field to order services by."""
+  field: ServiceOrderField!
+}
+
+"""Properties by which service connections can be ordered."""
+enum ServiceOrderField {
+  CREATED_AT
+  ID
+}
+
+type ServicePort {
+  port: Int!
+  targetPort: Int
+}
+
+input ServicePortInput {
+  port: Int!
+  targetPort: Int
+}
+
+enum ServiceStatus {
+  FAILED
+  PENDING
+  PROGRESSING
+  READY
+  UNKNOWN
+}
+
 input UpdateApiKeyInput {
   name: String
+}
+
+input UpdateProjectInput {
+  name: String
+}
+
+input UpdateServiceInput {
+  env: [ServiceEnvVarInput!]
+  image: String
+  name: String
+  ports: [ServicePortInput!]
+  replicas: Int
 }
 
 input UpdateWorkspaceInput {

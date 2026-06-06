@@ -1,0 +1,51 @@
+{
+  "title": "Projects",
+  "description": "Projects are backed by Kubernetes Project CRDs in the current cluster.",
+  "create": {
+    "button": "Create project",
+    "title": "Create project",
+    "description": "A Project CRD will be created immediately."
+  },
+  "detail": {
+    "title": "Project",
+    "description": "Editing saves directly to the Project CRD.",
+    "services_action": "Services"
+  },
+  "form": {
+    "name": {
+      "label": "Name",
+      "placeholder": "payments",
+      "required": "Name is required"
+    }
+  },
+  "filter": {
+    "search": {
+      "placeholder": "Search projects"
+    },
+    "name": {
+      "label": "Name",
+      "placeholder": "Project name"
+    }
+  },
+  "table": {
+    "created_at": "Created",
+    "name": "Name",
+    "status": "Status"
+  },
+  "delete": {
+    "title": "Delete project",
+    "description": "Delete project \"{{name}}\"? Its Kubernetes resources may be removed by the controller."
+  },
+  "status": {
+    "FAILED": "Failed",
+    "PENDING": "Pending",
+    "PROGRESSING": "Progressing",
+    "READY": "Ready",
+    "UNKNOWN": "Unknown"
+  },
+  "toast": {
+    "created": "Project created",
+    "updated": "Project updated",
+    "deleted": "Project deleted"
+  }
+}
