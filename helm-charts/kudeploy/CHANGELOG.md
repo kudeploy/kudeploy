@@ -1,3 +1,9 @@
+## 0.3.5 (2026-06-06)
+
+### 🧱 Updated Dependencies
+
+- Updated server-helm-chart to 0.3.4
+
 ## 0.3.4 (2026-06-06)
 
 ### 🧱 Updated Dependencies

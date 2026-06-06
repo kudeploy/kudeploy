@@ -1,3 +1,13 @@
+## 1.3.2 (2026-06-06)
+
+### 🩹 Fixes
+
+- **server:** optimize image build cache ([1c818bf](https://github.com/kudeploy/kudeploy/commit/1c818bf))
+
+### ❤️ Thank You
+
+- Xudong Huang @xudongcc
+
 ## 1.3.1 (2026-06-06)
 
 ### 🩹 Fixes
