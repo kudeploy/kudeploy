@@ -15,6 +15,27 @@
     }
   },
   "targets": {
+    "generate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "apps/controller",
+        "commands": [
+          "make controller-gen",
+          "mkdir -p ../../helm-charts/kudeploy-crds/templates",
+          "rm -f ../../helm-charts/kudeploy-crds/templates/*.yaml",
+          "GOTOOLCHAIN=auto ./bin/controller-gen crd paths=./api/... output:crd:artifacts:config=../../helm-charts/kudeploy-crds/templates"
+        ],
+        "parallel": false
+      },
+      "cache": true,
+      "inputs": [
+        "{workspaceRoot}/apps/controller/api/**/*.go",
+        "{workspaceRoot}/apps/controller/go.mod",
+        "{workspaceRoot}/apps/controller/go.sum",
+        "{workspaceRoot}/apps/controller/Makefile"
+      ],
+      "outputs": ["{workspaceRoot}/helm-charts/kudeploy-crds/templates"]
+    },
     "dependency-build": {
       "executor": "nx-helm:dependency-build",
       "options": {
@@ -24,6 +45,7 @@
       "cache": false,
       "inputs": ["default", "{workspaceRoot}/pnpm-lock.yaml"],
       "dependsOn": [
+        "generate",
         { "dependencies": true, "target": "package", "params": "ignore" }
       ]
     },

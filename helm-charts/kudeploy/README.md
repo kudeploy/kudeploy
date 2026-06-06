@@ -8,6 +8,12 @@ helm dependency update helm-charts/kudeploy
 helm install kudeploy helm-charts/kudeploy
 ```
 
+CRD templates are generated from the controller API types:
+
+```bash
+pnpm nx run crds-helm-chart:generate
+```
+
 ## Values
 
 ```yaml

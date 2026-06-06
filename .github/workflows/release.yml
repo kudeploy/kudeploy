@@ -134,6 +134,10 @@ jobs:
               add_version_project controller
               add_version_project helm-chart
             fi
+            if grep -qE '^apps/controller/(api/|config/crd/)' <<< "$changed_files_for_version"; then
+              add_version_project crds-helm-chart
+              add_version_project helm-chart
+            fi
             if grep -q '^apps/client/' <<< "$changed_files_for_version"; then
               add_version_project client
               add_version_project helm-chart
