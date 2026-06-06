@@ -15,14 +15,7 @@ if (buildResult.status !== 0) {
   process.exit(buildResult.status ?? 1);
 }
 
-const args = [
-  "publish",
-  "./packages/client-assets",
-  "--registry",
-  "https://npm.pkg.github.com",
-  "--access",
-  "public",
-];
+const args = ["publish", "./packages/client-assets", "--access", "public"];
 
 if (dryRun) {
   args.push("--dry-run");

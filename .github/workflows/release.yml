@@ -65,6 +65,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      id-token: write
       packages: write
 
     steps:
@@ -77,7 +78,6 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version-file: .nvmrc
-          registry-url: https://npm.pkg.github.com
           scope: "@kudeploy"
 
       - name: Enable Corepack
@@ -243,5 +243,3 @@ jobs:
       - name: Publish release artifacts
         if: steps.release.outputs.should_publish == 'true'
         run: pnpm exec nx release publish --yes --parallel=1 --projects="${{ steps.release.outputs.projects_to_publish }}"
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
