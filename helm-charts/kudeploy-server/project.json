@@ -5,7 +5,7 @@
   "projectType": "application",
   "tags": ["type:helm-chart"],
   "metadata": {
-    "description": "Kudeploy API server and web application."
+    "description": "Kudeploy API server."
   },
   "release": {
     "version": {

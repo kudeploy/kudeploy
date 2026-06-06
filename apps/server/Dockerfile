@@ -14,10 +14,9 @@ FROM build-base AS builder
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml nx.json tsconfig.base.json ./
 COPY apps/server/package.json apps/server/package.json
-COPY packages/client-assets/package.json packages/client-assets/package.json
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store,sharing=locked \
     pnpm i --frozen-lockfile --store-dir=/pnpm/store
-COPY . .
+COPY apps/server apps/server
 RUN pnpm --filter @kudeploy/server build
 RUN CI=true pnpm prune --prod
 
@@ -32,11 +31,6 @@ COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nodejs:nodejs /app/apps/server/package.json ./apps/server/package.json
 COPY --from=builder --chown=nodejs:nodejs /app/apps/server/node_modules ./apps/server/node_modules
 COPY --from=builder --chown=nodejs:nodejs /app/apps/server/dist ./apps/server/dist
-COPY --from=builder --chown=nodejs:nodejs /app/packages/client-assets/package.json ./packages/client-assets/package.json
-COPY --from=builder --chown=nodejs:nodejs /app/packages/client-assets/dist ./packages/client-assets/dist
-RUN mkdir -p ./node_modules/@kudeploy && \
-    ln -s ../../packages/client-assets ./node_modules/@kudeploy/client-assets && \
-    chown -h nodejs:nodejs ./node_modules/@kudeploy/client-assets
 USER nodejs
 WORKDIR /app/apps/server
 CMD ["node", "dist/main.js"]

@@ -1,6 +1,6 @@
 # kudeploy-server
 
-Installs the Kudeploy API server and bundled web application.
+Installs the Kudeploy API server.
 
 ```bash
 helm dependency update helm-charts/kudeploy-server

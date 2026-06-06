@@ -27,7 +27,6 @@
     "seeder:run": "mikro-orm seeder:run"
   },
   "dependencies": {
-    "@kudeploy/client-assets": "workspace:^",
     "@ai-sdk/google": "^3.0.55",
     "@apollo/server": "^5.2.0",
     "@casl/ability": "^6.7.5",
@@ -54,7 +53,6 @@
     "@nestjs/event-emitter": "^3.0.1",
     "@nestjs/graphql": "^13.2.3",
     "@nestjs/platform-express": "^11.1.11",
-    "@nestjs/serve-static": "^5.0.4",
     "@node-rs/jieba": "^2.0.1",
     "@types/fluent-ffmpeg": "^2.1.28",
     "@types/ms": "^2.1.0",

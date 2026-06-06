@@ -1,6 +1,5 @@
 packages:
   - "apps/*"
-  - "packages/*"
 allowBuilds:
   "@apollo/protobufjs": true
   "@nestjs/core": true

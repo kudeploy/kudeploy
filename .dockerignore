@@ -3,8 +3,6 @@
 node_modules
 **/node_modules
 **/dist
-!packages/client-assets/dist
-!packages/client-assets/dist/**
 **/coverage
 **/test-results
 .DS_Store

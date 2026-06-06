@@ -25,19 +25,11 @@
       },
       "inputs": [
         "production",
-        "^production",
         "{workspaceRoot}/package.json",
         "{workspaceRoot}/pnpm-lock.yaml",
         "{workspaceRoot}/pnpm-workspace.yaml",
         "{workspaceRoot}/nx.json",
         "{workspaceRoot}/tsconfig.base.json"
-      ],
-      "dependsOn": [
-        {
-          "dependencies": true,
-          "target": "build",
-          "params": "ignore"
-        }
       ],
       "cache": true
     },
@@ -48,7 +40,7 @@
         "command": "docker run {args} apps-server"
       },
       "dependsOn": ["docker:build"],
-      "inputs": ["production", "^production"],
+      "inputs": ["production"],
       "cache": false
     },
     "nx-release-publish": {
