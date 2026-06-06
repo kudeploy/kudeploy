@@ -20,6 +20,8 @@ const dryRun =
 const args = [
   'buildx',
   'build',
+  '--progress',
+  'plain',
   '--platform',
   'linux/amd64,linux/arm64',
   '--push',
