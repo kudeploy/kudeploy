@@ -1,3 +1,17 @@
+## 1.2.0 (2026-06-06)
+
+### 🚀 Features
+
+- publish client assets package ([09b0e9e](https://github.com/kudeploy/kudeploy/commit/09b0e9e))
+
+### 🧱 Updated Dependencies
+
+- Updated client-assets to 0.2.0
+
+### ❤️ Thank You
+
+- Xudong Huang @xudongcc
+
 ## 1.1.0 (2026-06-05)
 
 ### 🚀 Features

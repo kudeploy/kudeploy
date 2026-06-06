@@ -1,3 +1,11 @@
+## 0.3.0 (2026-06-06)
+
+### 🧱 Updated Dependencies
+
+- Updated controller-helm-chart to 0.2.0
+- Updated server-helm-chart to 0.3.0
+- Updated crds-helm-chart to 0.2.0
+
 ## 0.2.0 (2026-06-05)
 
 ### 🧱 Updated Dependencies

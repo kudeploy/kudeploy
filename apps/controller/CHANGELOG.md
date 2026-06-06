@@ -1,3 +1,7 @@
+## 0.2.0 (2026-06-06)
+
+This was a version bump only for controller to align it with other projects, there were no code changes.
+
 ## 0.1.2 (2026-06-05)
 
 ### 🩹 Fixes
