@@ -1,0 +1,7 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "client",
+  "root": "apps/client",
+  "projectType": "application",
+  "tags": ["type:client", "language:typescript"]
+}

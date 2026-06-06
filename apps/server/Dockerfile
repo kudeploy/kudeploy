@@ -18,7 +18,7 @@ COPY apps/server/package.json apps/server/package.json
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store,sharing=locked \
     pnpm i --frozen-lockfile --store-dir=/pnpm/store
 COPY . .
-RUN pnpm nx run @repo/client:build
+RUN pnpm nx run client:build
 RUN pnpm nx run server:build
 RUN CI=true pnpm prune --prod
 
