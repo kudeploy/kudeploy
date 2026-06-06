@@ -2,8 +2,8 @@ apiVersion: v2
 name: kudeploy-client
 description: Kudeploy web client.
 type: application
-version: 0.2.0
-appVersion: 0.2.0
+version: 0.2.1
+appVersion: 0.2.1
 dependencies:
   - name: common
     version: 0.1.0

@@ -1,3 +1,13 @@
+## 1.3.1 (2026-06-06)
+
+### 🩹 Fixes
+
+- **release:** improve multiarch image publish ([6ba07b0](https://github.com/kudeploy/kudeploy/commit/6ba07b0))
+
+### ❤️ Thank You
+
+- Xudong Huang @xudongcc
+
 ## 1.3.0 (2026-06-06)
 
 ### 🚀 Features
