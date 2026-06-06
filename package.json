@@ -15,6 +15,7 @@
     "@commitlint/cli": "^21.0.2",
     "@commitlint/config-conventional": "^21.0.2",
     "@nx/docker": "^22.7.5",
+    "@nx/js": "^22.7.5",
     "nx": "^22.7.5",
     "nx-helm": "^0.1.1",
     "prettier": "^3.7.4",

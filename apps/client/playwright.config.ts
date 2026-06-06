@@ -38,7 +38,7 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command: `pnpm --filter @repo/server build && PORT=4100 APP_URL=${clientUrl} AUTH_URL=${serverUrl} pnpm --filter @repo/server start:e2e`,
+      command: `pnpm --filter @kudeploy/server build && PORT=4100 APP_URL=${clientUrl} AUTH_URL=${serverUrl} pnpm --filter @kudeploy/server start:e2e`,
       cwd: workspaceRoot,
       gracefulShutdown: {
         signal: "SIGTERM",
@@ -50,7 +50,7 @@ export default defineConfig({
     },
     {
       command:
-        "pnpm --filter @repo/client codegen && pnpm --filter @repo/client dev:e2e",
+        "pnpm --filter @kudeploy/client codegen && pnpm --filter @kudeploy/client dev:e2e",
       cwd: workspaceRoot,
       gracefulShutdown: {
         signal: "SIGTERM",

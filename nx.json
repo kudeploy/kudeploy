@@ -59,7 +59,8 @@
   "release": {
     "projects": [
       "tag:type:helm-chart",
-      "tag:type:docker-image"
+      "tag:type:docker-image",
+      "tag:type:npm-package"
     ],
     "projectsRelationship": "independent",
     "git": {

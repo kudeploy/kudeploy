@@ -1,0 +1,16 @@
+{
+  "name": "@kudeploy/client-assets",
+  "version": "0.1.0",
+  "description": "Static web client assets for Kudeploy.",
+  "license": "UNLICENSED",
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "public"
+  },
+  "scripts": {
+    "build": "node scripts/build.cjs"
+  }
+}

@@ -17,6 +17,16 @@ const dryRun =
   process.env.NX_DRY_RUN === 'true' ||
   process.env.DRY_RUN === 'true';
 
+const buildAssetsResult = spawnSync(
+  'pnpm',
+  ['nx', 'run', 'client-assets:build'],
+  { stdio: 'inherit' },
+);
+
+if (buildAssetsResult.status !== 0) {
+  process.exit(buildAssetsResult.status ?? 1);
+}
+
 const args = [
   'buildx',
   'build',

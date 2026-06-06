@@ -26,12 +26,18 @@
       "inputs": [
         "production",
         "^production",
-        "{workspaceRoot}/apps/client/**/*",
         "{workspaceRoot}/package.json",
         "{workspaceRoot}/pnpm-lock.yaml",
         "{workspaceRoot}/pnpm-workspace.yaml",
         "{workspaceRoot}/nx.json",
         "{workspaceRoot}/tsconfig.base.json"
+      ],
+      "dependsOn": [
+        {
+          "dependencies": true,
+          "target": "build",
+          "params": "ignore"
+        }
       ],
       "cache": true
     },

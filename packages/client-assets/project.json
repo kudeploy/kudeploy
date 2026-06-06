@@ -1,0 +1,43 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "client-assets",
+  "root": "packages/client-assets",
+  "projectType": "library",
+  "tags": ["type:npm-package", "language:typescript"],
+  "implicitDependencies": ["client"],
+  "release": {
+    "version": {
+      "currentVersionResolver": "git-tag",
+      "fallbackCurrentVersionResolver": "disk",
+      "versionActions": "@nx/js/src/release/version-actions"
+    }
+  },
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "node packages/client-assets/scripts/build.cjs"
+      },
+      "inputs": ["production", "^production"],
+      "outputs": ["{projectRoot}/dist"],
+      "cache": true,
+      "dependsOn": [
+        {
+          "dependencies": true,
+          "target": "build",
+          "params": "ignore"
+        }
+      ]
+    },
+    "nx-release-publish": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "node packages/client-assets/scripts/publish.cjs \"{args.dryRun}\""
+      },
+      "dependsOn": [],
+      "cache": false
+    }
+  }
+}

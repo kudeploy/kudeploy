@@ -7,7 +7,7 @@ feature flow is added, changed, or intentionally left uncovered.
 Run the report with:
 
 ```bash
-pnpm --filter @repo/client test:e2e:coverage
+pnpm --filter @kudeploy/client test:e2e:coverage
 ```
 
 Status meanings:
@@ -19,5 +19,5 @@ Status meanings:
 Use `--fail-on-missing` later if CI should block on uncovered functional gaps:
 
 ```bash
-pnpm --filter @repo/client test:e2e:coverage -- --fail-on-missing
+pnpm --filter @kudeploy/client test:e2e:coverage -- --fail-on-missing
 ```
