@@ -1,3 +1,9 @@
+## 1.2.1 (2026-06-06)
+
+### 🧱 Updated Dependencies
+
+- Updated client-assets to 0.2.1
+
 ## 1.2.0 (2026-06-06)
 
 ### 🚀 Features
