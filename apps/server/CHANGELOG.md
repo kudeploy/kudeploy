@@ -1,3 +1,13 @@
+## 1.3.0 (2026-06-06)
+
+### 🚀 Features
+
+- **server:** stop bundling client assets ([4dfe9b7](https://github.com/kudeploy/kudeploy/commit/4dfe9b7))
+
+### ❤️ Thank You
+
+- Xudong Huang @xudongcc
+
 ## 1.2.1 (2026-06-06)
 
 ### 🧱 Updated Dependencies

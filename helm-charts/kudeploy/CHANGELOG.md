@@ -1,3 +1,18 @@
+## 0.3.2 (2026-06-06)
+
+### 🚀 Features
+
+- **client:** add standalone web client deployment ([d02ff66](https://github.com/kudeploy/kudeploy/commit/d02ff66))
+
+### 🧱 Updated Dependencies
+
+- Updated client-helm-chart to 0.2.0
+- Updated server-helm-chart to 0.3.2
+
+### ❤️ Thank You
+
+- Xudong Huang @xudongcc
+
 ## 0.3.1 (2026-06-06)
 
 ### 🧱 Updated Dependencies
