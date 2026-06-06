@@ -186,6 +186,31 @@ jobs:
         if: steps.release.outputs.should_publish == 'true'
         uses: docker/setup-buildx-action@v4
 
+      - name: Expose GitHub Actions cache runtime
+        if: steps.release.outputs.should_publish == 'true'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const names = [
+              "ACTIONS_RUNTIME_TOKEN",
+              "ACTIONS_RUNTIME_URL",
+              "ACTIONS_CACHE_URL",
+              "ACTIONS_RESULTS_URL",
+              "ACTIONS_CACHE_SERVICE_V2",
+            ];
+
+            for (const name of names) {
+              const value = process.env[name];
+              if (!value) {
+                continue;
+              }
+
+              if (name.includes("TOKEN")) {
+                core.setSecret(value);
+              }
+              core.exportVariable(name, value);
+            }
+
       - name: Login to GHCR for Docker
         if: steps.release.outputs.should_publish == 'true'
         uses: docker/login-action@v4

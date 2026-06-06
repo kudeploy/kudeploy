@@ -49,7 +49,7 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": ".",
-        "command": "dry_run=\"{args.dryRun}\"; version=$(node -e \"const fs = require('node:fs'); const { parse } = require('yaml'); const chart = parse(fs.readFileSync('helm-charts/kudeploy-server/Chart.yaml', 'utf8')); if (!chart.appVersion) throw new Error('Missing helm-charts/kudeploy-server/Chart.yaml appVersion'); process.stdout.write(String(chart.appVersion));\"); if [ \"$dry_run\" = \"true\" ] || [ \"$NX_DRY_RUN\" = \"true\" ]; then echo \"[dry-run] docker buildx build --platform linux/amd64,linux/arm64 --push --tag ghcr.io/kudeploy/server:$version --tag ghcr.io/kudeploy/server:latest --file apps/server/Dockerfile .\"; else docker buildx build --platform linux/amd64,linux/arm64 --push --tag ghcr.io/kudeploy/server:$version --tag ghcr.io/kudeploy/server:latest --file apps/server/Dockerfile .; fi"
+        "command": "node apps/server/scripts/publish-image.cjs \"{args.dryRun}\""
       },
       "dependsOn": [],
       "cache": false
