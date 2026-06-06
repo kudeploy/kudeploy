@@ -221,22 +221,22 @@ jobs:
                 image_tag_changed() {
                   local component="$1"
                   node - "$before_release" "$after_release" "$component" <<'NODE'
-const { execFileSync } = require('node:child_process');
-const { parse } = require('yaml');
+          const { execFileSync } = require('node:child_process');
+          const { parse } = require('yaml');
 
-const [before, after, component] = process.argv.slice(2);
+          const [before, after, component] = process.argv.slice(2);
 
-function readTag(ref) {
-  const source = execFileSync(
-    'git',
-    ['show', `${ref}:helm-charts/kudeploy/values.yaml`],
-    { encoding: 'utf8' },
-  );
-  return String(parse(source)?.[component]?.image?.tag ?? '');
-}
+          function readTag(ref) {
+            const source = execFileSync(
+              'git',
+              ['show', `${ref}:helm-charts/kudeploy/values.yaml`],
+              { encoding: 'utf8' },
+            );
+            return String(parse(source)?.[component]?.image?.tag ?? '');
+          }
 
-process.exit(readTag(before) === readTag(after) ? 1 : 0);
-NODE
+          process.exit(readTag(before) === readTag(after) ? 1 : 0);
+          NODE
                 }
 
                 if image_tag_changed controller; then
