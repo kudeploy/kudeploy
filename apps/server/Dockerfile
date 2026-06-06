@@ -14,12 +14,14 @@ FROM build-base AS builder
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml nx.json tsconfig.base.json ./
 COPY apps/server/package.json apps/server/package.json
-RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store,sharing=locked \
-    pnpm i --frozen-lockfile --store-dir=/pnpm/store
+RUN --mount=type=cache,id=pnpm-store-server-build,target=/pnpm/store,sharing=locked \
+    pnpm i --frozen-lockfile --prefer-offline --store-dir=/pnpm/store
 COPY apps/server apps/server
 RUN pnpm --filter @kudeploy/server build
 
 FROM node:24-alpine AS prod-deps
+ARG TARGETOS
+ARG TARGETARCH
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 ENV NX_DAEMON=false
@@ -29,8 +31,8 @@ RUN apk add --no-cache libc6-compat || \
     (sleep 5 && apk add --no-cache libc6-compat)
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/server/package.json apps/server/package.json
-RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store,sharing=locked \
-    pnpm i --prod --frozen-lockfile --store-dir=/pnpm/store
+RUN --mount=type=cache,id=pnpm-store-server-prod-${TARGETOS}-${TARGETARCH},target=/pnpm/store,sharing=locked \
+    pnpm i --prod --frozen-lockfile --prefer-offline --store-dir=/pnpm/store
 
 FROM node:24-alpine AS runner
 ENV NODE_ENV=production
