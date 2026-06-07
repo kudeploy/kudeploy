@@ -1,3 +1,13 @@
+## 1.4.2 (2026-06-07)
+
+### 🩹 Fixes
+
+- **server:** write generated schema to writable path ([bad5990](https://github.com/kudeploy/kudeploy/commit/bad5990))
+
+### ❤️ Thank You
+
+- Xudong Huang @xudongcc
+
 ## 1.4.1 (2026-06-07)
 
 ### 🩹 Fixes
