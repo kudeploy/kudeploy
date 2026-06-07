@@ -249,10 +249,18 @@ jobs:
                   add_project server
                 fi
                 if grep -q '^helm-charts/kudeploy-crds/' <<< "$changed_files"; then
+                  if ! grep -q '^helm-charts/kudeploy-crds/Chart.yaml$' <<< "$changed_files"; then
+                    echo "::error::kudeploy-crds chart files changed during release without a Chart.yaml version bump."
+                    exit 1
+                  fi
                   add_project crds-helm-chart
                   add_chart crds-helm-chart
                 fi
                 if grep -q '^helm-charts/kudeploy/' <<< "$changed_files"; then
+                  if ! grep -q '^helm-charts/kudeploy/Chart.yaml$' <<< "$changed_files"; then
+                    echo "::error::kudeploy chart files changed during release without a Chart.yaml version bump."
+                    exit 1
+                  fi
                   add_project helm-chart
                   add_chart helm-chart
                 fi
