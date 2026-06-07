@@ -62,6 +62,8 @@ the CRDs chart as a dependency. Each component has its own ServiceAccount.
 When `ingress.enabled=true`, the chart routes `/api` to the server service and
 `/` to the client service. `server` receives `APP_URL` from the main
 `ingress.hostname`; additional host rules can be added with `ingress.extraHosts`.
+Ingress is disabled by default and should be enabled through release values for
+the target environment.
 
 PostgreSQL and Valkey are installed by default from
 `oci://ghcr.io/community-helm-charts`. Disable `postgresql.enabled` or
