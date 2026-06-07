@@ -4,7 +4,6 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { t } from "i18next";
 import { toast } from "sonner";
 
-
 import { useCurrentWorkspaceContext } from "../contexts/current-workspace-context";
 import { useCurrentWorkspaceMemberContext } from "../contexts/current-workspace-member-context";
 import { alertDialog } from "@/components/fabric-ui/alert-dialog";
@@ -45,7 +44,7 @@ export const Route = createFileRoute(
   component: SettingsComponent,
   beforeLoad: () => {
     return {
-      title: "设置",
+      title: t("workspace:title"),
     };
   },
 });
@@ -75,9 +74,13 @@ function SettingsComponent() {
           },
         });
         form.reset({ name: value.name.trim() });
-        toast.success("保存成功");
+        toast.success(t("workspace:settings.toast.updated_success"));
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "保存失败，请稍后重试");
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : t("workspace:settings.toast.update_failed"),
+        );
       }
     },
   });
@@ -97,9 +100,13 @@ function SettingsComponent() {
         to: "/workspaces",
         reloadDocument: true,
       });
-      toast.success("工作区已成功删除");
+      toast.success(t("workspace:settings.toast.deleted_success"));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "删除失败，请稍后重试");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : t("workspace:settings.toast.delete_failed"),
+      );
     }
   };
 
@@ -137,7 +144,13 @@ function SettingsComponent() {
                   onBlur={field.handleBlur}
                   error={
                     field.state.meta.errors.length > 0
-                      ? field.state.meta.errors.map((error: any) => typeof error === "string" ? error : error?.message || error).join(", ")
+                      ? field.state.meta.errors
+                          .map((error: any) =>
+                            typeof error === "string"
+                              ? error
+                              : error?.message || error,
+                          )
+                          .join(", ")
                       : undefined
                   }
                 />

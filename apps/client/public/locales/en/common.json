@@ -1,5 +1,6 @@
 {
   "action": {
+    "back": "Back",
     "cancel": "Cancel",
     "close": "Close",
     "confirm": "Confirm",
@@ -15,11 +16,33 @@
     "save": "Save",
     "saving": "Saving..."
   },
+  "a11y": {
+    "breadcrumb": "breadcrumb",
+    "close": "Close",
+    "goToNextPage": "Go to next page",
+    "goToPreviousPage": "Go to previous page",
+    "loading": "Loading",
+    "mobileSidebarDescription": "Displays the mobile sidebar.",
+    "more": "More",
+    "morePages": "More pages",
+    "next": "Next",
+    "nextSlide": "Next slide",
+    "pagination": "pagination",
+    "previous": "Previous",
+    "previousSlide": "Previous slide",
+    "sidebar": "Sidebar",
+    "toggleSidebar": "Toggle Sidebar"
+  },
   "app": {
-    "name": "Project Template"
+    "name": "Kudeploy"
   },
   "contextualSaveBar": {
     "discard": "Discard",
     "message": "Unsaved changes"
+  },
+  "notFound": {
+    "description": "The page you are looking for does not exist.",
+    "goHome": "Go Home",
+    "title": "Not Found"
   }
 }

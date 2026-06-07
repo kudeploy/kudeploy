@@ -1,6 +1,7 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useForm } from "@tanstack/react-form";
 import { useMutation } from "@apollo/client/react";
+import { t } from "i18next";
 import { Button } from "@/components/fabric-ui/button";
 
 import { Input } from "@/components/fabric-ui/input";
@@ -25,6 +26,11 @@ const CREATE_WORKSPACE_FROM_CREATE_WORKSPACE_ROUTE = graphql(`
 
 export const Route = createFileRoute("/_authenticated/workspaces/create/")({
   component: CreateWorkspaceComponent,
+  beforeLoad: () => {
+    return {
+      title: t("workspace:create.title"),
+    };
+  },
 });
 
 function CreateWorkspaceComponent() {
@@ -70,9 +76,9 @@ function CreateWorkspaceComponent() {
         >
           <FieldGroup>
             <FieldSet>
-              <FieldLegend>Create Workspace</FieldLegend>
+              <FieldLegend>{t("workspace:create.title")}</FieldLegend>
               <FieldDescription>
-                Create a new workspace to start managing your projects.
+                {t("workspace:create.description")}
               </FieldDescription>
               <FieldGroup>
                 <form.Field name="name">
@@ -80,8 +86,8 @@ function CreateWorkspaceComponent() {
                     <Input
                       id="name"
                       data-testid="workspace-create-name-input"
-                      label="Name"
-                      placeholder="My Workspace"
+                      label={t("workspace:create.form.name.label")}
+                      placeholder={t("workspace:create.form.name.placeholder")}
                       required
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value)}
@@ -98,14 +104,14 @@ function CreateWorkspaceComponent() {
                 data-testid="workspace-create-submit"
                 loading={loading}
               >
-                Create
+                {t("action.create")}
               </Button>
               <Button
                 variant="outline"
                 type="button"
                 onClick={() => router.history.back()}
               >
-                Back
+                {t("action.back")}
               </Button>
             </Field>
           </FieldGroup>

@@ -1,4 +1,5 @@
 import { useForm } from "@tanstack/react-form";
+import { t } from "i18next";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -18,12 +19,6 @@ const CREATE_WORKSPACE_FROM_CREATE_WORKSPACE_FORM = graphql(`
   }
 `);
 
-const FormSchema = z.object({
-  name: z.string().min(2, {
-    message: "工作空间名称至少需要 2 个字符",
-  }),
-});
-
 export function CreateWorkspaceForm() {
   const navigate = useNavigate();
 
@@ -31,12 +26,18 @@ export function CreateWorkspaceForm() {
     CREATE_WORKSPACE_FROM_CREATE_WORKSPACE_FORM,
   );
 
+  const formSchema = z.object({
+    name: z.string().min(2, {
+      message: t("workspace:create.form.name.minLength"),
+    }),
+  });
+
   const form = useForm({
     defaultValues: {
       name: "",
     },
     validators: {
-      onSubmit: FormSchema,
+      onSubmit: formSchema,
     },
     onSubmit: async ({ value }) => {
       try {
@@ -49,7 +50,7 @@ export function CreateWorkspaceForm() {
         });
 
         if (result.data?.createWorkspace) {
-          toast.success("工作空间创建成功！");
+          toast.success(t("workspace:create.toast.success"));
           // 跳转到新创建的工作空间
           navigate({
             to: "/workspaces/$workspaceId",
@@ -58,8 +59,8 @@ export function CreateWorkspaceForm() {
           });
         }
       } catch (error) {
-        console.error("创建工作空间失败:", error);
-        toast.error("创建工作空间失败，请稍后重试");
+        console.error("Failed to create workspace:", error);
+        toast.error(t("workspace:create.toast.failed"));
       }
     },
   });
@@ -79,15 +80,21 @@ export function CreateWorkspaceForm() {
           <Input
             id="name"
             data-testid="workspace-create-name-input"
-            label="工作空间名称"
-            description="为您的工作空间起一个容易识别的名称"
-            placeholder="例如：我的团队"
+            label={t("workspace:create.form.name.label")}
+            description={t("workspace:create.form.name.description")}
+            placeholder={t("workspace:create.form.name.placeholder")}
             value={field.state.value}
             onChange={(e) => field.handleChange(e.target.value)}
             onBlur={field.handleBlur}
             error={
               field.form.state.isSubmitted && field.state.meta.errors.length > 0
-                ? field.state.meta.errors.map((error: any) => typeof error === "string" ? error : error?.message || error).join(", ")
+                ? field.state.meta.errors
+                    .map((error: any) =>
+                      typeof error === "string"
+                        ? error
+                        : error?.message || error,
+                    )
+                    .join(", ")
                 : undefined
             }
           />
@@ -102,7 +109,7 @@ export function CreateWorkspaceForm() {
             loading={isSubmitting || loading}
             className="w-full"
           >
-            创建工作空间
+            {t("workspace:create.submit")}
           </Button>
         )}
       </form.Subscribe>

@@ -1,9 +1,30 @@
 {
+  "create": {
+    "description": "Create a new workspace to start managing your projects.",
+    "form": {
+      "name": {
+        "description": "Choose a name that is easy to recognize.",
+        "label": "Workspace Name",
+        "minLength": "Workspace name must be at least 2 characters.",
+        "placeholder": "Example: My Team"
+      }
+    },
+    "submit": "Create Workspace",
+    "title": "Create Workspace",
+    "toast": {
+      "failed": "Failed to create workspace. Please try again later.",
+      "success": "Workspace created successfully."
+    }
+  },
   "deleteWorkspace": {
     "confirmHint": "Please type {{name}} to confirm.",
     "confirmLabel": "Workspace Name",
     "description": "Are you sure you want to delete the workspace {{name}}? This action cannot be undone and all associated data will be permanently deleted.",
     "title": "Delete Workspace"
+  },
+  "empty": {
+    "description": "Workspaces are where you manage resources and collaborate with your team. Start by creating your first workspace.",
+    "title": "Create your first workspace"
   },
   "invite": {
     "description": "Please fill in your information to join the workspace",
@@ -43,6 +64,12 @@
         "placeholder": "My Workspace",
         "required": "Workspace name is required"
       }
+    },
+    "toast": {
+      "delete_failed": "Failed to delete. Please try again later.",
+      "deleted_success": "Workspace deleted successfully",
+      "update_failed": "Failed to save. Please try again later.",
+      "updated_success": "Saved successfully"
     }
   },
   "title": "Settings"

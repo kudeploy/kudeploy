@@ -1,5 +1,6 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { zodValidator } from "@tanstack/zod-adapter";
+import { t } from "i18next";
 import z from "zod";
 import { LoginForm } from "../components/login-form";
 
@@ -22,10 +23,10 @@ function LoginComponent() {
         >
           <img
             src="/logo.png"
-            alt="Project Template"
+            alt={t("app.name")}
             className="aspect-square size-6"
           />
-          Project Template
+          {t("app.name")}
         </Link>
 
         <LoginForm />

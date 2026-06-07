@@ -1,5 +1,6 @@
 {
   "action": {
+    "back": "返回",
     "cancel": "取消",
     "close": "关闭",
     "confirm": "确认",
@@ -15,11 +16,33 @@
     "save": "保存",
     "saving": "保存中..."
   },
+  "a11y": {
+    "breadcrumb": "面包屑导航",
+    "close": "关闭",
+    "goToNextPage": "前往下一页",
+    "goToPreviousPage": "前往上一页",
+    "loading": "加载中",
+    "mobileSidebarDescription": "显示移动端侧边栏。",
+    "more": "更多",
+    "morePages": "更多页面",
+    "next": "下一页",
+    "nextSlide": "下一张",
+    "pagination": "分页导航",
+    "previous": "上一页",
+    "previousSlide": "上一张",
+    "sidebar": "侧边栏",
+    "toggleSidebar": "切换侧边栏"
+  },
   "app": {
-    "name": "项目模板"
+    "name": "酷部署"
   },
   "contextualSaveBar": {
     "discard": "丢弃",
     "message": "有未保存的更改"
+  },
+  "notFound": {
+    "description": "您访问的页面不存在。",
+    "goHome": "返回首页",
+    "title": "未找到页面"
   }
 }

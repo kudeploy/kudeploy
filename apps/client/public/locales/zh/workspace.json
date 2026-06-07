@@ -1,9 +1,30 @@
 {
+  "create": {
+    "description": "创建新的工作空间，开始管理您的项目。",
+    "form": {
+      "name": {
+        "description": "为您的工作空间起一个容易识别的名称。",
+        "label": "工作空间名称",
+        "minLength": "工作空间名称至少需要 2 个字符。",
+        "placeholder": "例如：我的团队"
+      }
+    },
+    "submit": "创建工作空间",
+    "title": "创建工作空间",
+    "toast": {
+      "failed": "创建工作空间失败，请稍后重试。",
+      "success": "工作空间创建成功。"
+    }
+  },
   "deleteWorkspace": {
     "confirmHint": "请输入 {{name}} 以确认。",
     "confirmLabel": "工作空间名称",
     "description": "您确定要删除工作空间 {{name}} 吗？此操作无法撤销，将永久删除工作空间及其所有相关数据。",
     "title": "删除工作空间"
+  },
+  "empty": {
+    "description": "工作空间是您管理资源和团队协作的地方。让我们从创建第一个工作空间开始吧！",
+    "title": "创建您的第一个工作空间"
   },
   "invite": {
     "description": "请填写您的信息以加入工作空间",
@@ -43,6 +64,12 @@
         "placeholder": "我的工作空间",
         "required": "工作空间名称是必填的"
       }
+    },
+    "toast": {
+      "delete_failed": "删除失败，请稍后重试",
+      "deleted_success": "工作空间已成功删除",
+      "update_failed": "保存失败，请稍后重试",
+      "updated_success": "保存成功"
     }
   },
   "title": "设置"

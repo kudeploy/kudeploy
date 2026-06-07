@@ -5,6 +5,7 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { TanStackDevtools } from "@tanstack/react-devtools";
+import { t } from "i18next";
 
 import appCss from "../styles.css?url";
 import type i18n from "i18next";
@@ -28,7 +29,7 @@ export const Route = createRootRouteWithContext<
         content: "width=device-width, initial-scale=1",
       },
       {
-        title: "Project Template",
+        title: t("app.name"),
       },
     ],
     links: [

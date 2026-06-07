@@ -4,6 +4,7 @@ import * as React from "react"
 import useEmblaCarousel, {
   type UseEmblaCarouselType,
 } from "embla-carousel-react"
+import { t } from "i18next"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -197,7 +198,7 @@ function CarouselPrevious({
     >
       <ChevronLeftIcon
       />
-      <span className="sr-only">Previous slide</span>
+      <span className="sr-only">{t("a11y.previousSlide")}</span>
     </Button>
   )
 }
@@ -228,7 +229,7 @@ function CarouselNext({
     >
       <ChevronRightIcon
       />
-      <span className="sr-only">Next slide</span>
+      <span className="sr-only">{t("a11y.nextSlide")}</span>
     </Button>
   )
 }
