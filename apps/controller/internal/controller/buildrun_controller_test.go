@@ -182,6 +182,20 @@ var _ = Describe("BuildRun Controller", func() {
 		)))
 	})
 
+	It("enqueues BuildRuns when Project metadata changes", func() {
+		buildRun := newBuildRun()
+		otherBuildRun := newBuildRun()
+		otherBuildRun.Name = "admin-latest"
+		reconciler := newReconciler(buildRun, otherBuildRun)
+
+		requests := reconciler.buildRunsForProject(ctx, newProject())
+
+		Expect(requests).To(ConsistOf(
+			reconcile.Request{NamespacedName: buildRunKey},
+			reconcile.Request{NamespacedName: types.NamespacedName{Name: "admin-latest", Namespace: namespaceName}},
+		))
+	})
+
 	It("marks the BuildRun ready when the PipelineRun succeeds", func() {
 		buildRun := newBuildRun()
 		pipelineRun := buildPipelineRun(buildRun)

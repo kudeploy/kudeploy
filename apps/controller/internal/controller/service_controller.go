@@ -28,6 +28,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	kudeployv1alpha1 "github.com/kudeploy/kudeploy-controller/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -445,10 +447,26 @@ func runtimeServiceAccountNameFor(serviceName string) string {
 func (r *ServiceReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&kudeployv1alpha1.Service{}).
+		Watches(&kudeployv1alpha1.Project{}, handler.EnqueueRequestsFromMapFunc(r.servicesForProject)).
 		Owns(&kudeployv1alpha1.Deployment{}).
 		Owns(&corev1.Service{}).
 		Owns(&corev1.ServiceAccount{}).
 		Owns(&corev1.Secret{}).
 		Named("service").
 		Complete(r)
+}
+
+func (r *ServiceReconciler) servicesForProject(ctx context.Context, object client.Object) []reconcile.Request {
+	if object == nil || object.GetName() == "" {
+		return nil
+	}
+	serviceList := &kudeployv1alpha1.ServiceList{}
+	if err := r.List(ctx, serviceList, client.InNamespace(object.GetName())); err != nil {
+		return nil
+	}
+	requests := make([]reconcile.Request, 0, len(serviceList.Items))
+	for index := range serviceList.Items {
+		requests = append(requests, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&serviceList.Items[index])})
+	}
+	return requests
 }

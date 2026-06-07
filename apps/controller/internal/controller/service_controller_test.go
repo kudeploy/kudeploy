@@ -230,6 +230,20 @@ var _ = Describe("Service Controller", func() {
 		)))
 	})
 
+	It("enqueues Services when Project metadata changes", func() {
+		service := newService()
+		otherService := newService()
+		otherService.Name = "admin"
+		reconciler := newReconciler(service, otherService)
+
+		requests := reconciler.servicesForProject(ctx, newProject())
+
+		Expect(requests).To(ConsistOf(
+			reconcile.Request{NamespacedName: serviceKey},
+			reconcile.Request{NamespacedName: types.NamespacedName{Name: "admin", Namespace: namespaceName}},
+		))
+	})
+
 	It("switches the stable Kubernetes Service selector after the latest Kudeploy Deployment is ready", func() {
 		service := newService()
 		service.Labels = map[string]string{

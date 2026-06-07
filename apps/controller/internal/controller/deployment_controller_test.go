@@ -245,6 +245,48 @@ var _ = Describe("Deployment Controller", func() {
 		)))
 	})
 
+	It("removes stale workspace labels when the Project has no workspace label", func() {
+		project := newProject()
+		project.Labels = nil
+		deployment := newDeployment()
+		deployment.Labels = map[string]string{
+			"kudeploy.com/workspace-id":   "workspace-stale",
+			"external.example.com/team":   "platform",
+			"external.example.com/region": "east",
+		}
+		reconciler := newReconciler(project, deployment)
+
+		_, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: deploymentKey})
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(reconciler.Get(ctx, deploymentKey, deployment)).To(Succeed())
+		Expect(deployment.Labels).NotTo(HaveKey("kudeploy.com/workspace-id"))
+		Expect(deployment.Labels).To(HaveKeyWithValue("external.example.com/team", "platform"))
+
+		kubernetesDeployment := &appsv1.Deployment{}
+		Expect(reconciler.Get(ctx, deploymentKey, kubernetesDeployment)).To(Succeed())
+		Expect(kubernetesDeployment.Labels).NotTo(HaveKey("kudeploy.com/workspace-id"))
+		Expect(kubernetesDeployment.Spec.Template.Labels).NotTo(HaveKey("kudeploy.com/workspace-id"))
+
+		envSecret := &corev1.Secret{}
+		Expect(reconciler.Get(ctx, types.NamespacedName{Name: "whoami-00001-env", Namespace: namespaceName}, envSecret)).To(Succeed())
+		Expect(envSecret.Labels).NotTo(HaveKey("kudeploy.com/workspace-id"))
+	})
+
+	It("enqueues Deployments when Project metadata changes", func() {
+		deployment := newDeployment()
+		otherDeployment := newDeployment()
+		otherDeployment.Name = "whoami-00002"
+		reconciler := newReconciler(deployment, otherDeployment)
+
+		requests := reconciler.deploymentsForProject(ctx, newProject())
+
+		Expect(requests).To(ConsistOf(
+			reconcile.Request{NamespacedName: deploymentKey},
+			reconcile.Request{NamespacedName: types.NamespacedName{Name: "whoami-00002", Namespace: namespaceName}},
+		))
+	})
+
 	It("preserves selector and external metadata on existing Kubernetes Deployments while applying desired replicas", func() {
 		deployment := newDeployment()
 		existing := buildKubernetesDeployment(deployment)

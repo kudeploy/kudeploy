@@ -33,7 +33,9 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	kudeployv1alpha1 "github.com/kudeploy/kudeploy-controller/api/v1alpha1"
 )
@@ -418,8 +420,24 @@ func ptrInt64(value int64) *int64 {
 func (r *BuildRunReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&kudeployv1alpha1.BuildRun{}).
+		Watches(&kudeployv1alpha1.Project{}, handler.EnqueueRequestsFromMapFunc(r.buildRunsForProject)).
 		Owns(&corev1.ServiceAccount{}).
 		Owns(&tektonv1.PipelineRun{}).
 		Named("buildrun").
 		Complete(r)
+}
+
+func (r *BuildRunReconciler) buildRunsForProject(ctx context.Context, object client.Object) []reconcile.Request {
+	if object == nil || object.GetName() == "" {
+		return nil
+	}
+	buildRunList := &kudeployv1alpha1.BuildRunList{}
+	if err := r.List(ctx, buildRunList, client.InNamespace(object.GetName())); err != nil {
+		return nil
+	}
+	requests := make([]reconcile.Request, 0, len(buildRunList.Items))
+	for index := range buildRunList.Items {
+		requests = append(requests, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&buildRunList.Items[index])})
+	}
+	return requests
 }

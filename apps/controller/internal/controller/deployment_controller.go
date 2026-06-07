@@ -31,6 +31,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	kudeployv1alpha1 "github.com/kudeploy/kudeploy-controller/api/v1alpha1"
 )
@@ -228,18 +230,12 @@ func (r *DeploymentReconciler) updateDeploymentStatus(ctx context.Context, kudep
 
 func ensureDeploymentMetadata(kudeployDeployment *kudeployv1alpha1.Deployment, workspaceID string) bool {
 	labels := deploymentManagedLabels(kudeployDeployment.Namespace, kudeployDeployment.Spec.ServiceName, kudeployDeployment.Name, workspaceID)
-	changed := false
-	if kudeployDeployment.Labels == nil {
-		kudeployDeployment.Labels = map[string]string{}
-		changed = true
+	mergedLabels := mergeManagedLabels(labels, kudeployDeployment.Labels)
+	if equality.Semantic.DeepEqual(kudeployDeployment.Labels, mergedLabels) {
+		return false
 	}
-	for key, value := range labels {
-		if kudeployDeployment.Labels[key] != value {
-			kudeployDeployment.Labels[key] = value
-			changed = true
-		}
-	}
-	return changed
+	kudeployDeployment.Labels = mergedLabels
+	return true
 }
 
 func buildKubernetesDeployment(kudeployDeployment *kudeployv1alpha1.Deployment) *appsv1.Deployment {
@@ -373,8 +369,24 @@ func ptrIntOrString(value intstr.IntOrString) *intstr.IntOrString {
 func (r *DeploymentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&kudeployv1alpha1.Deployment{}).
+		Watches(&kudeployv1alpha1.Project{}, handler.EnqueueRequestsFromMapFunc(r.deploymentsForProject)).
 		Owns(&appsv1.Deployment{}).
 		Owns(&corev1.Secret{}).
 		Named("deployment").
 		Complete(r)
+}
+
+func (r *DeploymentReconciler) deploymentsForProject(ctx context.Context, object client.Object) []reconcile.Request {
+	if object == nil || object.GetName() == "" {
+		return nil
+	}
+	deploymentList := &kudeployv1alpha1.DeploymentList{}
+	if err := r.List(ctx, deploymentList, client.InNamespace(object.GetName())); err != nil {
+		return nil
+	}
+	requests := make([]reconcile.Request, 0, len(deploymentList.Items))
+	for index := range deploymentList.Items {
+		requests = append(requests, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&deploymentList.Items[index])})
+	}
+	return requests
 }
