@@ -256,24 +256,64 @@ app.kubernetes.io/component: server-migration
 - name: APP_URL
   value: {{ $appUrl | quote }}
 {{- end }}
+- name: AUTH_DISABLE_SIGN_UP
+  value: {{ .Values.auth.disableSignUp | quote }}
 - name: AUTH_EMAIL_ENABLED
   value: {{ .Values.auth.email.enabled | quote }}
+- name: AUTH_EMAIL_DISABLE_SIGN_UP
+  value: {{ .Values.auth.email.disableSignUp | quote }}
 - name: AUTH_OIDC_ENABLED
   value: {{ .Values.auth.oidc.enabled | quote }}
+- name: AUTH_OIDC_DISABLE_SIGN_UP
+  value: {{ .Values.auth.oidc.disableSignUp | quote }}
 {{- if .Values.auth.oidc.enabled }}
-- name: AUTH_OIDC_ID
-  value: {{ required "auth.oidc.id is required when auth.oidc.enabled is true" .Values.auth.oidc.id | quote }}
-- name: AUTH_OIDC_SECRET
+- name: AUTH_OIDC_CLIENT_ID
+  value: {{ required "auth.oidc.clientId is required when auth.oidc.enabled is true" .Values.auth.oidc.clientId | quote }}
+- name: AUTH_OIDC_CLIENT_SECRET
   {{- if .Values.auth.oidc.existingSecret }}
   valueFrom:
     secretKeyRef:
       name: {{ .Values.auth.oidc.existingSecret }}
       key: {{ .Values.auth.oidc.existingSecretKey }}
   {{- else }}
-  value: {{ required "auth.oidc.secret is required when auth.oidc.enabled is true and auth.oidc.existingSecret is not set" .Values.auth.oidc.secret | quote }}
+  value: {{ required "auth.oidc.clientSecret is required when auth.oidc.enabled is true and auth.oidc.existingSecret is not set" .Values.auth.oidc.clientSecret | quote }}
   {{- end }}
 - name: AUTH_OIDC_DISCOVERY_URL
   value: {{ required "auth.oidc.discoveryUrl is required when auth.oidc.enabled is true" .Values.auth.oidc.discoveryUrl | quote }}
+{{- end }}
+- name: AUTH_GITHUB_ENABLED
+  value: {{ .Values.auth.github.enabled | quote }}
+- name: AUTH_GITHUB_DISABLE_SIGN_UP
+  value: {{ .Values.auth.github.disableSignUp | quote }}
+{{- if .Values.auth.github.enabled }}
+- name: AUTH_GITHUB_CLIENT_ID
+  value: {{ required "auth.github.clientId is required when auth.github.enabled is true" .Values.auth.github.clientId | quote }}
+- name: AUTH_GITHUB_CLIENT_SECRET
+  {{- if .Values.auth.github.existingSecret }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Values.auth.github.existingSecret }}
+      key: {{ .Values.auth.github.existingSecretKey }}
+  {{- else }}
+  value: {{ required "auth.github.clientSecret is required when auth.github.enabled is true and auth.github.existingSecret is not set" .Values.auth.github.clientSecret | quote }}
+  {{- end }}
+{{- end }}
+- name: AUTH_GOOGLE_ENABLED
+  value: {{ .Values.auth.google.enabled | quote }}
+- name: AUTH_GOOGLE_DISABLE_SIGN_UP
+  value: {{ .Values.auth.google.disableSignUp | quote }}
+{{- if .Values.auth.google.enabled }}
+- name: AUTH_GOOGLE_CLIENT_ID
+  value: {{ required "auth.google.clientId is required when auth.google.enabled is true" .Values.auth.google.clientId | quote }}
+- name: AUTH_GOOGLE_CLIENT_SECRET
+  {{- if .Values.auth.google.existingSecret }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Values.auth.google.existingSecret }}
+      key: {{ .Values.auth.google.existingSecretKey }}
+  {{- else }}
+  value: {{ required "auth.google.clientSecret is required when auth.google.enabled is true and auth.google.existingSecret is not set" .Values.auth.google.clientSecret | quote }}
+  {{- end }}
 {{- end }}
 {{- $postgresqlEnabled := .Values.postgresql.enabled }}
 {{- $externalDatabaseEnabled := and (not $postgresqlEnabled) .Values.externalDatabase.host }}

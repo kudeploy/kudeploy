@@ -286,8 +286,8 @@ importers:
         specifier: ^6.6.3
         version: 6.6.14(@mikro-orm/core@6.6.14)
       '@nest-boot/auth':
-        specifier: ^7.10.0
-        version: 7.10.0(955719321819c5707f707c3d9552bc88)
+        specifier: ^7.11.1
+        version: 7.11.1(955719321819c5707f707c3d9552bc88)
       '@nest-boot/crypt':
         specifier: ^7.1.3
         version: 7.1.3(@nestjs/common@11.1.24(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.24)(jose@6.2.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)
@@ -2748,15 +2748,15 @@ packages:
       '@emnapi/core': ^1.7.1
       '@emnapi/runtime': ^1.7.1
 
-  '@nest-boot/auth@7.10.0':
-    resolution: {integrity: sha512-YElLGeRiJuWs9tqc7wdG+nE8LvR/QRwfsJRiBuXKrII4A2sy0pwtSNwsKWu2AovVxGsfQOrqdU93z8Pg6mYgPA==}
+  '@nest-boot/auth@7.11.1':
+    resolution: {integrity: sha512-NA8WspQQvTFleFcqjO+kCuRNHrRfPOuarNME9Z87YLO96a1ez+39b9X2ZUfg2f0mj7X0BEPILc5M9YwIyK/BUg==}
     peerDependencies:
       '@mikro-orm/core': ^6.0.0
       '@nest-boot/middleware': ^7.0.0
       '@nest-boot/request-context': ^7.0.0
       '@nestjs/common': ^11.0.0
       '@nestjs/core': ^11.0.0
-      better-auth: ^1.0.0
+      better-auth: ^1.4.10
       express: ^5.0.0
       reflect-metadata: ^0.2.2
       rxjs: ^7.0.0
@@ -13203,7 +13203,7 @@ snapshots:
       '@tybys/wasm-util': 0.10.2
     optional: true
 
-  '@nest-boot/auth@7.10.0(955719321819c5707f707c3d9552bc88)':
+  '@nest-boot/auth@7.11.1(955719321819c5707f707c3d9552bc88)':
     dependencies:
       '@mikro-orm/core': 6.6.14
       '@nest-boot/middleware': 7.3.0(@nestjs/common@11.1.24(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.24)(reflect-metadata@0.2.2)(rxjs@7.8.2)

@@ -42,8 +42,8 @@ const envKeys = [
   'APP_SECRET',
   'AUTH_SECRET',
   'AUTH_EMAIL_ENABLED',
-  'AUTH_OIDC_ID',
-  'AUTH_OIDC_SECRET',
+  'AUTH_OIDC_CLIENT_ID',
+  'AUTH_OIDC_CLIENT_SECRET',
   'AUTH_OIDC_DISCOVERY_URL',
   'PORT',
 ] as const;
@@ -1512,9 +1512,7 @@ describe('Server application PostgreSQL integration (e2e)', () => {
     );
 
     expectNoGraphQLErrors(response);
-    expect(response.body.data.createApiKey.apiKey).toMatch(
-      /^sk-[0-9a-f]{32}$/,
-    );
+    expect(response.body.data.createApiKey.apiKey).toMatch(/^sk-[0-9a-f]{32}$/);
     expect(response.body.data.createApiKey.entity.keyPrefix).toBe('sk-');
 
     return response.body.data.createApiKey as {
@@ -1702,8 +1700,8 @@ function setTestEnv() {
   process.env.APP_SECRET = '1oAdy3zpD3S0t1AdAqPTlj4Hhkyx83pT2UlNGfS4P2c';
   process.env.AUTH_SECRET = 'R4vWrEDXeeor7VzGzQsdbQobOFtv2nRrlhOVTGpOteA';
   process.env.AUTH_EMAIL_ENABLED = 'true';
-  process.env.AUTH_OIDC_ID = 'server-e2e';
-  process.env.AUTH_OIDC_SECRET = 'server-e2e-secret';
+  process.env.AUTH_OIDC_CLIENT_ID = 'server-e2e';
+  process.env.AUTH_OIDC_CLIENT_SECRET = 'server-e2e-secret';
   process.env.AUTH_OIDC_DISCOVERY_URL =
     'https://auth.example.test/.well-known/openid-configuration';
 }

@@ -1,16 +1,16 @@
-import { EntitySchema } from "@mikro-orm/core";
-import { MikroORM, PostgreSqlDriver } from "@mikro-orm/postgresql";
-import { spawn } from "node:child_process";
-import { readdir } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { EntitySchema } from '@mikro-orm/core';
+import { MikroORM, PostgreSqlDriver } from '@mikro-orm/postgresql';
+import { spawn } from 'node:child_process';
+import { readdir } from 'node:fs/promises';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
-const serverRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const serverRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const adminDatabaseUrl =
   process.env.SERVER_E2E_DATABASE_URL ??
-  "postgresql://postgres:secret@localhost:5432/postgres";
-const port = process.env.PORT ?? "4100";
-const appUrl = process.env.APP_URL ?? "http://127.0.0.1:3100";
+  'postgresql://postgres:secret@localhost:5432/postgres';
+const port = process.env.PORT ?? '4100';
+const appUrl = process.env.APP_URL ?? 'http://127.0.0.1:3100';
 const authUrl = process.env.AUTH_URL ?? `http://127.0.0.1:${port}`;
 const databaseName = `client_e2e_${process.pid}_${Date.now()}`;
 const databaseUrl = databaseUrlFor(databaseName);
@@ -18,28 +18,28 @@ let serverProcess;
 let shuttingDown = false;
 
 const DbProbeSchema = new EntitySchema({
-  name: "ClientE2eDbProbe",
-  tableName: "client_e2e_db_probe",
+  name: 'ClientE2eDbProbe',
+  tableName: 'client_e2e_db_probe',
   properties: {
     id: {
       primary: true,
-      type: "number",
+      type: 'number',
     },
   },
 });
 
-process.on("SIGINT", () => cleanup(0));
-process.on("SIGTERM", () => cleanup(0));
+process.on('SIGINT', () => cleanup(0));
+process.on('SIGTERM', () => cleanup(0));
 
 try {
   await createDatabase();
   await applyMigrations();
-  serverProcess = spawn(process.execPath, ["dist/main.js"], {
+  serverProcess = spawn(process.execPath, ['dist/main.js'], {
     cwd: serverRoot,
     env: createServerEnv(),
-    stdio: ["ignore", "inherit", "inherit"],
+    stdio: ['ignore', 'inherit', 'inherit'],
   });
-  serverProcess.once("exit", (code, signal) => {
+  serverProcess.once('exit', (code, signal) => {
     if (!shuttingDown) {
       console.error(`e2e server exited unexpectedly: ${signal ?? code}`);
       cleanup(1);
@@ -57,7 +57,7 @@ async function applyMigrations() {
   const orm = await adminOrm(databaseUrl);
 
   try {
-    const migrationsDir = join(serverRoot, "dist/database/migrations");
+    const migrationsDir = join(serverRoot, 'dist/database/migrations');
     const migrationFiles = (await readdir(migrationsDir))
       .filter((file) => /^Migration.*\.js$/.test(file))
       .sort();
@@ -72,7 +72,7 @@ async function applyMigrations() {
       );
       const Migration = Object.values(migrationModule).find(
         (value) =>
-          typeof value === "function" && value.name.startsWith("Migration"),
+          typeof value === 'function' && value.name.startsWith('Migration'),
       );
 
       if (!Migration) {
@@ -106,11 +106,11 @@ async function cleanup(exitCode) {
 
   if (serverProcess && serverProcess.exitCode === null) {
     await new Promise((resolveExit) => {
-      serverProcess.once("exit", resolveExit);
-      serverProcess.kill("SIGTERM");
+      serverProcess.once('exit', resolveExit);
+      serverProcess.kill('SIGTERM');
       setTimeout(() => {
         if (serverProcess.exitCode === null) {
-          serverProcess.kill("SIGKILL");
+          serverProcess.kill('SIGKILL');
         }
       }, 5_000).unref();
     });
@@ -141,17 +141,17 @@ function createServerEnv() {
   delete env.DB_URL;
   delete env.JEST_WORKER_ID;
   delete env.NODE_OPTIONS;
-  env.NODE_ENV = "testing";
+  env.NODE_ENV = 'testing';
   env.DATABASE_URL = databaseUrl;
   env.APP_URL = appUrl;
   env.AUTH_URL = authUrl;
-  env.APP_SECRET = "1oAdy3zpD3S0t1AdAqPTlj4Hhkyx83pT2UlNGfS4P2c";
-  env.AUTH_SECRET = "R4vWrEDXeeor7VzGzQsdbQobOFtv2nRrlhOVTGpOteA";
-  env.AUTH_EMAIL_ENABLED = "true";
-  env.AUTH_OIDC_ID = "client-e2e";
-  env.AUTH_OIDC_SECRET = "client-e2e-secret";
+  env.APP_SECRET = '1oAdy3zpD3S0t1AdAqPTlj4Hhkyx83pT2UlNGfS4P2c';
+  env.AUTH_SECRET = 'R4vWrEDXeeor7VzGzQsdbQobOFtv2nRrlhOVTGpOteA';
+  env.AUTH_EMAIL_ENABLED = 'true';
+  env.AUTH_OIDC_CLIENT_ID = 'client-e2e';
+  env.AUTH_OIDC_CLIENT_SECRET = 'client-e2e-secret';
   env.AUTH_OIDC_DISCOVERY_URL =
-    "https://auth.example.test/.well-known/openid-configuration";
+    'https://auth.example.test/.well-known/openid-configuration';
   env.PORT = port;
 
   return env;
@@ -209,7 +209,7 @@ async function waitForServer() {
     }
 
     if (serverProcess.exitCode !== null || serverProcess.signalCode !== null) {
-      throw new Error("Server exited before becoming ready");
+      throw new Error('Server exited before becoming ready');
     }
 
     await new Promise((resolveRetry) => setTimeout(resolveRetry, 250));

@@ -1,32 +1,49 @@
 global:
-  imageRegistry: ''
+  imageRegistry: ""
   imagePullSecrets: []
   postgresql:
-    fullnameOverride: ''
+    fullnameOverride: ""
     auth:
-      username: ''
-      password: ''
-      database: ''
-      existingSecret: ''
+      username: ""
+      password: ""
+      database: ""
+      existingSecret: ""
       existingSecretPasswordKey: postgresql-password
     service:
       ports:
-        postgresql: ''
+        postgresql: ""
 
 auth:
+  disableSignUp: false
   email:
     enabled: true
+    disableSignUp: false
   oidc:
     enabled: false
-    id: ''
-    secret: ''
-    existingSecret: ''
-    existingSecretKey: oidc-secret
-    discoveryUrl: ''
+    clientId: ""
+    clientSecret: ""
+    existingSecret: ""
+    existingSecretKey: oidc-client-secret
+    discoveryUrl: ""
+    disableSignUp: false
+  github:
+    enabled: false
+    clientId: ""
+    clientSecret: ""
+    existingSecret: ""
+    existingSecretKey: github-client-secret
+    disableSignUp: false
+  google:
+    enabled: false
+    clientId: ""
+    clientSecret: ""
+    existingSecret: ""
+    existingSecretKey: google-client-secret
+    disableSignUp: false
 
-nameOverride: ''
-fullnameOverride: ''
-namespaceOverride: ''
+nameOverride: ""
+fullnameOverride: ""
+namespaceOverride: ""
 
 commonLabels: {}
 
@@ -35,17 +52,17 @@ crds:
 
 controller:
   enabled: true
-  nameOverride: ''
-  fullnameOverride: ''
-  namespaceOverride: ''
+  nameOverride: ""
+  fullnameOverride: ""
+  namespaceOverride: ""
   commonLabels: {}
   commonAnnotations: {}
   replicaCount: 1
   image:
     registry: ghcr.io
     repository: kudeploy/controller
-    tag: '0.3.1'
-    digest: ''
+    tag: "0.3.1"
+    digest: ""
     pullPolicy: IfNotPresent
     pullSecrets: []
   command:
@@ -54,7 +71,7 @@ controller:
   leaderElection:
     enabled: true
   healthProbe:
-    bindAddress: ':8081'
+    bindAddress: ":8081"
     port: 8081
     liveness:
       initialDelaySeconds: 15
@@ -64,7 +81,7 @@ controller:
       periodSeconds: 10
   metrics:
     enabled: true
-    bindAddress: ':8443'
+    bindAddress: ":8443"
     port: 8443
     service:
       enabled: true
@@ -73,10 +90,10 @@ controller:
       annotations: {}
     serviceMonitor:
       enabled: false
-      namespace: ''
+      namespace: ""
       additionalLabels: {}
-      interval: ''
-      scrapeTimeout: ''
+      interval: ""
+      scrapeTimeout: ""
       path: /metrics
       scheme: https
       bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
@@ -89,7 +106,7 @@ controller:
         metrics: enabled
   serviceAccount:
     create: true
-    name: ''
+    name: ""
     annotations: {}
   rbac:
     create: true
@@ -118,7 +135,7 @@ controller:
   nodeSelector: {}
   tolerations: []
   affinity: {}
-  priorityClassName: ''
+  priorityClassName: ""
   extraEnv: []
   extraVolumeMounts: []
   extraVolumes: []
@@ -126,17 +143,17 @@ controller:
 
 client:
   enabled: true
-  nameOverride: ''
-  fullnameOverride: ''
-  namespaceOverride: ''
+  nameOverride: ""
+  fullnameOverride: ""
+  namespaceOverride: ""
   commonLabels: {}
   commonAnnotations: {}
   replicaCount: 1
   image:
     registry: ghcr.io
     repository: kudeploy/client
-    tag: '0.3.1'
-    digest: ''
+    tag: "0.3.1"
+    digest: ""
     pullPolicy: IfNotPresent
     pullSecrets: []
   port: 8080
@@ -155,7 +172,7 @@ client:
       periodSeconds: 10
   serviceAccount:
     create: true
-    name: ''
+    name: ""
     annotations: {}
   podAnnotations: {}
   podLabels: {}
@@ -182,7 +199,7 @@ client:
   nodeSelector: {}
   tolerations: []
   affinity: {}
-  priorityClassName: ''
+  priorityClassName: ""
   extraEnv: []
   envFrom: []
   extraVolumeMounts:
@@ -195,21 +212,21 @@ client:
 
 server:
   enabled: true
-  nameOverride: ''
-  fullnameOverride: ''
-  namespaceOverride: ''
+  nameOverride: ""
+  fullnameOverride: ""
+  namespaceOverride: ""
   commonLabels: {}
   commonAnnotations: {}
   replicaCount: 1
   image:
     registry: ghcr.io
     repository: kudeploy/server
-    tag: '1.4.3'
-    digest: ''
+    tag: "1.4.3"
+    digest: ""
     pullPolicy: IfNotPresent
     pullSecrets: []
   port: 4000
-  appUrl: ''
+  appUrl: ""
   graphqlSchemaFile: /app/apps/server/temp/schema.gql
   service:
     enabled: true
@@ -226,9 +243,9 @@ server:
       periodSeconds: 10
   serviceAccount:
     create: true
-    name: ''
+    name: ""
     annotations: {}
-  existingSecret: ''
+  existingSecret: ""
   podAnnotations: {}
   podLabels: {}
   podSecurityContext:
@@ -254,7 +271,7 @@ server:
   nodeSelector: {}
   tolerations: []
   affinity: {}
-  priorityClassName: ''
+  priorityClassName: ""
   migration:
     enabled: true
     useHelmHooks: true
@@ -280,7 +297,7 @@ server:
     nodeSelector: {}
     tolerations: []
     affinity: {}
-    priorityClassName: ''
+    priorityClassName: ""
     env: []
     envFrom: []
     waitForMigrations:
@@ -305,19 +322,19 @@ server:
 
 ingress:
   enabled: false
-  hostname: ''
+  hostname: ""
   pathType: Prefix
-  className: ''
-  ingressClassName: ''
+  className: ""
+  ingressClassName: ""
   annotations: {}
   client:
-    serviceName: ''
+    serviceName: ""
     servicePort: 80
     paths:
       - path: /
         pathType: Prefix
   server:
-    serviceName: ''
+    serviceName: ""
     servicePort: 4000
     paths:
       - path: /api
@@ -329,12 +346,12 @@ ingress:
 
 postgresql:
   enabled: true
-  fullnameOverride: ''
+  fullnameOverride: ""
   auth:
     username: kudeploy
-    password: ''
+    password: ""
     database: kudeploy
-    existingSecret: ''
+    existingSecret: ""
     existingSecretPasswordKey: postgresql-password
   initdb:
     scripts:
@@ -363,21 +380,21 @@ postgresql:
     size: 8Gi
 
 externalDatabase:
-  host: ''
+  host: ""
   port: 5432
   user: kudeploy
-  password: ''
+  password: ""
   database: kudeploy
-  existingSecret: ''
+  existingSecret: ""
   existingSecretPasswordKey: postgresql-password
 
 valkey:
   enabled: true
-  fullnameOverride: ''
+  fullnameOverride: ""
   auth:
     enabled: true
-    password: ''
-    existingSecret: ''
+    password: ""
+    existingSecret: ""
     existingSecretPasswordKey: valkey-password
   service:
     ports:
@@ -387,8 +404,8 @@ valkey:
     size: 8Gi
 
 externalValkey:
-  host: ''
+  host: ""
   port: 6379
-  password: ''
-  existingSecret: ''
+  password: ""
+  existingSecret: ""
   existingSecretPasswordKey: valkey-password

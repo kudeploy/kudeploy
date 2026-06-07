@@ -10,3 +10,4 @@ allowBuilds:
   unrs-resolver: true
 minimumReleaseAgeExclude:
   - nx-helm
+  - '@nest-boot/auth@7.11.1'
