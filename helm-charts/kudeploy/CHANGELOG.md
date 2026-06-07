@@ -1,3 +1,13 @@
+## 0.4.2 (2026-06-07)
+
+### 🩹 Fixes
+
+- **charts:** mount writable server temp ([13fcc88](https://github.com/kudeploy/kudeploy/commit/13fcc88))
+
+### ❤️ Thank You
+
+- Xudong Huang @xudongcc
+
 ## 0.4.1 (2026-06-07)
 
 ### 🩹 Fixes
