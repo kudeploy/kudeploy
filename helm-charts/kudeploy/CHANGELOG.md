@@ -1,3 +1,13 @@
+## 0.4.3 (2026-06-07)
+
+### 🩹 Fixes
+
+- **charts:** provide server crypt secret ([d7570e2](https://github.com/kudeploy/kudeploy/commit/d7570e2))
+
+### ❤️ Thank You
+
+- Xudong Huang @xudongcc
+
 ## 0.4.2 (2026-06-07)
 
 ### 🩹 Fixes
