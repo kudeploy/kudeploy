@@ -147,6 +147,7 @@ function createServerEnv() {
   env.AUTH_URL = authUrl;
   env.APP_SECRET = "1oAdy3zpD3S0t1AdAqPTlj4Hhkyx83pT2UlNGfS4P2c";
   env.AUTH_SECRET = "R4vWrEDXeeor7VzGzQsdbQobOFtv2nRrlhOVTGpOteA";
+  env.AUTH_EMAIL_ENABLED = "true";
   env.AUTH_OIDC_ID = "client-e2e";
   env.AUTH_OIDC_SECRET = "client-e2e-secret";
   env.AUTH_OIDC_DISCOVERY_URL =

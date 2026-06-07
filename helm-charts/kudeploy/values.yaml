@@ -14,6 +14,8 @@ global:
         postgresql: ''
 
 auth:
+  email:
+    enabled: true
   oidc:
     enabled: false
     id: ''

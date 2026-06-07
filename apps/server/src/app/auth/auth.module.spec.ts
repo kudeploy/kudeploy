@@ -1,6 +1,10 @@
 import { ConfigService } from '@nestjs/config';
 
-import { AuthModule, buildAuthPlugins } from './auth.module';
+import {
+  AuthModule,
+  buildAuthPlugins,
+  buildEmailAndPasswordOptions,
+} from './auth.module';
 
 describe('AuthModule', () => {
   it('can be imported with real ESM auth dependencies', () => {
@@ -16,6 +20,27 @@ describe('AuthModule', () => {
     expect(buildAuthPlugins(configService)).toEqual([]);
     expect(configService.get).toHaveBeenCalledWith('AUTH_OIDC_ENABLED');
     expect(configService.getOrThrow).not.toHaveBeenCalled();
+  });
+
+  it('enables email and password auth by default', () => {
+    const configService = {
+      get: jest.fn(() => undefined),
+    } as unknown as ConfigService;
+
+    expect(buildEmailAndPasswordOptions(configService)).toEqual({
+      enabled: true,
+    });
+    expect(configService.get).toHaveBeenCalledWith('AUTH_EMAIL_ENABLED');
+  });
+
+  it('disables email and password auth when configured', () => {
+    const configService = {
+      get: jest.fn(() => 'false'),
+    } as unknown as ConfigService;
+
+    expect(buildEmailAndPasswordOptions(configService)).toEqual({
+      enabled: false,
+    });
   });
 
   it('loads OIDC configuration when OIDC is enabled', () => {

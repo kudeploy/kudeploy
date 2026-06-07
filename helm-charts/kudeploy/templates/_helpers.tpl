@@ -256,6 +256,8 @@ app.kubernetes.io/component: server-migration
 - name: APP_URL
   value: {{ $appUrl | quote }}
 {{- end }}
+- name: AUTH_EMAIL_ENABLED
+  value: {{ .Values.auth.email.enabled | quote }}
 - name: AUTH_OIDC_ENABLED
   value: {{ .Values.auth.oidc.enabled | quote }}
 {{- if .Values.auth.oidc.enabled }}

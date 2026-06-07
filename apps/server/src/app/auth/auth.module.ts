@@ -33,6 +33,12 @@ export function buildAuthPlugins(configService: ConfigService) {
   ];
 }
 
+export function buildEmailAndPasswordOptions(configService: ConfigService) {
+  return {
+    enabled: configService.get('AUTH_EMAIL_ENABLED') !== 'false',
+  };
+}
+
 /**
  * 应用认证模块。
  */
@@ -48,9 +54,7 @@ export function buildAuthPlugins(configService: ConfigService) {
           session: Session,
           verification: Verification,
         },
-        emailAndPassword: {
-          enabled: true,
-        },
+        emailAndPassword: buildEmailAndPasswordOptions(configService),
         plugins: buildAuthPlugins(configService),
       }),
     }),
