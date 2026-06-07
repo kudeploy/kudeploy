@@ -1,3 +1,13 @@
+## 1.4.3 (2026-06-07)
+
+### 🚀 Features
+
+- **auth:** add email auth toggle ([abfe1cc](https://github.com/kudeploy/kudeploy/commit/abfe1cc))
+
+### ❤️ Thank You
+
+- Xudong Huang @xudongcc
+
 ## 1.4.2 (2026-06-07)
 
 ### 🩹 Fixes
