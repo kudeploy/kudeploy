@@ -42,9 +42,9 @@ server:
     tag: '1.3.2'
 
 ingress:
-  enabled: false
-  hostname: ''
-  tls: false
+  enabled: true
+  hostname: app.kudeploy.com
+  tls: true
   server:
     paths:
       - path: /api

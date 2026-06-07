@@ -304,8 +304,8 @@ server:
   terminationGracePeriodSeconds: 30
 
 ingress:
-  enabled: false
-  hostname: ''
+  enabled: true
+  hostname: app.kudeploy.com
   pathType: Prefix
   className: ''
   ingressClassName: ''
@@ -322,7 +322,7 @@ ingress:
     paths:
       - path: /api
         pathType: Prefix
-  tls: false
+  tls: true
   extraHosts: []
   extraTls: []
   extraRules: []
