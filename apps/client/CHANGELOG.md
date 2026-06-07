@@ -1,3 +1,13 @@
+## 0.3.1 (2026-06-07)
+
+### 🩹 Fixes
+
+- **client:** localize branding and workspace copy ([71f6bf0](https://github.com/kudeploy/kudeploy/commit/71f6bf0))
+
+### ❤️ Thank You
+
+- Xudong Huang @xudongcc
+
 ## 0.3.0 (2026-06-07)
 
 ### 🚀 Features
