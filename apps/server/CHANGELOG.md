@@ -1,3 +1,13 @@
+## 1.4.4 (2026-06-07)
+
+### 🚀 Features
+
+- **auth:** expose signup disable env config ([604d852](https://github.com/kudeploy/kudeploy/commit/604d852))
+
+### ❤️ Thank You
+
+- Xudong Huang @xudongcc
+
 ## 1.4.3 (2026-06-07)
 
 ### 🚀 Features

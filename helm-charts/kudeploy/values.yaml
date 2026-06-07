@@ -221,7 +221,7 @@ server:
   image:
     registry: ghcr.io
     repository: kudeploy/server
-    tag: "1.4.3"
+    tag: '1.4.4'
     digest: ""
     pullPolicy: IfNotPresent
     pullSecrets: []

@@ -1,3 +1,13 @@
+## 0.4.14 (2026-06-07)
+
+### 🚀 Features
+
+- **auth:** expose signup disable env config ([604d852](https://github.com/kudeploy/kudeploy/commit/604d852))
+
+### ❤️ Thank You
+
+- Xudong Huang @xudongcc
+
 ## 0.4.13 (2026-06-07)
 
 This was a version bump only for helm-chart to align it with other projects, there were no code changes.
