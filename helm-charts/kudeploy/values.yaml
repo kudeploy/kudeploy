@@ -13,6 +13,15 @@ global:
       ports:
         postgresql: ''
 
+auth:
+  oidc:
+    enabled: false
+    id: ''
+    secret: ''
+    existingSecret: ''
+    existingSecretKey: oidc-secret
+    discoveryUrl: ''
+
 nameOverride: ''
 fullnameOverride: ''
 namespaceOverride: ''

@@ -254,6 +254,23 @@ app.kubernetes.io/component: server-migration
 - name: APP_URL
   value: {{ $appUrl | quote }}
 {{- end }}
+- name: AUTH_OIDC_ENABLED
+  value: {{ .Values.auth.oidc.enabled | quote }}
+{{- if .Values.auth.oidc.enabled }}
+- name: AUTH_OIDC_ID
+  value: {{ required "auth.oidc.id is required when auth.oidc.enabled is true" .Values.auth.oidc.id | quote }}
+- name: AUTH_OIDC_SECRET
+  {{- if .Values.auth.oidc.existingSecret }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Values.auth.oidc.existingSecret }}
+      key: {{ .Values.auth.oidc.existingSecretKey }}
+  {{- else }}
+  value: {{ required "auth.oidc.secret is required when auth.oidc.enabled is true and auth.oidc.existingSecret is not set" .Values.auth.oidc.secret | quote }}
+  {{- end }}
+- name: AUTH_OIDC_DISCOVERY_URL
+  value: {{ required "auth.oidc.discoveryUrl is required when auth.oidc.enabled is true" .Values.auth.oidc.discoveryUrl | quote }}
+{{- end }}
 {{- $postgresqlEnabled := .Values.postgresql.enabled }}
 {{- $externalDatabaseEnabled := and (not $postgresqlEnabled) .Values.externalDatabase.host }}
 {{- if or $postgresqlEnabled $externalDatabaseEnabled }}
