@@ -1,3 +1,13 @@
+## 0.4.10 (2026-06-07)
+
+### 🩹 Fixes
+
+- **charts:** keep ingress opt-in ([edb868a](https://github.com/kudeploy/kudeploy/commit/edb868a))
+
+### ❤️ Thank You
+
+- Xudong Huang @xudongcc
+
 ## 0.4.9 (2026-06-07)
 
 ### 🚀 Features
