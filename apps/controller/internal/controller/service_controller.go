@@ -28,6 +28,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	kudeployv1alpha1 "github.com/kudeploy/kudeploy-controller/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -48,6 +50,7 @@ type ServiceReconciler struct {
 // +kubebuilder:rbac:groups=kudeploy.com,resources=services,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=kudeploy.com,resources=services/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=kudeploy.com,resources=services/finalizers,verbs=update
+// +kubebuilder:rbac:groups=kudeploy.com,resources=projects,verbs=get;list;watch
 // +kubebuilder:rbac:groups=kudeploy.com,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update;patch
@@ -66,7 +69,11 @@ func (r *ServiceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, nil
 	}
 
-	if ensureServiceMetadata(service) {
+	workspaceID, err := projectWorkspaceID(ctx, r.Client, service.Namespace, service.Labels)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	if ensureServiceMetadata(service, workspaceID) {
 		if err := r.Update(ctx, service); err != nil {
 			if apierrors.IsConflict(err) {
 				return ctrl.Result{Requeue: true}, nil
@@ -299,7 +306,7 @@ func (r *ServiceReconciler) createOrUpdateKubernetesService(ctx context.Context,
 	return nil
 }
 
-func ensureServiceMetadata(service *kudeployv1alpha1.Service) bool {
+func ensureServiceMetadata(service *kudeployv1alpha1.Service, workspaceID string) bool {
 	changed := false
 	if service.Labels == nil {
 		service.Labels = map[string]string{}
@@ -313,6 +320,9 @@ func ensureServiceMetadata(service *kudeployv1alpha1.Service) bool {
 		service.Labels[managedByLabel] = managedByLabelValue
 		changed = true
 	}
+	if syncWorkspaceIDLabel(service.Labels, workspaceID) {
+		changed = true
+	}
 	return changed
 }
 
@@ -321,7 +331,7 @@ func buildKudeployDeployment(kudeployService *kudeployv1alpha1.Service, version 
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: kudeployService.Namespace,
-			Labels:    deploymentManagedLabels(kudeployService.Namespace, kudeployService.Name, name),
+			Labels:    deploymentManagedLabels(kudeployService.Namespace, kudeployService.Name, name, workspaceIDFromLabels(kudeployService.Labels)),
 		},
 		Spec: kudeployv1alpha1.DeploymentSpec{
 			ServiceName:        kudeployService.Name,
@@ -348,11 +358,7 @@ func buildServiceEnvSecret(kudeployService *kudeployv1alpha1.Service) *corev1.Se
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      serviceEnvSecretNameFor(kudeployService.Name),
 			Namespace: kudeployService.Namespace,
-			Labels: map[string]string{
-				projectLabel:   kudeployService.Namespace,
-				serviceLabel:   kudeployService.Name,
-				managedByLabel: managedByLabelValue,
-			},
+			Labels:    serviceManagedLabels(kudeployService),
 		},
 		Type: corev1.SecretTypeOpaque,
 	}
@@ -363,11 +369,7 @@ func buildRuntimeServiceAccount(kudeployService *kudeployv1alpha1.Service) *core
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      runtimeServiceAccountNameFor(kudeployService.Name),
 			Namespace: kudeployService.Namespace,
-			Labels: map[string]string{
-				projectLabel:   kudeployService.Namespace,
-				serviceLabel:   kudeployService.Name,
-				managedByLabel: managedByLabelValue,
-			},
+			Labels:    serviceManagedLabels(kudeployService),
 		},
 	}
 }
@@ -377,11 +379,7 @@ func buildKubernetesService(kudeployService *kudeployv1alpha1.Service, selector 
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      kudeployService.Name,
 			Namespace: kudeployService.Namespace,
-			Labels: map[string]string{
-				projectLabel:   kudeployService.Namespace,
-				serviceLabel:   kudeployService.Name,
-				managedByLabel: managedByLabelValue,
-			},
+			Labels:    serviceManagedLabels(kudeployService),
 		},
 		Spec: corev1.ServiceSpec{
 			Selector: selector,
@@ -420,13 +418,25 @@ func serviceVersionName(serviceName string, version int64) string {
 	return childName(serviceName, suffix)
 }
 
-func deploymentManagedLabels(namespace, serviceName, deploymentName string) map[string]string {
-	return map[string]string{
+func serviceManagedLabels(kudeployService *kudeployv1alpha1.Service) map[string]string {
+	return addWorkspaceIDLabel(map[string]string{
+		projectLabel:   kudeployService.Namespace,
+		serviceLabel:   kudeployService.Name,
+		managedByLabel: managedByLabelValue,
+	}, workspaceIDFromLabels(kudeployService.Labels))
+}
+
+func deploymentManagedLabels(namespace, serviceName, deploymentName string, workspaceIDs ...string) map[string]string {
+	var workspaceID string
+	if len(workspaceIDs) > 0 {
+		workspaceID = workspaceIDs[0]
+	}
+	return addWorkspaceIDLabel(map[string]string{
 		projectLabel:    namespace,
 		serviceLabel:    serviceName,
 		deploymentLabel: deploymentName,
 		managedByLabel:  managedByLabelValue,
-	}
+	}, workspaceID)
 }
 
 func runtimeServiceAccountNameFor(serviceName string) string {
@@ -437,10 +447,26 @@ func runtimeServiceAccountNameFor(serviceName string) string {
 func (r *ServiceReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&kudeployv1alpha1.Service{}).
+		Watches(&kudeployv1alpha1.Project{}, handler.EnqueueRequestsFromMapFunc(r.servicesForProject)).
 		Owns(&kudeployv1alpha1.Deployment{}).
 		Owns(&corev1.Service{}).
 		Owns(&corev1.ServiceAccount{}).
 		Owns(&corev1.Secret{}).
 		Named("service").
 		Complete(r)
+}
+
+func (r *ServiceReconciler) servicesForProject(ctx context.Context, object client.Object) []reconcile.Request {
+	if object == nil || object.GetName() == "" {
+		return nil
+	}
+	serviceList := &kudeployv1alpha1.ServiceList{}
+	if err := r.List(ctx, serviceList, client.InNamespace(object.GetName())); err != nil {
+		return nil
+	}
+	requests := make([]reconcile.Request, 0, len(serviceList.Items))
+	for index := range serviceList.Items {
+		requests = append(requests, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&serviceList.Items[index])})
+	}
+	return requests
 }

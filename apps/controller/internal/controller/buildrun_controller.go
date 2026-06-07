@@ -23,6 +23,7 @@ import (
 	tektonpod "github.com/tektoncd/pipeline/pkg/apis/pipeline/pod"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -32,7 +33,9 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	kudeployv1alpha1 "github.com/kudeploy/kudeploy-controller/api/v1alpha1"
 )
@@ -61,6 +64,7 @@ type BuildRunReconciler struct {
 // +kubebuilder:rbac:groups=kudeploy.com,resources=buildruns,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=kudeploy.com,resources=buildruns/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=kudeploy.com,resources=buildruns/finalizers,verbs=update
+// +kubebuilder:rbac:groups=kudeploy.com,resources=projects,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",resources=serviceaccounts,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch
 // +kubebuilder:rbac:groups=tekton.dev,resources=pipelineruns,verbs=get;list;watch;create;update;patch;delete
@@ -84,7 +88,11 @@ func (r *BuildRunReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		return r.reconcileDelete(ctx, buildRun)
 	}
 
-	if ensureBuildRunMetadata(buildRun) {
+	workspaceID, err := projectWorkspaceID(ctx, r.Client, buildRun.Namespace, buildRun.Labels)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	if ensureBuildRunMetadata(buildRun, workspaceID) {
 		if err := r.Update(ctx, buildRun); err != nil {
 			if apierrors.IsConflict(err) {
 				return ctrl.Result{Requeue: true}, nil
@@ -120,7 +128,7 @@ func (r *BuildRunReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	if err := controllerutil.SetControllerReference(buildRun, pipelineRun, r.Scheme); err != nil {
 		return ctrl.Result{}, err
 	}
-	if err := r.createPipelineRun(ctx, pipelineRun); err != nil {
+	if err := r.createOrUpdatePipelineRun(ctx, pipelineRun); err != nil {
 		return ctrl.Result{}, err
 	}
 
@@ -180,7 +188,7 @@ func (r *BuildRunReconciler) createOrUpdateBuildRunServiceAccount(ctx context.Co
 	return r.Update(ctx, existingServiceAccount)
 }
 
-func (r *BuildRunReconciler) createPipelineRun(ctx context.Context, pipelineRun *tektonv1.PipelineRun) error {
+func (r *BuildRunReconciler) createOrUpdatePipelineRun(ctx context.Context, pipelineRun *tektonv1.PipelineRun) error {
 	existingPipelineRun := &tektonv1.PipelineRun{}
 	err := r.Get(ctx, client.ObjectKeyFromObject(pipelineRun), existingPipelineRun)
 	if apierrors.IsNotFound(err) {
@@ -189,7 +197,17 @@ func (r *BuildRunReconciler) createPipelineRun(ctx context.Context, pipelineRun 
 		}
 		return nil
 	}
-	return err
+	if err != nil {
+		return err
+	}
+	originalPipelineRun := existingPipelineRun.DeepCopy()
+	existingPipelineRun.Labels = mergeManagedLabels(pipelineRun.Labels, existingPipelineRun.Labels)
+	existingPipelineRun.OwnerReferences = pipelineRun.OwnerReferences
+	if equality.Semantic.DeepEqual(existingPipelineRun.Labels, originalPipelineRun.Labels) &&
+		equality.Semantic.DeepEqual(existingPipelineRun.OwnerReferences, originalPipelineRun.OwnerReferences) {
+		return nil
+	}
+	return r.Patch(ctx, existingPipelineRun, client.MergeFrom(originalPipelineRun))
 }
 
 func (r *BuildRunReconciler) deleteIfExists(ctx context.Context, object client.Object) error {
@@ -259,7 +277,7 @@ func buildRunConditionFromPipelineRun(pipelineRun *tektonv1.PipelineRun) metav1.
 	}
 }
 
-func ensureBuildRunMetadata(buildRun *kudeployv1alpha1.BuildRun) bool {
+func ensureBuildRunMetadata(buildRun *kudeployv1alpha1.BuildRun, workspaceID string) bool {
 	changed := false
 	if buildRun.Labels == nil {
 		buildRun.Labels = map[string]string{}
@@ -271,6 +289,9 @@ func ensureBuildRunMetadata(buildRun *kudeployv1alpha1.BuildRun) bool {
 	}
 	if buildRun.Labels[managedByLabel] != managedByLabelValue {
 		buildRun.Labels[managedByLabel] = managedByLabelValue
+		changed = true
+	}
+	if syncWorkspaceIDLabel(buildRun.Labels, workspaceID) {
 		changed = true
 	}
 	if controllerutil.AddFinalizer(buildRun, buildRunFinalizer) {
@@ -346,11 +367,11 @@ func buildPipelineRun(buildRun *kudeployv1alpha1.BuildRun) *tektonv1.PipelineRun
 }
 
 func buildRunManagedLabels(buildRun *kudeployv1alpha1.BuildRun) map[string]string {
-	return map[string]string{
+	return addWorkspaceIDLabel(map[string]string{
 		projectLabel:   buildRun.Namespace,
 		buildRunLabel:  buildRun.Name,
 		managedByLabel: managedByLabelValue,
-	}
+	}, workspaceIDFromLabels(buildRun.Labels))
 }
 
 func buildPipelineRunParams(buildRun *kudeployv1alpha1.BuildRun) tektonv1.Params {
@@ -399,8 +420,24 @@ func ptrInt64(value int64) *int64 {
 func (r *BuildRunReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&kudeployv1alpha1.BuildRun{}).
+		Watches(&kudeployv1alpha1.Project{}, handler.EnqueueRequestsFromMapFunc(r.buildRunsForProject)).
 		Owns(&corev1.ServiceAccount{}).
 		Owns(&tektonv1.PipelineRun{}).
 		Named("buildrun").
 		Complete(r)
+}
+
+func (r *BuildRunReconciler) buildRunsForProject(ctx context.Context, object client.Object) []reconcile.Request {
+	if object == nil || object.GetName() == "" {
+		return nil
+	}
+	buildRunList := &kudeployv1alpha1.BuildRunList{}
+	if err := r.List(ctx, buildRunList, client.InNamespace(object.GetName())); err != nil {
+		return nil
+	}
+	requests := make([]reconcile.Request, 0, len(buildRunList.Items))
+	for index := range buildRunList.Items {
+		requests = append(requests, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&buildRunList.Items[index])})
+	}
+	return requests
 }

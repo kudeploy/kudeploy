@@ -31,6 +31,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	kudeployv1alpha1 "github.com/kudeploy/kudeploy-controller/api/v1alpha1"
 )
@@ -46,6 +48,7 @@ type DeploymentReconciler struct {
 // +kubebuilder:rbac:groups=kudeploy.com,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=kudeploy.com,resources=deployments/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=kudeploy.com,resources=deployments/finalizers,verbs=update
+// +kubebuilder:rbac:groups=kudeploy.com,resources=projects,verbs=get;list;watch
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update;patch
 
@@ -66,7 +69,11 @@ func (r *DeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, err
 	}
 
-	if ensureDeploymentMetadata(kudeployDeployment) {
+	workspaceID, err := projectWorkspaceID(ctx, r.Client, kudeployDeployment.Namespace, kudeployDeployment.Labels)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	if ensureDeploymentMetadata(kudeployDeployment, workspaceID) {
 		if err := r.Update(ctx, kudeployDeployment); err != nil {
 			if apierrors.IsConflict(err) {
 				return ctrl.Result{Requeue: true}, nil
@@ -192,7 +199,7 @@ func (r *DeploymentReconciler) buildDeploymentEnvSecret(ctx context.Context, kud
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        deploymentEnvSecretNameFor(kudeployDeployment.Name),
 			Namespace:   kudeployDeployment.Namespace,
-			Labels:      deploymentManagedLabels(kudeployDeployment.Namespace, kudeployDeployment.Spec.ServiceName, kudeployDeployment.Name),
+			Labels:      deploymentManagedLabels(kudeployDeployment.Namespace, kudeployDeployment.Spec.ServiceName, kudeployDeployment.Name, workspaceIDFromLabels(kudeployDeployment.Labels)),
 			Annotations: copyStringMap(serviceEnvSecret.Annotations),
 		},
 		Type: corev1.SecretTypeOpaque,
@@ -221,24 +228,18 @@ func (r *DeploymentReconciler) updateDeploymentStatus(ctx context.Context, kudep
 	return ignoreConflict(r.Status().Patch(ctx, kudeployDeployment, client.MergeFrom(originalKudeployDeployment)))
 }
 
-func ensureDeploymentMetadata(kudeployDeployment *kudeployv1alpha1.Deployment) bool {
-	labels := deploymentManagedLabels(kudeployDeployment.Namespace, kudeployDeployment.Spec.ServiceName, kudeployDeployment.Name)
-	changed := false
-	if kudeployDeployment.Labels == nil {
-		kudeployDeployment.Labels = map[string]string{}
-		changed = true
+func ensureDeploymentMetadata(kudeployDeployment *kudeployv1alpha1.Deployment, workspaceID string) bool {
+	labels := deploymentManagedLabels(kudeployDeployment.Namespace, kudeployDeployment.Spec.ServiceName, kudeployDeployment.Name, workspaceID)
+	mergedLabels := mergeManagedLabels(labels, kudeployDeployment.Labels)
+	if equality.Semantic.DeepEqual(kudeployDeployment.Labels, mergedLabels) {
+		return false
 	}
-	for key, value := range labels {
-		if kudeployDeployment.Labels[key] != value {
-			kudeployDeployment.Labels[key] = value
-			changed = true
-		}
-	}
-	return changed
+	kudeployDeployment.Labels = mergedLabels
+	return true
 }
 
 func buildKubernetesDeployment(kudeployDeployment *kudeployv1alpha1.Deployment) *appsv1.Deployment {
-	labels := deploymentManagedLabels(kudeployDeployment.Namespace, kudeployDeployment.Spec.ServiceName, kudeployDeployment.Name)
+	labels := deploymentManagedLabels(kudeployDeployment.Namespace, kudeployDeployment.Spec.ServiceName, kudeployDeployment.Name, workspaceIDFromLabels(kudeployDeployment.Labels))
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      kudeployDeployment.Name,
@@ -368,8 +369,24 @@ func ptrIntOrString(value intstr.IntOrString) *intstr.IntOrString {
 func (r *DeploymentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&kudeployv1alpha1.Deployment{}).
+		Watches(&kudeployv1alpha1.Project{}, handler.EnqueueRequestsFromMapFunc(r.deploymentsForProject)).
 		Owns(&appsv1.Deployment{}).
 		Owns(&corev1.Secret{}).
 		Named("deployment").
 		Complete(r)
+}
+
+func (r *DeploymentReconciler) deploymentsForProject(ctx context.Context, object client.Object) []reconcile.Request {
+	if object == nil || object.GetName() == "" {
+		return nil
+	}
+	deploymentList := &kudeployv1alpha1.DeploymentList{}
+	if err := r.List(ctx, deploymentList, client.InNamespace(object.GetName())); err != nil {
+		return nil
+	}
+	requests := make([]reconcile.Request, 0, len(deploymentList.Items))
+	for index := range deploymentList.Items {
+		requests = append(requests, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&deploymentList.Items[index])})
+	}
+	return requests
 }
