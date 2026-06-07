@@ -282,8 +282,12 @@ server:
       resources: {}
   extraEnv: []
   envFrom: []
-  extraVolumeMounts: []
-  extraVolumes: []
+  extraVolumeMounts:
+    - name: temp
+      mountPath: /app/apps/server/temp
+  extraVolumes:
+    - name: temp
+      emptyDir: {}
   terminationGracePeriodSeconds: 30
 
 ingress:
