@@ -248,7 +248,7 @@ app.kubernetes.io/component: server-migration
   valueFrom:
     secretKeyRef:
       name: {{ include "kudeploy.server.secretName" . }}
-      key: APP_SECRET
+      key: app-secret
 {{- $appUrl := include "kudeploy.server.appUrl" . }}
 {{- if $appUrl }}
 - name: APP_URL
@@ -332,7 +332,9 @@ app.kubernetes.io/component: server-migration
 {{- if not $secretValue -}}
 {{- $secretName := include "kudeploy.server.secretName" . -}}
 {{- $existing := lookup "v1" "Secret" (include "kudeploy.server.namespace" .) $secretName -}}
-{{- if and $existing (hasKey $existing.data "APP_SECRET") -}}
+{{- if and $existing (hasKey $existing.data "app-secret") -}}
+{{- $secretValue = (index $existing.data "app-secret" | b64dec) -}}
+{{- else if and $existing (hasKey $existing.data "APP_SECRET") -}}
 {{- $secretValue = (index $existing.data "APP_SECRET" | b64dec) -}}
 {{- else -}}
 {{- $secretValue = randAlphaNum 64 -}}
