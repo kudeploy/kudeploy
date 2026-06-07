@@ -150,6 +150,9 @@ client:
   podLabels: {}
   podSecurityContext:
     runAsNonRoot: true
+    runAsUser: 101
+    runAsGroup: 101
+    fsGroup: 101
     seccompProfile:
       type: RuntimeDefault
   securityContext:
@@ -171,8 +174,12 @@ client:
   priorityClassName: ''
   extraEnv: []
   envFrom: []
-  extraVolumeMounts: []
-  extraVolumes: []
+  extraVolumeMounts:
+    - name: tmp
+      mountPath: /tmp
+  extraVolumes:
+    - name: tmp
+      emptyDir: {}
   terminationGracePeriodSeconds: 30
 
 server:
@@ -213,6 +220,9 @@ server:
   podLabels: {}
   podSecurityContext:
     runAsNonRoot: true
+    runAsUser: 1001
+    runAsGroup: 1001
+    fsGroup: 1001
     seccompProfile:
       type: RuntimeDefault
   securityContext:
