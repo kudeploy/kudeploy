@@ -1,3 +1,13 @@
+## 1.4.0 (2026-06-07)
+
+### 🚀 Features
+
+- add crd-backed projects and helm migrations ([cf150ba](https://github.com/kudeploy/kudeploy/commit/cf150ba))
+
+### ❤️ Thank You
+
+- Xudong Huang @xudongcc
+
 ## 1.3.2 (2026-06-06)
 
 ### 🩹 Fixes
