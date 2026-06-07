@@ -20,7 +20,6 @@ import (
 	"context"
 
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -37,7 +36,6 @@ const (
 	projectFinalizer = "kudeploy.com/project"
 
 	projectLabel        = "kudeploy.com/project"
-	workspaceIDLabel    = "kudeploy.com/workspace-id"
 	managedByLabel      = "app.kubernetes.io/managed-by"
 	managedByLabelValue = "kudeploy"
 
@@ -91,8 +89,11 @@ func (r *ProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	if apierrors.IsNotFound(err) {
 		namespace = &corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:   project.Name,
-				Labels: projectManagedLabels(project),
+				Name: project.Name,
+				Labels: map[string]string{
+					projectLabel:   project.Name,
+					managedByLabel: managedByLabelValue,
+				},
 			},
 		}
 		if err := r.Create(ctx, namespace); err != nil {
@@ -120,10 +121,6 @@ func (r *ProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			Reason:  "NamespaceConflict",
 			Message: "A same-name Namespace already exists and is not managed by Kudeploy.",
 		})
-	}
-
-	if err := r.ensureNamespaceMetadata(ctx, namespace, project); err != nil {
-		return ctrl.Result{}, err
 	}
 
 	return ctrl.Result{}, r.updateProjectStatus(ctx, project, metav1.Condition{
@@ -168,22 +165,6 @@ func (r *ProjectReconciler) updateProjectStatus(ctx context.Context, project *ku
 	project.Status.NamespaceName = project.Name
 	meta.SetStatusCondition(&project.Status.Conditions, condition)
 	return ignoreConflict(r.Status().Patch(ctx, project, client.MergeFrom(originalProject)))
-}
-
-func (r *ProjectReconciler) ensureNamespaceMetadata(ctx context.Context, namespace *corev1.Namespace, project *kudeployv1alpha1.Project) error {
-	originalNamespace := namespace.DeepCopy()
-	namespace.Labels = mergeManagedLabels(projectManagedLabels(project), namespace.Labels)
-	if equality.Semantic.DeepEqual(namespace.Labels, originalNamespace.Labels) {
-		return nil
-	}
-	return r.Patch(ctx, namespace, client.MergeFrom(originalNamespace))
-}
-
-func projectManagedLabels(project *kudeployv1alpha1.Project) map[string]string {
-	return addWorkspaceIDLabel(map[string]string{
-		projectLabel:   project.Name,
-		managedByLabel: managedByLabelValue,
-	}, workspaceIDFromLabels(project.Labels))
 }
 
 func isManagedNamespace(namespace *corev1.Namespace, projectName string) bool {

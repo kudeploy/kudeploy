@@ -48,7 +48,6 @@ type ServiceReconciler struct {
 // +kubebuilder:rbac:groups=kudeploy.com,resources=services,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=kudeploy.com,resources=services/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=kudeploy.com,resources=services/finalizers,verbs=update
-// +kubebuilder:rbac:groups=kudeploy.com,resources=projects,verbs=get;list;watch
 // +kubebuilder:rbac:groups=kudeploy.com,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update;patch
@@ -67,11 +66,7 @@ func (r *ServiceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, nil
 	}
 
-	workspaceID, err := projectWorkspaceID(ctx, r.Client, service.Namespace, service.Labels)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-	if ensureServiceMetadata(service, workspaceID) {
+	if ensureServiceMetadata(service) {
 		if err := r.Update(ctx, service); err != nil {
 			if apierrors.IsConflict(err) {
 				return ctrl.Result{Requeue: true}, nil
@@ -304,7 +299,7 @@ func (r *ServiceReconciler) createOrUpdateKubernetesService(ctx context.Context,
 	return nil
 }
 
-func ensureServiceMetadata(service *kudeployv1alpha1.Service, workspaceID string) bool {
+func ensureServiceMetadata(service *kudeployv1alpha1.Service) bool {
 	changed := false
 	if service.Labels == nil {
 		service.Labels = map[string]string{}
@@ -318,9 +313,6 @@ func ensureServiceMetadata(service *kudeployv1alpha1.Service, workspaceID string
 		service.Labels[managedByLabel] = managedByLabelValue
 		changed = true
 	}
-	if syncWorkspaceIDLabel(service.Labels, workspaceID) {
-		changed = true
-	}
 	return changed
 }
 
@@ -329,7 +321,7 @@ func buildKudeployDeployment(kudeployService *kudeployv1alpha1.Service, version 
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: kudeployService.Namespace,
-			Labels:    deploymentManagedLabels(kudeployService.Namespace, kudeployService.Name, name, workspaceIDFromLabels(kudeployService.Labels)),
+			Labels:    deploymentManagedLabels(kudeployService.Namespace, kudeployService.Name, name),
 		},
 		Spec: kudeployv1alpha1.DeploymentSpec{
 			ServiceName:        kudeployService.Name,
@@ -356,7 +348,11 @@ func buildServiceEnvSecret(kudeployService *kudeployv1alpha1.Service) *corev1.Se
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      serviceEnvSecretNameFor(kudeployService.Name),
 			Namespace: kudeployService.Namespace,
-			Labels:    serviceManagedLabels(kudeployService),
+			Labels: map[string]string{
+				projectLabel:   kudeployService.Namespace,
+				serviceLabel:   kudeployService.Name,
+				managedByLabel: managedByLabelValue,
+			},
 		},
 		Type: corev1.SecretTypeOpaque,
 	}
@@ -367,7 +363,11 @@ func buildRuntimeServiceAccount(kudeployService *kudeployv1alpha1.Service) *core
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      runtimeServiceAccountNameFor(kudeployService.Name),
 			Namespace: kudeployService.Namespace,
-			Labels:    serviceManagedLabels(kudeployService),
+			Labels: map[string]string{
+				projectLabel:   kudeployService.Namespace,
+				serviceLabel:   kudeployService.Name,
+				managedByLabel: managedByLabelValue,
+			},
 		},
 	}
 }
@@ -377,7 +377,11 @@ func buildKubernetesService(kudeployService *kudeployv1alpha1.Service, selector 
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      kudeployService.Name,
 			Namespace: kudeployService.Namespace,
-			Labels:    serviceManagedLabels(kudeployService),
+			Labels: map[string]string{
+				projectLabel:   kudeployService.Namespace,
+				serviceLabel:   kudeployService.Name,
+				managedByLabel: managedByLabelValue,
+			},
 		},
 		Spec: corev1.ServiceSpec{
 			Selector: selector,
@@ -416,25 +420,13 @@ func serviceVersionName(serviceName string, version int64) string {
 	return childName(serviceName, suffix)
 }
 
-func serviceManagedLabels(kudeployService *kudeployv1alpha1.Service) map[string]string {
-	return addWorkspaceIDLabel(map[string]string{
-		projectLabel:   kudeployService.Namespace,
-		serviceLabel:   kudeployService.Name,
-		managedByLabel: managedByLabelValue,
-	}, workspaceIDFromLabels(kudeployService.Labels))
-}
-
-func deploymentManagedLabels(namespace, serviceName, deploymentName string, workspaceIDs ...string) map[string]string {
-	var workspaceID string
-	if len(workspaceIDs) > 0 {
-		workspaceID = workspaceIDs[0]
-	}
-	return addWorkspaceIDLabel(map[string]string{
+func deploymentManagedLabels(namespace, serviceName, deploymentName string) map[string]string {
+	return map[string]string{
 		projectLabel:    namespace,
 		serviceLabel:    serviceName,
 		deploymentLabel: deploymentName,
 		managedByLabel:  managedByLabelValue,
-	}, workspaceID)
+	}
 }
 
 func runtimeServiceAccountNameFor(serviceName string) string {

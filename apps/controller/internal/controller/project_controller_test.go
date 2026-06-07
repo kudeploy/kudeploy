@@ -90,67 +90,6 @@ var _ = Describe("Project Controller", func() {
 			)))
 		})
 
-		It("propagates the Project workspace label to the managed namespace", func() {
-			project := &kudeployv1alpha1.Project{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: projectName,
-					Labels: map[string]string{
-						"kudeploy.com/workspace-id": "workspace-main",
-					},
-				},
-			}
-			Expect(k8sClient.Create(ctx, project)).To(Succeed())
-
-			controllerReconciler := &ProjectReconciler{
-				Client: k8sClient,
-				Scheme: k8sClient.Scheme(),
-			}
-
-			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: projectKey})
-			Expect(err).NotTo(HaveOccurred())
-
-			namespace := &corev1.Namespace{}
-			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: projectName}, namespace)).To(Succeed())
-			Expect(namespace.Labels).To(HaveKeyWithValue("kudeploy.com/workspace-id", "workspace-main"))
-		})
-
-		It("repairs the workspace label on an existing managed namespace", func() {
-			namespace := &corev1.Namespace{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: projectName,
-					Labels: map[string]string{
-						"kudeploy.com/project":         projectName,
-						"kudeploy.com/workspace-id":    "workspace-stale",
-						"app.kubernetes.io/managed-by": "kudeploy",
-						"external.example.com/team":    "platform",
-					},
-				},
-			}
-			Expect(k8sClient.Create(ctx, namespace)).To(Succeed())
-
-			project := &kudeployv1alpha1.Project{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: projectName,
-					Labels: map[string]string{
-						"kudeploy.com/workspace-id": "workspace-main",
-					},
-				},
-			}
-			Expect(k8sClient.Create(ctx, project)).To(Succeed())
-
-			controllerReconciler := &ProjectReconciler{
-				Client: k8sClient,
-				Scheme: k8sClient.Scheme(),
-			}
-
-			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: projectKey})
-			Expect(err).NotTo(HaveOccurred())
-
-			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: projectName}, namespace)).To(Succeed())
-			Expect(namespace.Labels).To(HaveKeyWithValue("kudeploy.com/workspace-id", "workspace-main"))
-			Expect(namespace.Labels).To(HaveKeyWithValue("external.example.com/team", "platform"))
-		})
-
 		It("reports a conflict without taking over an unmanaged same-name namespace", func() {
 			namespace := &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{

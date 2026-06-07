@@ -46,7 +46,6 @@ type DeploymentReconciler struct {
 // +kubebuilder:rbac:groups=kudeploy.com,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=kudeploy.com,resources=deployments/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=kudeploy.com,resources=deployments/finalizers,verbs=update
-// +kubebuilder:rbac:groups=kudeploy.com,resources=projects,verbs=get;list;watch
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update;patch
 
@@ -67,11 +66,7 @@ func (r *DeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, err
 	}
 
-	workspaceID, err := projectWorkspaceID(ctx, r.Client, kudeployDeployment.Namespace, kudeployDeployment.Labels)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-	if ensureDeploymentMetadata(kudeployDeployment, workspaceID) {
+	if ensureDeploymentMetadata(kudeployDeployment) {
 		if err := r.Update(ctx, kudeployDeployment); err != nil {
 			if apierrors.IsConflict(err) {
 				return ctrl.Result{Requeue: true}, nil
@@ -197,7 +192,7 @@ func (r *DeploymentReconciler) buildDeploymentEnvSecret(ctx context.Context, kud
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        deploymentEnvSecretNameFor(kudeployDeployment.Name),
 			Namespace:   kudeployDeployment.Namespace,
-			Labels:      deploymentManagedLabels(kudeployDeployment.Namespace, kudeployDeployment.Spec.ServiceName, kudeployDeployment.Name, workspaceIDFromLabels(kudeployDeployment.Labels)),
+			Labels:      deploymentManagedLabels(kudeployDeployment.Namespace, kudeployDeployment.Spec.ServiceName, kudeployDeployment.Name),
 			Annotations: copyStringMap(serviceEnvSecret.Annotations),
 		},
 		Type: corev1.SecretTypeOpaque,
@@ -226,8 +221,8 @@ func (r *DeploymentReconciler) updateDeploymentStatus(ctx context.Context, kudep
 	return ignoreConflict(r.Status().Patch(ctx, kudeployDeployment, client.MergeFrom(originalKudeployDeployment)))
 }
 
-func ensureDeploymentMetadata(kudeployDeployment *kudeployv1alpha1.Deployment, workspaceID string) bool {
-	labels := deploymentManagedLabels(kudeployDeployment.Namespace, kudeployDeployment.Spec.ServiceName, kudeployDeployment.Name, workspaceID)
+func ensureDeploymentMetadata(kudeployDeployment *kudeployv1alpha1.Deployment) bool {
+	labels := deploymentManagedLabels(kudeployDeployment.Namespace, kudeployDeployment.Spec.ServiceName, kudeployDeployment.Name)
 	changed := false
 	if kudeployDeployment.Labels == nil {
 		kudeployDeployment.Labels = map[string]string{}
@@ -243,7 +238,7 @@ func ensureDeploymentMetadata(kudeployDeployment *kudeployv1alpha1.Deployment, w
 }
 
 func buildKubernetesDeployment(kudeployDeployment *kudeployv1alpha1.Deployment) *appsv1.Deployment {
-	labels := deploymentManagedLabels(kudeployDeployment.Namespace, kudeployDeployment.Spec.ServiceName, kudeployDeployment.Name, workspaceIDFromLabels(kudeployDeployment.Labels))
+	labels := deploymentManagedLabels(kudeployDeployment.Namespace, kudeployDeployment.Spec.ServiceName, kudeployDeployment.Name)
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      kudeployDeployment.Name,
