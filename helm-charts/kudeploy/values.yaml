@@ -216,10 +216,7 @@ server:
     create: true
     name: ''
     annotations: {}
-  crypt:
-    secret: ''
-    existingSecret: ''
-    secretKey: crypt-secret
+  existingSecret: ''
   podAnnotations: {}
   podLabels: {}
   podSecurityContext:

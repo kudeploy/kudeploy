@@ -244,11 +244,11 @@ app.kubernetes.io/component: server-migration
 {{- $values := .Values.server -}}
 - name: PORT
   value: {{ $values.port | quote }}
-- name: CRYPT_SECRET
+- name: APP_SECRET
   valueFrom:
     secretKeyRef:
-      name: {{ include "kudeploy.server.crypt.secretName" . }}
-      key: {{ $values.crypt.secretKey }}
+      name: {{ include "kudeploy.server.secretName" . }}
+      key: APP_SECRET
 {{- $appUrl := include "kudeploy.server.appUrl" . }}
 {{- if $appUrl }}
 - name: APP_URL
@@ -319,22 +319,21 @@ app.kubernetes.io/component: server-migration
 {{- end }}
 {{- end -}}
 
-{{- define "kudeploy.server.crypt.secretName" -}}
-{{- if .Values.server.crypt.existingSecret -}}
-{{- .Values.server.crypt.existingSecret -}}
+{{- define "kudeploy.server.secretName" -}}
+{{- if .Values.server.existingSecret -}}
+{{- .Values.server.existingSecret -}}
 {{- else -}}
-{{- printf "%s-crypt" (include "kudeploy.server.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- include "kudeploy.server.fullname" . -}}
 {{- end -}}
 {{- end -}}
 
-{{- define "kudeploy.server.crypt.secretValue" -}}
-{{- $secretValue := .Values.server.crypt.secret -}}
+{{- define "kudeploy.server.appSecret" -}}
+{{- $secretValue := "" -}}
 {{- if not $secretValue -}}
-{{- $secretName := include "kudeploy.server.crypt.secretName" . -}}
-{{- $secretKey := .Values.server.crypt.secretKey -}}
+{{- $secretName := include "kudeploy.server.secretName" . -}}
 {{- $existing := lookup "v1" "Secret" (include "kudeploy.server.namespace" .) $secretName -}}
-{{- if and $existing (hasKey $existing.data $secretKey) -}}
-{{- $secretValue = (index $existing.data $secretKey | b64dec) -}}
+{{- if and $existing (hasKey $existing.data "APP_SECRET") -}}
+{{- $secretValue = (index $existing.data "APP_SECRET" | b64dec) -}}
 {{- else -}}
 {{- $secretValue = randAlphaNum 64 -}}
 {{- end -}}
