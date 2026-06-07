@@ -1,3 +1,13 @@
+## 0.4.1 (2026-06-07)
+
+### 🩹 Fixes
+
+- **charts:** set secure runtime defaults ([12213b8](https://github.com/kudeploy/kudeploy/commit/12213b8))
+
+### ❤️ Thank You
+
+- Xudong Huang @xudongcc
+
 ## 0.4.0 (2026-06-07)
 
 ### 🚀 Features
