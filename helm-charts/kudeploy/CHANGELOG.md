@@ -1,3 +1,13 @@
+## 0.4.6 (2026-06-07)
+
+### 🚀 Features
+
+- **charts:** add oidc auth values ([71de582](https://github.com/kudeploy/kudeploy/commit/71de582))
+
+### ❤️ Thank You
+
+- Xudong Huang @xudongcc
+
 ## 0.4.5 (2026-06-07)
 
 ### 🩹 Fixes
