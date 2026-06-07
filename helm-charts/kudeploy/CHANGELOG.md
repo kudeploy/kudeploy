@@ -1,3 +1,13 @@
+## 0.4.15 (2026-06-07)
+
+### 🩹 Fixes
+
+- **charts:** grant server kubernetes access ([860d3d1](https://github.com/kudeploy/kudeploy/commit/860d3d1))
+
+### ❤️ Thank You
+
+- Xudong Huang @xudongcc
+
 ## 0.4.14 (2026-06-07)
 
 ### 🚀 Features
