@@ -1,3 +1,13 @@
+## 0.4.9 (2026-06-07)
+
+### 🚀 Features
+
+- **charts:** enable app ingress by default ([fb0c9cd](https://github.com/kudeploy/kudeploy/commit/fb0c9cd))
+
+### ❤️ Thank You
+
+- Xudong Huang @xudongcc
+
 ## 0.4.8 (2026-06-07)
 
 ### 🚀 Features
