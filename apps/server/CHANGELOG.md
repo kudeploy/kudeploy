@@ -1,3 +1,13 @@
+## 1.4.1 (2026-06-07)
+
+### 🩹 Fixes
+
+- **server:** make oidc auth optional ([a09cc7d](https://github.com/kudeploy/kudeploy/commit/a09cc7d))
+
+### ❤️ Thank You
+
+- Xudong Huang @xudongcc
+
 ## 1.4.0 (2026-06-07)
 
 ### 🚀 Features
