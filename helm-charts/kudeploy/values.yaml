@@ -44,7 +44,7 @@ controller:
   image:
     registry: ghcr.io
     repository: kudeploy/controller
-    tag: '0.2.1'
+    tag: '0.3.0'
     digest: ''
     pullPolicy: IfNotPresent
     pullSecrets: []
