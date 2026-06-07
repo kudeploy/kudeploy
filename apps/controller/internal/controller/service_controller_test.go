@@ -230,7 +230,7 @@ var _ = Describe("Service Controller", func() {
 		)))
 	})
 
-	It("enqueues Services when Project metadata changes", func() {
+	It("enqueues Services when Project labels change", func() {
 		service := newService()
 		otherService := newService()
 		otherService.Name = "admin"
