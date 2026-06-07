@@ -1,3 +1,14 @@
+## 0.4.5 (2026-06-07)
+
+### 🩹 Fixes
+
+- **charts:** drop legacy app secret key ([2de0e58](https://github.com/kudeploy/kudeploy/commit/2de0e58))
+- **charts:** use app-secret key ([417840f](https://github.com/kudeploy/kudeploy/commit/417840f))
+
+### ❤️ Thank You
+
+- Xudong Huang @xudongcc
+
 ## 0.4.4 (2026-06-07)
 
 ### 🩹 Fixes
