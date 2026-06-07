@@ -12,6 +12,27 @@ import { Session } from './entities/session.entity';
 import { Verification } from './entities/verification.entity';
 import { RowLevelSecurityInterceptor } from './row-level-security.interceptor';
 
+export function buildAuthPlugins(configService: ConfigService) {
+  if (configService.get('AUTH_OIDC_ENABLED') !== 'true') {
+    return [];
+  }
+
+  return [
+    genericOAuth({
+      config: [
+        {
+          providerId: 'oidc',
+          clientId: configService.getOrThrow('AUTH_OIDC_ID'),
+          clientSecret: configService.getOrThrow('AUTH_OIDC_SECRET'),
+          discoveryUrl: configService.getOrThrow('AUTH_OIDC_DISCOVERY_URL'),
+          prompt: 'login',
+          scopes: ['openid', 'profile', 'email'],
+        },
+      ],
+    }),
+  ];
+}
+
 /**
  * 应用认证模块。
  */
@@ -30,22 +51,7 @@ import { RowLevelSecurityInterceptor } from './row-level-security.interceptor';
         emailAndPassword: {
           enabled: true,
         },
-        plugins: [
-          genericOAuth({
-            config: [
-              {
-                providerId: 'oidc',
-                clientId: configService.getOrThrow('AUTH_OIDC_ID'),
-                clientSecret: configService.getOrThrow('AUTH_OIDC_SECRET'),
-                discoveryUrl: configService.getOrThrow(
-                  'AUTH_OIDC_DISCOVERY_URL',
-                ),
-                prompt: 'login',
-                scopes: ['openid', 'profile', 'email'],
-              },
-            ],
-          }),
-        ],
+        plugins: buildAuthPlugins(configService),
       }),
     }),
   ],
