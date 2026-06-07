@@ -1,3 +1,13 @@
+## 0.4.11 (2026-06-07)
+
+### 🩹 Fixes
+
+- **release:** bump chart when images change ([fde4b38](https://github.com/kudeploy/kudeploy/commit/fde4b38))
+
+### ❤️ Thank You
+
+- Xudong Huang @xudongcc
+
 ## 0.4.10 (2026-06-07)
 
 ### 🩹 Fixes
