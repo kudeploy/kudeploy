@@ -208,6 +208,7 @@ server:
     pullSecrets: []
   port: 4000
   appUrl: ''
+  graphqlSchemaFile: /app/apps/server/temp/schema.gql
   service:
     enabled: true
     type: ClusterIP

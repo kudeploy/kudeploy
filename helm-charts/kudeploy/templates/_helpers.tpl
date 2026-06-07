@@ -244,6 +244,8 @@ app.kubernetes.io/component: server-migration
 {{- $values := .Values.server -}}
 - name: PORT
   value: {{ $values.port | quote }}
+- name: GRAPHQL_SCHEMA_FILE
+  value: {{ $values.graphqlSchemaFile | quote }}
 - name: APP_SECRET
   valueFrom:
     secretKeyRef:

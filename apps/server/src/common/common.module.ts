@@ -11,7 +11,10 @@ import { Request, Response } from 'express';
 import { ConfigModule } from '@/common/modules/config.module';
 import { PermissionModule } from '@/common/modules/permission.module';
 
+import { ensureGraphqlSchemaDirectory } from './graphql-schema-file';
+
 const GraphQLDynamicModule = GraphQLModule.forRoot({
+  autoSchemaFile: ensureGraphqlSchemaDirectory(),
   context: ({ req, res }: { req: Request; res: Response }) => ({ req, res }),
 });
 
