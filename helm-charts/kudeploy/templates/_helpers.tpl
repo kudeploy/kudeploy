@@ -334,8 +334,6 @@ app.kubernetes.io/component: server-migration
 {{- $existing := lookup "v1" "Secret" (include "kudeploy.server.namespace" .) $secretName -}}
 {{- if and $existing (hasKey $existing.data "app-secret") -}}
 {{- $secretValue = (index $existing.data "app-secret" | b64dec) -}}
-{{- else if and $existing (hasKey $existing.data "APP_SECRET") -}}
-{{- $secretValue = (index $existing.data "APP_SECRET" | b64dec) -}}
 {{- else -}}
 {{- $secretValue = randAlphaNum 64 -}}
 {{- end -}}
