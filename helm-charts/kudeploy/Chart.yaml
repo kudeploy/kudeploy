@@ -2,11 +2,11 @@ apiVersion: v2
 name: kudeploy
 description: Kudeploy chart.
 type: application
-version: 0.4.15
+version: 0.4.16
 dependencies:
   - name: kudeploy-crds
     alias: crds
-    version: 0.2.1
+    version: 0.3.0
     repository: file://../kudeploy-crds
     condition: crds.enabled
   - name: common
