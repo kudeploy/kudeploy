@@ -1,3 +1,7 @@
+## 0.4.13 (2026-06-07)
+
+This was a version bump only for helm-chart to align it with other projects, there were no code changes.
+
 ## 0.4.11 (2026-06-07)
 
 ### 🩹 Fixes
