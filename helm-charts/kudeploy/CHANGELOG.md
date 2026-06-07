@@ -1,3 +1,13 @@
+## 0.4.4 (2026-06-07)
+
+### 🩹 Fixes
+
+- **charts:** use app secret existing secret ([36c682e](https://github.com/kudeploy/kudeploy/commit/36c682e))
+
+### ❤️ Thank You
+
+- Xudong Huang @xudongcc
+
 ## 0.4.3 (2026-06-07)
 
 ### 🩹 Fixes
