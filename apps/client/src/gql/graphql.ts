@@ -152,12 +152,16 @@ export type CreateServiceAccountWorkspaceMemberInput = {
 };
 
 export type CreateServiceInput = {
+  args?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  command?: InputMaybe<Array<Scalars["String"]["input"]>>;
   env?: InputMaybe<Array<ServiceEnvVarInput>>;
+  healthCheck?: InputMaybe<ServiceHealthCheckInput>;
   image: Scalars["String"]["input"];
   name: Scalars["String"]["input"];
   ports: Array<ServicePortInput>;
   projectId: Scalars["ID"]["input"];
   replicas?: InputMaybe<Scalars["Int"]["input"]>;
+  resources?: InputMaybe<ServiceResourcesInput>;
 };
 
 export type CreateWorkspaceInput = {
@@ -563,14 +567,18 @@ export type QueryWorkspacesArgs = {
 
 export type Service = {
   __typename?: "Service";
+  args: Array<Scalars["String"]["output"]>;
+  command: Array<Scalars["String"]["output"]>;
   createdAt: Scalars["DateTime"]["output"];
   env: Array<ServiceEnvVar>;
+  healthCheck?: Maybe<ServiceHealthCheck>;
   id: Scalars["ID"]["output"];
   image: Scalars["String"]["output"];
   name: Scalars["String"]["output"];
   ports: Array<ServicePort>;
   projectId: Scalars["ID"]["output"];
   replicas?: Maybe<Scalars["Int"]["output"]>;
+  resources?: Maybe<ServiceResources>;
   status: ServiceStatus;
   updatedAt: Scalars["DateTime"]["output"];
 };
@@ -605,6 +613,24 @@ export type ServiceEnvVarInput = {
   value: Scalars["String"]["input"];
 };
 
+export type ServiceHealthCheck = {
+  __typename?: "ServiceHealthCheck";
+  path?: Maybe<Scalars["String"]["output"]>;
+  port: Scalars["Int"]["output"];
+  type: ServiceHealthCheckType;
+};
+
+export type ServiceHealthCheckInput = {
+  path?: InputMaybe<Scalars["String"]["input"]>;
+  port: Scalars["Int"]["input"];
+  type: ServiceHealthCheckType;
+};
+
+export enum ServiceHealthCheckType {
+  HTTP = "HTTP",
+  TCP = "TCP",
+}
+
 /** Ordering options for service connections */
 export type ServiceOrder = {
   /** The ordering direction. */
@@ -630,6 +656,21 @@ export type ServicePortInput = {
   targetPort?: InputMaybe<Scalars["Int"]["input"]>;
 };
 
+export type ServiceResources = {
+  __typename?: "ServiceResources";
+  cpuLimit?: Maybe<Scalars["String"]["output"]>;
+  cpuRequest?: Maybe<Scalars["String"]["output"]>;
+  memoryLimit?: Maybe<Scalars["String"]["output"]>;
+  memoryRequest?: Maybe<Scalars["String"]["output"]>;
+};
+
+export type ServiceResourcesInput = {
+  cpuLimit?: InputMaybe<Scalars["String"]["input"]>;
+  cpuRequest?: InputMaybe<Scalars["String"]["input"]>;
+  memoryLimit?: InputMaybe<Scalars["String"]["input"]>;
+  memoryRequest?: InputMaybe<Scalars["String"]["input"]>;
+};
+
 export enum ServiceStatus {
   FAILED = "FAILED",
   PENDING = "PENDING",
@@ -647,11 +688,15 @@ export type UpdateProjectInput = {
 };
 
 export type UpdateServiceInput = {
+  args?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  command?: InputMaybe<Array<Scalars["String"]["input"]>>;
   env?: InputMaybe<Array<ServiceEnvVarInput>>;
+  healthCheck?: InputMaybe<ServiceHealthCheckInput>;
   image?: InputMaybe<Scalars["String"]["input"]>;
   name?: InputMaybe<Scalars["String"]["input"]>;
   ports?: InputMaybe<Array<ServicePortInput>>;
   replicas?: InputMaybe<Scalars["Int"]["input"]>;
+  resources?: InputMaybe<ServiceResourcesInput>;
 };
 
 export type UpdateWorkspaceInput = {
@@ -1504,11 +1549,11 @@ export type UpdateWorkspaceMemberStatusFromMembersRouteMutation = {
   } | null;
 };
 
-export type GetProjectFromProjectRouteQueryVariables = Exact<{
+export type GetProjectFromProjectLayoutQueryVariables = Exact<{
   id: Scalars["ID"]["input"];
 }>;
 
-export type GetProjectFromProjectRouteQuery = {
+export type GetProjectFromProjectLayoutQuery = {
   __typename?: "Query";
   project?: {
     __typename?: "Project";
@@ -1520,37 +1565,29 @@ export type GetProjectFromProjectRouteQuery = {
   } | null;
 };
 
-export type UpdateProjectFromProjectRouteMutationVariables = Exact<{
-  id: Scalars["ID"]["input"];
-  input: UpdateProjectInput;
-}>;
+export type UpdateServiceEnvironmentFromServiceEnvironmentRouteMutationVariables =
+  Exact<{
+    projectId: Scalars["ID"]["input"];
+    id: Scalars["ID"]["input"];
+    input: UpdateServiceInput;
+  }>;
 
-export type UpdateProjectFromProjectRouteMutation = {
+export type UpdateServiceEnvironmentFromServiceEnvironmentRouteMutation = {
   __typename?: "Mutation";
-  updateProject: {
-    __typename?: "Project";
+  updateService: {
+    __typename?: "Service";
     id: string;
-    name: string;
-    status: ProjectStatus;
     updatedAt: any;
+    env: Array<{ __typename?: "ServiceEnvVar"; key: string; value: string }>;
   };
 };
 
-export type DeleteProjectFromProjectRouteMutationVariables = Exact<{
-  id: Scalars["ID"]["input"];
-}>;
-
-export type DeleteProjectFromProjectRouteMutation = {
-  __typename?: "Mutation";
-  deleteProject: { __typename?: "Project"; id: string };
-};
-
-export type GetServiceFromServiceRouteQueryVariables = Exact<{
+export type GetServiceFromServiceLayoutQueryVariables = Exact<{
   projectId: Scalars["ID"]["input"];
   id: Scalars["ID"]["input"];
 }>;
 
-export type GetServiceFromServiceRouteQuery = {
+export type GetServiceFromServiceLayoutQuery = {
   __typename?: "Query";
   service?: {
     __typename?: "Service";
@@ -1559,9 +1596,24 @@ export type GetServiceFromServiceRouteQuery = {
     name: string;
     image: string;
     replicas?: number | null;
+    command: Array<string>;
+    args: Array<string>;
     status: ServiceStatus;
     createdAt: any;
     updatedAt: any;
+    resources?: {
+      __typename?: "ServiceResources";
+      cpuRequest?: string | null;
+      cpuLimit?: string | null;
+      memoryRequest?: string | null;
+      memoryLimit?: string | null;
+    } | null;
+    healthCheck?: {
+      __typename?: "ServiceHealthCheck";
+      type: ServiceHealthCheckType;
+      port: number;
+      path?: string | null;
+    } | null;
     ports: Array<{
       __typename?: "ServicePort";
       port: number;
@@ -1571,40 +1623,84 @@ export type GetServiceFromServiceRouteQuery = {
   } | null;
 };
 
-export type UpdateServiceFromServiceRouteMutationVariables = Exact<{
-  projectId: Scalars["ID"]["input"];
-  id: Scalars["ID"]["input"];
-  input: UpdateServiceInput;
-}>;
+export type UpdateServiceNetworkFromServiceNetworkRouteMutationVariables =
+  Exact<{
+    projectId: Scalars["ID"]["input"];
+    id: Scalars["ID"]["input"];
+    input: UpdateServiceInput;
+  }>;
 
-export type UpdateServiceFromServiceRouteMutation = {
+export type UpdateServiceNetworkFromServiceNetworkRouteMutation = {
   __typename?: "Mutation";
   updateService: {
     __typename?: "Service";
     id: string;
-    projectId: string;
-    name: string;
-    image: string;
-    replicas?: number | null;
-    status: ServiceStatus;
     updatedAt: any;
     ports: Array<{
       __typename?: "ServicePort";
       port: number;
       targetPort?: number | null;
     }>;
-    env: Array<{ __typename?: "ServiceEnvVar"; key: string; value: string }>;
+    healthCheck?: {
+      __typename?: "ServiceHealthCheck";
+      type: ServiceHealthCheckType;
+      port: number;
+      path?: string | null;
+    } | null;
   };
 };
 
-export type DeleteServiceFromServiceRouteMutationVariables = Exact<{
+export type UpdateServiceSettingsFromServiceSettingsRouteMutationVariables =
+  Exact<{
+    projectId: Scalars["ID"]["input"];
+    id: Scalars["ID"]["input"];
+    input: UpdateServiceInput;
+  }>;
+
+export type UpdateServiceSettingsFromServiceSettingsRouteMutation = {
+  __typename?: "Mutation";
+  updateService: {
+    __typename?: "Service";
+    id: string;
+    name: string;
+    replicas?: number | null;
+    updatedAt: any;
+    resources?: {
+      __typename?: "ServiceResources";
+      cpuRequest?: string | null;
+      cpuLimit?: string | null;
+      memoryRequest?: string | null;
+      memoryLimit?: string | null;
+    } | null;
+  };
+};
+
+export type DeleteServiceFromServiceSettingsRouteMutationVariables = Exact<{
   projectId: Scalars["ID"]["input"];
   id: Scalars["ID"]["input"];
 }>;
 
-export type DeleteServiceFromServiceRouteMutation = {
+export type DeleteServiceFromServiceSettingsRouteMutation = {
   __typename?: "Mutation";
   deleteService: { __typename?: "Service"; id: string };
+};
+
+export type UpdateServiceSourceFromServiceSourceRouteMutationVariables = Exact<{
+  projectId: Scalars["ID"]["input"];
+  id: Scalars["ID"]["input"];
+  input: UpdateServiceInput;
+}>;
+
+export type UpdateServiceSourceFromServiceSourceRouteMutation = {
+  __typename?: "Mutation";
+  updateService: {
+    __typename?: "Service";
+    id: string;
+    image: string;
+    command: Array<string>;
+    args: Array<string>;
+    updatedAt: any;
+  };
 };
 
 export type GetServicesFromServicesRouteQueryVariables = Exact<{
@@ -1669,8 +1765,23 @@ export type CreateServiceFromServicesRouteMutation = {
     name: string;
     image: string;
     replicas?: number | null;
+    command: Array<string>;
+    args: Array<string>;
     status: ServiceStatus;
     createdAt: any;
+    resources?: {
+      __typename?: "ServiceResources";
+      cpuRequest?: string | null;
+      cpuLimit?: string | null;
+      memoryRequest?: string | null;
+      memoryLimit?: string | null;
+    } | null;
+    healthCheck?: {
+      __typename?: "ServiceHealthCheck";
+      type: ServiceHealthCheckType;
+      port: number;
+      path?: string | null;
+    } | null;
     ports: Array<{
       __typename?: "ServicePort";
       port: number;
@@ -1688,6 +1799,31 @@ export type DeleteServiceFromServicesRouteMutationVariables = Exact<{
 export type DeleteServiceFromServicesRouteMutation = {
   __typename?: "Mutation";
   deleteService: { __typename?: "Service"; id: string };
+};
+
+export type UpdateProjectFromProjectRouteMutationVariables = Exact<{
+  id: Scalars["ID"]["input"];
+  input: UpdateProjectInput;
+}>;
+
+export type UpdateProjectFromProjectRouteMutation = {
+  __typename?: "Mutation";
+  updateProject: {
+    __typename?: "Project";
+    id: string;
+    name: string;
+    status: ProjectStatus;
+    updatedAt: any;
+  };
+};
+
+export type DeleteProjectFromProjectRouteMutationVariables = Exact<{
+  id: Scalars["ID"]["input"];
+}>;
+
+export type DeleteProjectFromProjectRouteMutation = {
+  __typename?: "Mutation";
+  deleteProject: { __typename?: "Project"; id: string };
 };
 
 export type GetProjectsFromProjectsRouteQueryVariables = Exact<{
@@ -4709,13 +4845,13 @@ export const UpdateWorkspaceMemberStatusFromMembersRouteDocument = {
   UpdateWorkspaceMemberStatusFromMembersRouteMutation,
   UpdateWorkspaceMemberStatusFromMembersRouteMutationVariables
 >;
-export const GetProjectFromProjectRouteDocument = {
+export const GetProjectFromProjectLayoutDocument = {
   kind: "Document",
   definitions: [
     {
       kind: "OperationDefinition",
       operation: "query",
-      name: { kind: "Name", value: "getProjectFromProjectRoute" },
+      name: { kind: "Name", value: "getProjectFromProjectLayout" },
       variableDefinitions: [
         {
           kind: "VariableDefinition",
@@ -4758,236 +4894,19 @@ export const GetProjectFromProjectRouteDocument = {
     },
   ],
 } as unknown as DocumentNode<
-  GetProjectFromProjectRouteQuery,
-  GetProjectFromProjectRouteQueryVariables
+  GetProjectFromProjectLayoutQuery,
+  GetProjectFromProjectLayoutQueryVariables
 >;
-export const UpdateProjectFromProjectRouteDocument = {
+export const UpdateServiceEnvironmentFromServiceEnvironmentRouteDocument = {
   kind: "Document",
   definitions: [
     {
       kind: "OperationDefinition",
       operation: "mutation",
-      name: { kind: "Name", value: "updateProjectFromProjectRoute" },
-      variableDefinitions: [
-        {
-          kind: "VariableDefinition",
-          variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
-          type: {
-            kind: "NonNullType",
-            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
-          },
-        },
-        {
-          kind: "VariableDefinition",
-          variable: {
-            kind: "Variable",
-            name: { kind: "Name", value: "input" },
-          },
-          type: {
-            kind: "NonNullType",
-            type: {
-              kind: "NamedType",
-              name: { kind: "Name", value: "UpdateProjectInput" },
-            },
-          },
-        },
-      ],
-      selectionSet: {
-        kind: "SelectionSet",
-        selections: [
-          {
-            kind: "Field",
-            name: { kind: "Name", value: "updateProject" },
-            arguments: [
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "id" },
-                value: {
-                  kind: "Variable",
-                  name: { kind: "Name", value: "id" },
-                },
-              },
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "input" },
-                value: {
-                  kind: "Variable",
-                  name: { kind: "Name", value: "input" },
-                },
-              },
-            ],
-            selectionSet: {
-              kind: "SelectionSet",
-              selections: [
-                { kind: "Field", name: { kind: "Name", value: "id" } },
-                { kind: "Field", name: { kind: "Name", value: "name" } },
-                { kind: "Field", name: { kind: "Name", value: "status" } },
-                { kind: "Field", name: { kind: "Name", value: "updatedAt" } },
-              ],
-            },
-          },
-        ],
+      name: {
+        kind: "Name",
+        value: "updateServiceEnvironmentFromServiceEnvironmentRoute",
       },
-    },
-  ],
-} as unknown as DocumentNode<
-  UpdateProjectFromProjectRouteMutation,
-  UpdateProjectFromProjectRouteMutationVariables
->;
-export const DeleteProjectFromProjectRouteDocument = {
-  kind: "Document",
-  definitions: [
-    {
-      kind: "OperationDefinition",
-      operation: "mutation",
-      name: { kind: "Name", value: "deleteProjectFromProjectRoute" },
-      variableDefinitions: [
-        {
-          kind: "VariableDefinition",
-          variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
-          type: {
-            kind: "NonNullType",
-            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
-          },
-        },
-      ],
-      selectionSet: {
-        kind: "SelectionSet",
-        selections: [
-          {
-            kind: "Field",
-            name: { kind: "Name", value: "deleteProject" },
-            arguments: [
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "id" },
-                value: {
-                  kind: "Variable",
-                  name: { kind: "Name", value: "id" },
-                },
-              },
-            ],
-            selectionSet: {
-              kind: "SelectionSet",
-              selections: [
-                { kind: "Field", name: { kind: "Name", value: "id" } },
-              ],
-            },
-          },
-        ],
-      },
-    },
-  ],
-} as unknown as DocumentNode<
-  DeleteProjectFromProjectRouteMutation,
-  DeleteProjectFromProjectRouteMutationVariables
->;
-export const GetServiceFromServiceRouteDocument = {
-  kind: "Document",
-  definitions: [
-    {
-      kind: "OperationDefinition",
-      operation: "query",
-      name: { kind: "Name", value: "getServiceFromServiceRoute" },
-      variableDefinitions: [
-        {
-          kind: "VariableDefinition",
-          variable: {
-            kind: "Variable",
-            name: { kind: "Name", value: "projectId" },
-          },
-          type: {
-            kind: "NonNullType",
-            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
-          },
-        },
-        {
-          kind: "VariableDefinition",
-          variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
-          type: {
-            kind: "NonNullType",
-            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
-          },
-        },
-      ],
-      selectionSet: {
-        kind: "SelectionSet",
-        selections: [
-          {
-            kind: "Field",
-            name: { kind: "Name", value: "service" },
-            arguments: [
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "projectId" },
-                value: {
-                  kind: "Variable",
-                  name: { kind: "Name", value: "projectId" },
-                },
-              },
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "id" },
-                value: {
-                  kind: "Variable",
-                  name: { kind: "Name", value: "id" },
-                },
-              },
-            ],
-            selectionSet: {
-              kind: "SelectionSet",
-              selections: [
-                { kind: "Field", name: { kind: "Name", value: "id" } },
-                { kind: "Field", name: { kind: "Name", value: "projectId" } },
-                { kind: "Field", name: { kind: "Name", value: "name" } },
-                { kind: "Field", name: { kind: "Name", value: "image" } },
-                { kind: "Field", name: { kind: "Name", value: "replicas" } },
-                { kind: "Field", name: { kind: "Name", value: "status" } },
-                { kind: "Field", name: { kind: "Name", value: "createdAt" } },
-                { kind: "Field", name: { kind: "Name", value: "updatedAt" } },
-                {
-                  kind: "Field",
-                  name: { kind: "Name", value: "ports" },
-                  selectionSet: {
-                    kind: "SelectionSet",
-                    selections: [
-                      { kind: "Field", name: { kind: "Name", value: "port" } },
-                      {
-                        kind: "Field",
-                        name: { kind: "Name", value: "targetPort" },
-                      },
-                    ],
-                  },
-                },
-                {
-                  kind: "Field",
-                  name: { kind: "Name", value: "env" },
-                  selectionSet: {
-                    kind: "SelectionSet",
-                    selections: [
-                      { kind: "Field", name: { kind: "Name", value: "key" } },
-                      { kind: "Field", name: { kind: "Name", value: "value" } },
-                    ],
-                  },
-                },
-              ],
-            },
-          },
-        ],
-      },
-    },
-  ],
-} as unknown as DocumentNode<
-  GetServiceFromServiceRouteQuery,
-  GetServiceFromServiceRouteQueryVariables
->;
-export const UpdateServiceFromServiceRouteDocument = {
-  kind: "Document",
-  definitions: [
-    {
-      kind: "OperationDefinition",
-      operation: "mutation",
-      name: { kind: "Name", value: "updateServiceFromServiceRoute" },
       variableDefinitions: [
         {
           kind: "VariableDefinition",
@@ -5059,11 +4978,130 @@ export const UpdateServiceFromServiceRouteDocument = {
               kind: "SelectionSet",
               selections: [
                 { kind: "Field", name: { kind: "Name", value: "id" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "env" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "key" } },
+                      { kind: "Field", name: { kind: "Name", value: "value" } },
+                    ],
+                  },
+                },
+                { kind: "Field", name: { kind: "Name", value: "updatedAt" } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  UpdateServiceEnvironmentFromServiceEnvironmentRouteMutation,
+  UpdateServiceEnvironmentFromServiceEnvironmentRouteMutationVariables
+>;
+export const GetServiceFromServiceLayoutDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "getServiceFromServiceLayout" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "projectId" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "service" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "projectId" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "projectId" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "id" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "id" },
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
                 { kind: "Field", name: { kind: "Name", value: "projectId" } },
                 { kind: "Field", name: { kind: "Name", value: "name" } },
                 { kind: "Field", name: { kind: "Name", value: "image" } },
                 { kind: "Field", name: { kind: "Name", value: "replicas" } },
+                { kind: "Field", name: { kind: "Name", value: "command" } },
+                { kind: "Field", name: { kind: "Name", value: "args" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "resources" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "cpuRequest" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "cpuLimit" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "memoryRequest" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "memoryLimit" },
+                      },
+                    ],
+                  },
+                },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "healthCheck" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "type" } },
+                      { kind: "Field", name: { kind: "Name", value: "port" } },
+                      { kind: "Field", name: { kind: "Name", value: "path" } },
+                    ],
+                  },
+                },
                 { kind: "Field", name: { kind: "Name", value: "status" } },
+                { kind: "Field", name: { kind: "Name", value: "createdAt" } },
                 { kind: "Field", name: { kind: "Name", value: "updatedAt" } },
                 {
                   kind: "Field",
@@ -5098,16 +5136,255 @@ export const UpdateServiceFromServiceRouteDocument = {
     },
   ],
 } as unknown as DocumentNode<
-  UpdateServiceFromServiceRouteMutation,
-  UpdateServiceFromServiceRouteMutationVariables
+  GetServiceFromServiceLayoutQuery,
+  GetServiceFromServiceLayoutQueryVariables
 >;
-export const DeleteServiceFromServiceRouteDocument = {
+export const UpdateServiceNetworkFromServiceNetworkRouteDocument = {
   kind: "Document",
   definitions: [
     {
       kind: "OperationDefinition",
       operation: "mutation",
-      name: { kind: "Name", value: "deleteServiceFromServiceRoute" },
+      name: {
+        kind: "Name",
+        value: "updateServiceNetworkFromServiceNetworkRoute",
+      },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "projectId" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "input" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "UpdateServiceInput" },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "updateService" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "projectId" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "projectId" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "id" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "id" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "input" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "input" },
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "ports" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "port" } },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "targetPort" },
+                      },
+                    ],
+                  },
+                },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "healthCheck" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "type" } },
+                      { kind: "Field", name: { kind: "Name", value: "port" } },
+                      { kind: "Field", name: { kind: "Name", value: "path" } },
+                    ],
+                  },
+                },
+                { kind: "Field", name: { kind: "Name", value: "updatedAt" } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  UpdateServiceNetworkFromServiceNetworkRouteMutation,
+  UpdateServiceNetworkFromServiceNetworkRouteMutationVariables
+>;
+export const UpdateServiceSettingsFromServiceSettingsRouteDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "mutation",
+      name: {
+        kind: "Name",
+        value: "updateServiceSettingsFromServiceSettingsRoute",
+      },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "projectId" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "input" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "UpdateServiceInput" },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "updateService" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "projectId" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "projectId" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "id" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "id" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "input" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "input" },
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "name" } },
+                { kind: "Field", name: { kind: "Name", value: "replicas" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "resources" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "cpuRequest" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "cpuLimit" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "memoryRequest" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "memoryLimit" },
+                      },
+                    ],
+                  },
+                },
+                { kind: "Field", name: { kind: "Name", value: "updatedAt" } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  UpdateServiceSettingsFromServiceSettingsRouteMutation,
+  UpdateServiceSettingsFromServiceSettingsRouteMutationVariables
+>;
+export const DeleteServiceFromServiceSettingsRouteDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "mutation",
+      name: { kind: "Name", value: "deleteServiceFromServiceSettingsRoute" },
       variableDefinitions: [
         {
           kind: "VariableDefinition",
@@ -5165,8 +5442,104 @@ export const DeleteServiceFromServiceRouteDocument = {
     },
   ],
 } as unknown as DocumentNode<
-  DeleteServiceFromServiceRouteMutation,
-  DeleteServiceFromServiceRouteMutationVariables
+  DeleteServiceFromServiceSettingsRouteMutation,
+  DeleteServiceFromServiceSettingsRouteMutationVariables
+>;
+export const UpdateServiceSourceFromServiceSourceRouteDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "mutation",
+      name: {
+        kind: "Name",
+        value: "updateServiceSourceFromServiceSourceRoute",
+      },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "projectId" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "input" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "UpdateServiceInput" },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "updateService" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "projectId" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "projectId" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "id" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "id" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "input" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "input" },
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "image" } },
+                { kind: "Field", name: { kind: "Name", value: "command" } },
+                { kind: "Field", name: { kind: "Name", value: "args" } },
+                { kind: "Field", name: { kind: "Name", value: "updatedAt" } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  UpdateServiceSourceFromServiceSourceRouteMutation,
+  UpdateServiceSourceFromServiceSourceRouteMutationVariables
 >;
 export const GetServicesFromServicesRouteDocument = {
   kind: "Document",
@@ -5506,6 +5879,45 @@ export const CreateServiceFromServicesRouteDocument = {
                 { kind: "Field", name: { kind: "Name", value: "name" } },
                 { kind: "Field", name: { kind: "Name", value: "image" } },
                 { kind: "Field", name: { kind: "Name", value: "replicas" } },
+                { kind: "Field", name: { kind: "Name", value: "command" } },
+                { kind: "Field", name: { kind: "Name", value: "args" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "resources" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "cpuRequest" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "cpuLimit" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "memoryRequest" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "memoryLimit" },
+                      },
+                    ],
+                  },
+                },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "healthCheck" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "type" } },
+                      { kind: "Field", name: { kind: "Name", value: "port" } },
+                      { kind: "Field", name: { kind: "Name", value: "path" } },
+                    ],
+                  },
+                },
                 { kind: "Field", name: { kind: "Name", value: "status" } },
                 { kind: "Field", name: { kind: "Name", value: "createdAt" } },
                 {
@@ -5610,6 +6022,127 @@ export const DeleteServiceFromServicesRouteDocument = {
 } as unknown as DocumentNode<
   DeleteServiceFromServicesRouteMutation,
   DeleteServiceFromServicesRouteMutationVariables
+>;
+export const UpdateProjectFromProjectRouteDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "mutation",
+      name: { kind: "Name", value: "updateProjectFromProjectRoute" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "input" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "UpdateProjectInput" },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "updateProject" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "id" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "id" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "input" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "input" },
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "name" } },
+                { kind: "Field", name: { kind: "Name", value: "status" } },
+                { kind: "Field", name: { kind: "Name", value: "updatedAt" } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  UpdateProjectFromProjectRouteMutation,
+  UpdateProjectFromProjectRouteMutationVariables
+>;
+export const DeleteProjectFromProjectRouteDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "mutation",
+      name: { kind: "Name", value: "deleteProjectFromProjectRoute" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "deleteProject" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "id" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "id" },
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  DeleteProjectFromProjectRouteMutation,
+  DeleteProjectFromProjectRouteMutationVariables
 >;
 export const GetProjectsFromProjectsRouteDocument = {
   kind: "Document",

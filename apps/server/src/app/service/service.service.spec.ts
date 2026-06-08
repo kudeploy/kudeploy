@@ -39,6 +39,19 @@ describe('ServiceService', () => {
       name: 'API',
       image: 'ghcr.io/kudeploy/whoami:latest',
       replicas: 2,
+      command: ['pnpm'],
+      args: ['start'],
+      resources: {
+        cpuRequest: '250m',
+        cpuLimit: '500m',
+        memoryRequest: '256Mi',
+        memoryLimit: '512Mi',
+      },
+      healthCheck: {
+        type: 'HTTP',
+        path: '/healthz',
+        port: 8080,
+      },
       ports: [{ port: 80, targetPort: 8080 }],
       env: [{ key: 'NODE_ENV', value: 'production' }],
     });
@@ -68,6 +81,51 @@ describe('ServiceService', () => {
           spec: {
             image: 'ghcr.io/kudeploy/whoami:latest',
             replicas: 2,
+            command: ['pnpm'],
+            args: ['start'],
+            resources: {
+              requests: {
+                cpu: '250m',
+                memory: '256Mi',
+              },
+              limits: {
+                cpu: '500m',
+                memory: '512Mi',
+              },
+            },
+            readinessProbe: {
+              httpGet: {
+                path: '/healthz',
+                port: 8080,
+              },
+              initialDelaySeconds: 0,
+              timeoutSeconds: 3,
+              periodSeconds: 5,
+              successThreshold: 1,
+              failureThreshold: 3,
+            },
+            livenessProbe: {
+              httpGet: {
+                path: '/healthz',
+                port: 8080,
+              },
+              initialDelaySeconds: 0,
+              timeoutSeconds: 3,
+              periodSeconds: 10,
+              successThreshold: 1,
+              failureThreshold: 3,
+            },
+            startupProbe: {
+              httpGet: {
+                path: '/healthz',
+                port: 8080,
+              },
+              initialDelaySeconds: 0,
+              timeoutSeconds: 3,
+              periodSeconds: 10,
+              successThreshold: 1,
+              failureThreshold: 30,
+            },
             ports: [{ port: 80, targetPort: 8080 }],
             env: [{ name: 'NODE_ENV', value: 'production' }],
           },
@@ -85,6 +143,19 @@ describe('ServiceService', () => {
       name: 'API',
       image: 'ghcr.io/kudeploy/whoami:latest',
       replicas: 2,
+      command: ['pnpm'],
+      args: ['start'],
+      resources: {
+        cpuRequest: '250m',
+        cpuLimit: '500m',
+        memoryRequest: '256Mi',
+        memoryLimit: '512Mi',
+      },
+      healthCheck: {
+        type: 'HTTP',
+        path: '/healthz',
+        port: 8080,
+      },
       status: ServiceStatus.PENDING,
     });
   });
@@ -271,6 +342,24 @@ function serviceCrd(
     spec: {
       image,
       replicas: 2,
+      command: ['pnpm'],
+      args: ['start'],
+      resources: {
+        requests: {
+          cpu: '250m',
+          memory: '256Mi',
+        },
+        limits: {
+          cpu: '500m',
+          memory: '512Mi',
+        },
+      },
+      readinessProbe: {
+        httpGet: {
+          path: '/healthz',
+          port: 8080,
+        },
+      },
       ports: [{ port: 80, targetPort: 8080 }],
       env: [{ name: 'NODE_ENV', value: 'production' }],
     },

@@ -10,6 +10,52 @@
     "title": "Service",
     "description": "Saving updates the Service CRD and publishes a new Deployment version."
   },
+  "tabs": {
+    "overview": "Overview",
+    "source": "Source",
+    "environment": "Environment",
+    "network": "Network",
+    "volumes": "Volumes",
+    "terminal": "Terminal",
+    "logs": "Logs",
+    "metrics": "Metrics",
+    "settings": "Settings"
+  },
+  "overview": {
+    "description": "Review the current service status and runtime summary.",
+    "status": "Status",
+    "image": "Image",
+    "replicas": "Replicas"
+  },
+  "source": {
+    "title": "Runtime source",
+    "description": "Configure the container image and startup process."
+  },
+  "environment": {
+    "title": "Environment variables",
+    "description": "Manage service environment variables.",
+    "empty": "No environment variables configured."
+  },
+  "network": {
+    "description": "Configure exposed ports and health checks.",
+    "ports": "Ports"
+  },
+  "settings": {
+    "description": "Manage service metadata, scale, resources, and deletion.",
+    "general": {
+      "title": "General",
+      "description": "Update the service name and replica count."
+    },
+    "danger_zone": {
+      "title": "Danger zone",
+      "description": "Deleting a service removes its Kubernetes Service CRD.",
+      "delete_button": "Delete service"
+    }
+  },
+  "placeholder": {
+    "description": "This service area is reserved for a future backend capability.",
+    "body": "This page is ready in the service detail layout. The backend API is not implemented yet."
+  },
   "form": {
     "env": "Environment",
     "image": {
@@ -23,6 +69,24 @@
       "placeholder": "api",
       "required": "Name is required"
     },
+    "args": {
+      "label": "Arguments",
+      "placeholder": "start\n--host\n0.0.0.0"
+    },
+    "command": {
+      "label": "Command",
+      "placeholder": "node"
+    },
+    "resources": "Resources",
+    "cpu_request": "CPU request",
+    "cpu_limit": "CPU limit",
+    "memory_request": "Memory request",
+    "memory_limit": "Memory limit",
+    "health_check": "Health check",
+    "health_check_type": "Type",
+    "health_check_port": "Port",
+    "health_check_path": "Path",
+    "health_check_port_required": "Health check port is required",
     "ports": "Ports",
     "port": "Port",
     "replicas": "Replicas",

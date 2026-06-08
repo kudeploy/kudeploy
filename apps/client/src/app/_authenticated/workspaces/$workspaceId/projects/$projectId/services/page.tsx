@@ -18,6 +18,7 @@ import {
   initialServiceFormValue,
   toServiceInput,
 } from "../../components/service-form";
+import { ProjectTabs } from "../../components/project-tabs";
 import { StatusBadge } from "../../components/status-badge";
 import type { DataFilterItemProps as FilterItemProps } from "@/components/fabric-ui/data-filter";
 import type { GetServicesFromServicesRouteQuery } from "@/gql/graphql";
@@ -107,6 +108,19 @@ const CREATE_SERVICE_FROM_SERVICES_ROUTE = graphql(`
       name
       image
       replicas
+      command
+      args
+      resources {
+        cpuRequest
+        cpuLimit
+        memoryRequest
+        memoryLimit
+      }
+      healthCheck {
+        type
+        port
+        path
+      }
       status
       createdAt
       ports {
@@ -133,6 +147,9 @@ export const Route = createFileRoute(
   "/_authenticated/workspaces/$workspaceId/projects/$projectId/services/",
 )({
   component: ServicesComponent,
+  beforeLoad: () => {
+    return { title: null };
+  },
   validateSearch: zodValidator(
     createConnectionSearchSchema({
       filterSchema: z
@@ -188,7 +205,6 @@ function ServicesComponent() {
     DELETE_SERVICE_FROM_SERVICES_ROUTE,
   );
 
-  const project = data?.project;
   const services = data?.services.edges.map((edge) => edge.node) ?? [];
   const pageInfo = data?.services.pageInfo;
 
@@ -230,6 +246,14 @@ function ServicesComponent() {
 
     if (input.ports.length === 0) {
       toast.error(t("service:form.ports"));
+      return;
+    }
+
+    if (
+      serviceForm.healthCheck.enabled &&
+      serviceForm.healthCheck.port === ""
+    ) {
+      toast.error(t("service:form.health_check_port_required"));
       return;
     }
 
@@ -284,181 +308,184 @@ function ServicesComponent() {
   };
 
   return (
-    <Page
-      title={
-        project?.name
-          ? `${project.name} / ${t("service:title")}`
-          : t("service:title")
-      }
-      description={t("service:description")}
-      primaryAction={{
-        icon: <ServerCog data-icon="inline-start" />,
-        label: t("service:create.button"),
-        onClick: () => setCreateDialogOpen(true),
-        testId: "service-create-action",
-      }}
-    >
-      <div className="mb-4" data-testid="services-page">
-        <Filter
-          filters={filters}
-          values={filterValues}
-          onChange={(values) => {
-            navigate({
-              to: location.pathname,
-              search: {
-                ...(query ? { query } : {}),
-                ...(!isEmpty(values) ? { filter: values } : {}),
-              },
-            });
-          }}
-          search={{
-            placeholder: t("service:filter.search.placeholder"),
-            value: query,
-            onChange: (value) => {
+    <>
+      <ProjectTabs workspaceId={workspaceId} projectId={projectId} />
+      <Page
+        title={t("service:title")}
+        description={t("service:description")}
+        primaryAction={{
+          icon: <ServerCog data-icon="inline-start" />,
+          label: t("service:create.button"),
+          onClick: () => setCreateDialogOpen(true),
+          testId: "service-create-action",
+        }}
+      >
+        <div className="mb-4" data-testid="services-page">
+          <Filter
+            filters={filters}
+            values={filterValues}
+            onChange={(values) => {
               navigate({
                 to: location.pathname,
                 search: {
-                  ...(value ? { query: value } : {}),
-                  ...(!isEmpty(filterValues) ? { filter: filterValues } : {}),
+                  ...(query ? { query } : {}),
+                  ...(!isEmpty(values) ? { filter: values } : {}),
                 },
+              });
+            }}
+            search={{
+              placeholder: t("service:filter.search.placeholder"),
+              value: query,
+              onChange: (value) => {
+                navigate({
+                  to: location.pathname,
+                  search: {
+                    ...(value ? { query: value } : {}),
+                    ...(!isEmpty(filterValues) ? { filter: filterValues } : {}),
+                  },
+                });
+              },
+            }}
+          />
+        </div>
+
+        <DataTable
+          columns={[
+            {
+              accessorKey: "name",
+              header: t("service:table.name"),
+              cell: ({ row }) => (
+                <span
+                  className="font-medium"
+                  data-testid={`service-row-${row.original.id}`}
+                >
+                  {row.original.name}
+                </span>
+              ),
+            },
+            {
+              accessorKey: "status",
+              header: t("service:table.status"),
+              size: 130,
+              cell: ({ row }) => (
+                <StatusBadge namespace="service" status={row.original.status} />
+              ),
+            },
+            {
+              accessorKey: "image",
+              header: t("service:table.image"),
+              cell: ({ row }) => (
+                <span className="text-muted-foreground line-clamp-1 text-xs break-all">
+                  {row.original.image}
+                </span>
+              ),
+            },
+            {
+              accessorKey: "replicas",
+              header: t("service:table.replicas"),
+              size: 100,
+              cell: ({ row }) => row.original.replicas ?? "-",
+            },
+            {
+              accessorKey: "ports",
+              header: t("service:table.ports"),
+              cell: ({ row }) =>
+                row.original.ports
+                  .map((port) =>
+                    port.targetPort
+                      ? `${port.port}:${port.targetPort}`
+                      : port.port,
+                  )
+                  .join(", "),
+            },
+            {
+              accessorKey: "createdAt",
+              header: t("service:table.created_at"),
+              cell: ({ row }) =>
+                dayjs(row.original.createdAt).format("YYYY-MM-DD HH:mm"),
+            },
+          ]}
+          data={services}
+          pagination={{
+            hasPreviousPage: pageInfo?.hasPreviousPage,
+            hasNextPage: pageInfo?.hasNextPage,
+            onPreviousPage: () => {
+              navigate({
+                to: location.pathname,
+                search: getPreviousPageSearch(search, pageInfo),
+              });
+            },
+            onNextPage: () => {
+              navigate({
+                to: location.pathname,
+                search: getNextPageSearch(search, pageInfo),
               });
             },
           }}
+          rowActions={(row) => [
+            {
+              label: t("action.edit"),
+              onClick: () =>
+                navigate({
+                  to: "/workspaces/$workspaceId/projects/$projectId/services/$serviceId",
+                  params: {
+                    workspaceId,
+                    projectId,
+                    serviceId: row.original.id,
+                  },
+                }),
+            },
+            {
+              disabled: deleteLoading,
+              label: t("action.delete"),
+              onClick: () => handleDeleteService(row.original),
+            },
+          ]}
+          onRowClick={(row) =>
+            navigate({
+              to: "/workspaces/$workspaceId/projects/$projectId/services/$serviceId",
+              params: { workspaceId, projectId, serviceId: row.original.id },
+            })
+          }
         />
-      </div>
 
-      <DataTable
-        columns={[
-          {
-            accessorKey: "name",
-            header: t("service:table.name"),
-            cell: ({ row }) => (
-              <span
-                className="font-medium"
-                data-testid={`service-row-${row.original.id}`}
-              >
-                {row.original.name}
-              </span>
-            ),
-          },
-          {
-            accessorKey: "status",
-            header: t("service:table.status"),
-            size: 130,
-            cell: ({ row }) => (
-              <StatusBadge namespace="service" status={row.original.status} />
-            ),
-          },
-          {
-            accessorKey: "image",
-            header: t("service:table.image"),
-            cell: ({ row }) => (
-              <span className="text-muted-foreground line-clamp-1 text-xs break-all">
-                {row.original.image}
-              </span>
-            ),
-          },
-          {
-            accessorKey: "replicas",
-            header: t("service:table.replicas"),
-            size: 100,
-            cell: ({ row }) => row.original.replicas ?? "-",
-          },
-          {
-            accessorKey: "ports",
-            header: t("service:table.ports"),
-            cell: ({ row }) =>
-              row.original.ports
-                .map((port) =>
-                  port.targetPort
-                    ? `${port.port}:${port.targetPort}`
-                    : port.port,
-                )
-                .join(", "),
-          },
-          {
-            accessorKey: "createdAt",
-            header: t("service:table.created_at"),
-            cell: ({ row }) =>
-              dayjs(row.original.createdAt).format("YYYY-MM-DD HH:mm"),
-          },
-        ]}
-        data={services}
-        pagination={{
-          hasPreviousPage: pageInfo?.hasPreviousPage,
-          hasNextPage: pageInfo?.hasNextPage,
-          onPreviousPage: () => {
-            navigate({
-              to: location.pathname,
-              search: getPreviousPageSearch(search, pageInfo),
-            });
-          },
-          onNextPage: () => {
-            navigate({
-              to: location.pathname,
-              search: getNextPageSearch(search, pageInfo),
-            });
-          },
-        }}
-        rowActions={(row) => [
-          {
-            label: t("action.edit"),
-            onClick: () =>
-              navigate({
-                to: "/workspaces/$workspaceId/projects/$projectId/services/$serviceId",
-                params: { workspaceId, projectId, serviceId: row.original.id },
-              }),
-          },
-          {
-            disabled: deleteLoading,
-            label: t("action.delete"),
-            onClick: () => handleDeleteService(row.original),
-          },
-        ]}
-        onRowClick={(row) =>
-          navigate({
-            to: "/workspaces/$workspaceId/projects/$projectId/services/$serviceId",
-            params: { workspaceId, projectId, serviceId: row.original.id },
-          })
-        }
-      />
-
-      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent className="max-h-[85vh] overflow-auto sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{t("service:create.title")}</DialogTitle>
-            <DialogDescription>
-              {t("service:create.description")}
-            </DialogDescription>
-          </DialogHeader>
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              handleCreateService();
-            }}
-          >
-            <div className="py-4">
-              <ServiceForm value={serviceForm} onChange={setServiceForm} />
-            </div>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setCreateDialogOpen(false)}
-              >
-                {t("action.cancel")}
-              </Button>
-              <Button
-                data-testid="service-create-submit"
-                loading={createLoading}
-                type="submit"
-              >
-                {t("action.create")}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-    </Page>
+        <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+          <DialogContent className="max-h-[85vh] overflow-auto sm:max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>{t("service:create.title")}</DialogTitle>
+              <DialogDescription>
+                {t("service:create.description")}
+              </DialogDescription>
+            </DialogHeader>
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                handleCreateService();
+              }}
+            >
+              <div className="py-4">
+                <ServiceForm value={serviceForm} onChange={setServiceForm} />
+              </div>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setCreateDialogOpen(false)}
+                >
+                  {t("action.cancel")}
+                </Button>
+                <Button
+                  data-testid="service-create-submit"
+                  loading={createLoading}
+                  type="submit"
+                >
+                  {t("action.create")}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </Page>
+    </>
   );
 }

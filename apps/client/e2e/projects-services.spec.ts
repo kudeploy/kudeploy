@@ -19,6 +19,19 @@ type MockService = {
   name: string;
   image: string;
   replicas: number | null;
+  command: string[];
+  args: string[];
+  resources: {
+    cpuRequest: string | null;
+    cpuLimit: string | null;
+    memoryRequest: string | null;
+    memoryLimit: string | null;
+  } | null;
+  healthCheck: {
+    type: "HTTP" | "TCP";
+    port: number;
+    path: string | null;
+  } | null;
   status: "PENDING" | "PROGRESSING" | "READY" | "FAILED" | "UNKNOWN";
   createdAt: string;
   updatedAt: string;
@@ -60,15 +73,43 @@ test.describe("workspace Projects and Services", () => {
     await page.getByTestId("project-create-submit").click();
 
     await expect(page).toHaveURL(
-      new RegExp(`/workspaces/${workspaceId}/projects/project-e2e$`),
+      new RegExp(
+        `/workspaces/${workspaceId}/projects/project-e2e/services(\\?.*)?$`,
+      ),
+    );
+    await expect(page.getByTestId("services-page")).toBeVisible();
+    await expect(page.getByTestId("project-services-tab")).toBeVisible();
+    await expect(page.getByTestId("project-settings-tab")).toBeVisible();
+    await expect(page.getByTestId("project-services-tab")).toHaveAttribute(
+      "data-active",
+      "true",
+    );
+
+    const breadcrumb = page.getByLabel("面包屑导航");
+    await expect(breadcrumb).toContainText("项目");
+    await expect(breadcrumb).toContainText("Payments");
+    await expect(breadcrumb).not.toContainText("服务");
+
+    await page.getByTestId("project-settings-tab").click();
+    await expect(page).toHaveURL(
+      new RegExp(`/workspaces/${workspaceId}/projects/project-e2e/settings$`),
     );
     await expect(page.getByTestId("project-detail-page")).toBeVisible();
     await expect(page.getByTestId("project-status")).toContainText("处理中");
-
-    await page.goto(
-      `/workspaces/${workspaceId}/projects/project-e2e/services`,
+    await expect(page.getByTestId("project-settings-tab")).toHaveAttribute(
+      "data-active",
+      "true",
     );
-    await expect(page.getByTestId("services-page")).toBeVisible();
+    await expect(breadcrumb).toContainText("项目");
+    await expect(breadcrumb).toContainText("Payments");
+    await expect(breadcrumb).not.toContainText("设置");
+
+    await page.getByTestId("project-services-tab").click();
+    await expect(page).toHaveURL(
+      new RegExp(
+        `/workspaces/${workspaceId}/projects/project-e2e/services(\\?.*)?$`,
+      ),
+    );
 
     await page.getByTestId("service-create-action").click();
     await page.getByTestId("service-name-input").fill("API");
@@ -83,22 +124,65 @@ test.describe("workspace Projects and Services", () => {
       ),
     );
     await expect(page.getByTestId("service-detail-page")).toBeVisible();
+    await expect(page.getByTestId("project-services-tab")).not.toBeVisible();
+    await expect(page.getByTestId("project-settings-tab")).not.toBeVisible();
+    await expect(page.getByTestId("service-overview-tab")).toHaveAttribute(
+      "data-active",
+      "true",
+    );
+    await expect(page.getByTestId("service-source-tab")).toBeVisible();
+    await expect(page.getByTestId("service-environment-tab")).toBeVisible();
+    await expect(page.getByTestId("service-network-tab")).toBeVisible();
+    await expect(page.getByTestId("service-settings-tab")).toBeVisible();
     await expect(page.getByTestId("service-status")).toContainText("就绪");
 
-    await page.getByTestId("service-name-input").fill("API Edited");
+    await page.getByTestId("service-source-tab").click();
+    await expect(page).toHaveURL(
+      new RegExp(
+        `/workspaces/${workspaceId}/projects/project-e2e/services/service-e2e/source$`,
+      ),
+    );
+    await expect(page.getByTestId("service-source-page")).toBeVisible();
     await page
       .getByTestId("service-image-input")
       .fill("ghcr.io/kudeploy/api:v2");
+    await page.getByTestId("service-save-action").click();
+    await expect(page.getByTestId("service-image-input")).toHaveValue(
+      "ghcr.io/kudeploy/api:v2",
+    );
+
+    await page.getByTestId("service-environment-tab").click();
+    await expect(page).toHaveURL(
+      new RegExp(
+        `/workspaces/${workspaceId}/projects/project-e2e/services/service-e2e/environment$`,
+      ),
+    );
+    await expect(page.getByTestId("service-environment-page")).toBeVisible();
+
+    await page.getByTestId("service-network-tab").click();
+    await expect(page).toHaveURL(
+      new RegExp(
+        `/workspaces/${workspaceId}/projects/project-e2e/services/service-e2e/network$`,
+      ),
+    );
+    await expect(page.getByTestId("service-network-page")).toBeVisible();
+
+    await page.getByTestId("service-settings-tab").click();
+    await expect(page).toHaveURL(
+      new RegExp(
+        `/workspaces/${workspaceId}/projects/project-e2e/services/service-e2e/settings$`,
+      ),
+    );
+    await expect(page.getByTestId("service-settings-page")).toBeVisible();
+
+    await page.getByTestId("service-name-input").fill("API Edited");
     await page.getByTestId("service-save-action").click();
 
     await expect(page.getByTestId("service-name-input")).toHaveValue(
       "API Edited",
     );
-    await expect(page.getByTestId("service-image-input")).toHaveValue(
-      "ghcr.io/kudeploy/api:v2",
-    );
 
-    await page.goto(`/workspaces/${workspaceId}/projects/project-e2e`);
+    await page.goto(`/workspaces/${workspaceId}/projects/project-e2e/settings`);
     await page.getByTestId("project-delete-action").click();
     await page.getByTestId("alert-dialog-confirm").click();
 
@@ -157,6 +241,13 @@ async function mockProjectsAndServicesGraphql(page: Page) {
         });
         return;
       }
+      case "getProjectFromProjectLayout": {
+        await fulfill(route, {
+          project:
+            projects.find((project) => project.id === variables.id) ?? null,
+        });
+        return;
+      }
       case "deleteProjectFromProjectRoute":
       case "deleteProjectFromProjectsRoute": {
         const index = projects.findIndex(
@@ -189,6 +280,10 @@ async function mockProjectsAndServicesGraphql(page: Page) {
           name: input.name,
           image: input.image,
           replicas: input.replicas ?? null,
+          command: input.command ?? [],
+          args: input.args ?? [],
+          resources: input.resources ?? null,
+          healthCheck: input.healthCheck ?? null,
           status: "READY",
           createdAt: now,
           updatedAt: now,
@@ -206,6 +301,7 @@ async function mockProjectsAndServicesGraphql(page: Page) {
         });
         return;
       }
+      case "getServiceFromServiceLayout":
       case "getServiceFromServiceRoute": {
         await fulfill(route, {
           service:
@@ -217,23 +313,49 @@ async function mockProjectsAndServicesGraphql(page: Page) {
         });
         return;
       }
-      case "updateServiceFromServiceRoute": {
+      case "deleteServiceFromServiceRoute":
+      case "deleteServiceFromServiceSettingsRoute": {
+        const index = services.findIndex(
+          (service) =>
+            service.projectId === variables.projectId &&
+            service.id === variables.id,
+        );
+        const [service] = index >= 0 ? services.splice(index, 1) : [];
+        await fulfill(route, {
+          deleteService: service ?? { id: variables.id },
+        });
+        return;
+      }
+      case "updateServiceFromServiceRoute":
+      case "updateServiceSourceFromServiceSourceRoute":
+      case "updateServiceEnvironmentFromServiceEnvironmentRoute":
+      case "updateServiceNetworkFromServiceNetworkRoute":
+      case "updateServiceSettingsFromServiceSettingsRoute": {
         const service = services.find(
           (item) =>
             item.projectId === variables.projectId && item.id === variables.id,
         );
         if (service) {
-          Object.assign(service, {
-            ...variables.input,
-            updatedAt: now,
-            ports: variables.input.ports.map(
+          const input = variables.input;
+          if ("name" in input) service.name = input.name;
+          if ("image" in input) service.image = input.image;
+          if ("replicas" in input) service.replicas = input.replicas ?? null;
+          if ("command" in input) service.command = input.command ?? [];
+          if ("args" in input) service.args = input.args ?? [];
+          if ("resources" in input) service.resources = input.resources ?? null;
+          if ("healthCheck" in input) {
+            service.healthCheck = input.healthCheck ?? null;
+          }
+          if ("ports" in input) {
+            service.ports = input.ports.map(
               (port: { port: number; targetPort?: number | null }) => ({
                 port: port.port,
                 targetPort: port.targetPort ?? null,
               }),
-            ),
-            env: variables.input.env ?? [],
-          });
+            );
+          }
+          if ("env" in input) service.env = input.env ?? [];
+          service.updatedAt = now;
         }
         await fulfill(route, {
           updateService: service,

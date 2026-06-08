@@ -11,6 +11,23 @@
     "description": "保存会直接更新 Project CRD。",
     "services_action": "服务"
   },
+  "tabs": {
+    "services": "服务",
+    "settings": "设置"
+  },
+  "settings": {
+    "title": "设置",
+    "description": "管理项目名称和删除操作。",
+    "update": {
+      "title": "项目信息",
+      "description": "保存会直接更新 Project CRD。"
+    },
+    "danger_zone": {
+      "title": "危险操作",
+      "description": "删除项目后，相关 Kubernetes 资源可能会被 controller 清理。",
+      "delete_button": "删除项目"
+    }
+  },
   "form": {
     "name": {
       "label": "名称",

@@ -23,8 +23,11 @@ import {
   ServiceConnectionArgs,
 } from './service.connection-definition';
 import { CreateServiceInput } from './inputs/create-service.input';
+import { ServiceHealthCheckInput } from './inputs/service-health-check.input';
+import { ServiceResourcesInput } from './inputs/service-resources.input';
 import { UpdateServiceInput } from './inputs/update-service.input';
 import { Service } from './service.object';
+import { ServiceHealthCheckType } from './service-health-check-type.enum';
 import { ServiceStatus } from './service-status.enum';
 
 export const PROJECT_LABEL = 'kudeploy.com/project';
@@ -43,6 +46,9 @@ export interface ServiceResource {
   spec: {
     image: string;
     replicas?: number;
+    command?: string[];
+    args?: string[];
+    resources?: ServiceResourceRequirements;
     ports: Array<{
       port: number;
       targetPort?: number;
@@ -51,10 +57,39 @@ export interface ServiceResource {
       name: string;
       value: string;
     }>;
+    readinessProbe?: ServiceResourceProbe;
+    livenessProbe?: ServiceResourceProbe;
+    startupProbe?: ServiceResourceProbe;
   };
   status?: {
     conditions?: KudeployCondition[];
   };
+}
+
+interface ServiceResourceRequirements {
+  requests?: {
+    cpu?: string;
+    memory?: string;
+  };
+  limits?: {
+    cpu?: string;
+    memory?: string;
+  };
+}
+
+interface ServiceResourceProbe {
+  httpGet?: {
+    path?: string;
+    port: number | string;
+  };
+  tcpSocket?: {
+    port: number | string;
+  };
+  initialDelaySeconds?: number;
+  timeoutSeconds?: number;
+  periodSeconds?: number;
+  successThreshold?: number;
+  failureThreshold?: number;
 }
 
 interface ServiceResourceInput {
@@ -62,6 +97,10 @@ interface ServiceResourceInput {
   name: string;
   image: string;
   replicas?: number;
+  command?: string[] | null;
+  args?: string[] | null;
+  resources?: ServiceResourcesInput | Service['resources'] | null;
+  healthCheck?: ServiceHealthCheckInput | Service['healthCheck'] | null;
   ports: Array<{
     port: number;
     targetPort?: number;
@@ -190,6 +229,22 @@ export class ServiceService {
             input.replicas === undefined
               ? (existing.replicas ?? undefined)
               : input.replicas,
+          command:
+            input.command === undefined
+              ? existing.command
+              : (input.command ?? undefined),
+          args:
+            input.args === undefined
+              ? existing.args
+              : (input.args ?? undefined),
+          resources:
+            input.resources === undefined
+              ? (existing.resources ?? undefined)
+              : input.resources,
+          healthCheck:
+            input.healthCheck === undefined
+              ? (existing.healthCheck ?? undefined)
+              : input.healthCheck,
           ports: input.ports ?? this.toServiceInputPorts(existing.ports),
           env: input.env ?? existing.env,
         }),
@@ -254,6 +309,10 @@ export class ServiceService {
         key: env.name,
         value: env.value,
       })),
+      command: resource.spec.command ?? [],
+      args: resource.spec.args ?? [],
+      resources: this.toServiceResources(resource.spec.resources),
+      healthCheck: this.toServiceHealthCheck(resource.spec.readinessProbe),
       status: this.toServiceStatus(resource),
       createdAt: creationTime,
       updatedAt: creationTime,
@@ -277,6 +336,11 @@ export class ServiceService {
     name: string,
     input: ServiceResourceInput,
   ): ServiceResource {
+    const resources = this.buildResourceRequirements(input.resources);
+    const readinessProbe = this.buildReadinessProbe(input.healthCheck);
+    const livenessProbe = this.buildLivenessProbe(input.healthCheck);
+    const startupProbe = this.buildStartupProbe(input.healthCheck);
+
     return {
       apiVersion: KUDEPLOY_API_VERSION,
       kind: 'Service',
@@ -295,6 +359,12 @@ export class ServiceService {
       spec: {
         image: input.image,
         ...(input.replicas === undefined ? {} : { replicas: input.replicas }),
+        ...(input.command?.length ? { command: input.command } : {}),
+        ...(input.args?.length ? { args: input.args } : {}),
+        ...(resources ? { resources } : {}),
+        ...(readinessProbe ? { readinessProbe } : {}),
+        ...(livenessProbe ? { livenessProbe } : {}),
+        ...(startupProbe ? { startupProbe } : {}),
         ports: input.ports.map((port) => ({
           port: port.port,
           ...(port.targetPort === undefined
@@ -306,6 +376,115 @@ export class ServiceService {
           value: env.value,
         })),
       },
+    };
+  }
+
+  private buildResourceRequirements(
+    resources?: ServiceResourceInput['resources'],
+  ): ServiceResourceRequirements | undefined {
+    if (!resources) {
+      return undefined;
+    }
+
+    const requests = {
+      ...(this.nonEmpty(resources.cpuRequest)
+        ? { cpu: resources.cpuRequest.trim() }
+        : {}),
+      ...(this.nonEmpty(resources.memoryRequest)
+        ? { memory: resources.memoryRequest.trim() }
+        : {}),
+    };
+    const limits = {
+      ...(this.nonEmpty(resources.cpuLimit)
+        ? { cpu: resources.cpuLimit.trim() }
+        : {}),
+      ...(this.nonEmpty(resources.memoryLimit)
+        ? { memory: resources.memoryLimit.trim() }
+        : {}),
+    };
+
+    const result = {
+      ...(Object.keys(requests).length ? { requests } : {}),
+      ...(Object.keys(limits).length ? { limits } : {}),
+    };
+
+    return Object.keys(result).length ? result : undefined;
+  }
+
+  private buildProbeAction(
+    healthCheck?: ServiceResourceInput['healthCheck'],
+  ): Pick<ServiceResourceProbe, 'httpGet' | 'tcpSocket'> | undefined {
+    if (!healthCheck) {
+      return undefined;
+    }
+
+    if (healthCheck.type === ServiceHealthCheckType.HTTP) {
+      return {
+        httpGet: {
+          path: this.nonEmpty(healthCheck.path) ? healthCheck.path.trim() : '/',
+          port: healthCheck.port,
+        },
+      };
+    }
+
+    return {
+      tcpSocket: {
+        port: healthCheck.port,
+      },
+    };
+  }
+
+  private buildReadinessProbe(
+    healthCheck?: ServiceResourceInput['healthCheck'],
+  ): ServiceResourceProbe | undefined {
+    const action = this.buildProbeAction(healthCheck);
+    if (!action) {
+      return undefined;
+    }
+
+    return {
+      ...action,
+      initialDelaySeconds: 0,
+      timeoutSeconds: 3,
+      periodSeconds: 5,
+      successThreshold: 1,
+      failureThreshold: 3,
+    };
+  }
+
+  private buildLivenessProbe(
+    healthCheck?: ServiceResourceInput['healthCheck'],
+  ): ServiceResourceProbe | undefined {
+    const action = this.buildProbeAction(healthCheck);
+    if (!action) {
+      return undefined;
+    }
+
+    return {
+      ...action,
+      initialDelaySeconds: 0,
+      timeoutSeconds: 3,
+      periodSeconds: 10,
+      successThreshold: 1,
+      failureThreshold: 3,
+    };
+  }
+
+  private buildStartupProbe(
+    healthCheck?: ServiceResourceInput['healthCheck'],
+  ): ServiceResourceProbe | undefined {
+    const action = this.buildProbeAction(healthCheck);
+    if (!action) {
+      return undefined;
+    }
+
+    return {
+      ...action,
+      initialDelaySeconds: 0,
+      timeoutSeconds: 3,
+      periodSeconds: 10,
+      successThreshold: 1,
+      failureThreshold: 30,
     };
   }
 
@@ -366,6 +545,65 @@ export class ServiceService {
       port: port.port,
       ...(port.targetPort == null ? {} : { targetPort: port.targetPort }),
     }));
+  }
+
+  private toServiceResources(
+    resources?: ServiceResourceRequirements,
+  ): Service['resources'] {
+    if (!resources) {
+      return null;
+    }
+
+    const result = {
+      cpuRequest: resources.requests?.cpu ?? null,
+      cpuLimit: resources.limits?.cpu ?? null,
+      memoryRequest: resources.requests?.memory ?? null,
+      memoryLimit: resources.limits?.memory ?? null,
+    };
+
+    return Object.values(result).some((value) => value !== null)
+      ? result
+      : null;
+  }
+
+  private toServiceHealthCheck(
+    probe?: ServiceResourceProbe,
+  ): Service['healthCheck'] {
+    if (probe?.httpGet) {
+      const port = this.toNumber(probe.httpGet.port);
+
+      return port === null
+        ? null
+        : {
+            type: ServiceHealthCheckType.HTTP,
+            port,
+            path: probe.httpGet.path ?? null,
+          };
+    }
+
+    if (probe?.tcpSocket) {
+      const port = this.toNumber(probe.tcpSocket.port);
+
+      return port === null
+        ? null
+        : {
+            type: ServiceHealthCheckType.TCP,
+            port,
+            path: null,
+          };
+    }
+
+    return null;
+  }
+
+  private nonEmpty(value?: string | null): value is string {
+    return typeof value === 'string' && value.trim().length > 0;
+  }
+
+  private toNumber(value: number | string): number | null {
+    const numberValue = Number(value);
+
+    return Number.isFinite(numberValue) ? numberValue : null;
   }
 
   private isNotFoundError(error: unknown): boolean {

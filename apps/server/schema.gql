@@ -113,12 +113,16 @@ input CreateServiceAccountWorkspaceMemberInput {
 }
 
 input CreateServiceInput {
+  args: [String!]
+  command: [String!]
   env: [ServiceEnvVarInput!]
+  healthCheck: ServiceHealthCheckInput
   image: String!
   name: String!
   ports: [ServicePortInput!]!
   projectId: ID!
   replicas: Int
+  resources: ServiceResourcesInput
 }
 
 input CreateWorkspaceInput {
@@ -651,14 +655,18 @@ type Query {
 }
 
 type Service {
+  args: [String!]!
+  command: [String!]!
   createdAt: DateTime!
   env: [ServiceEnvVar!]!
+  healthCheck: ServiceHealthCheck
   id: ID!
   image: String!
   name: String!
   ports: [ServicePort!]!
   projectId: ID!
   replicas: Int
+  resources: ServiceResources
   status: ServiceStatus!
   updatedAt: DateTime!
 }
@@ -711,6 +719,23 @@ Supported fields: name, createdAt
 """
 scalar ServiceFilter
 
+type ServiceHealthCheck {
+  path: String
+  port: Int!
+  type: ServiceHealthCheckType!
+}
+
+input ServiceHealthCheckInput {
+  path: String
+  port: Int!
+  type: ServiceHealthCheckType!
+}
+
+enum ServiceHealthCheckType {
+  HTTP
+  TCP
+}
+
 """
 Ordering options for service connections
 """
@@ -744,6 +769,20 @@ input ServicePortInput {
   targetPort: Int
 }
 
+type ServiceResources {
+  cpuLimit: String
+  cpuRequest: String
+  memoryLimit: String
+  memoryRequest: String
+}
+
+input ServiceResourcesInput {
+  cpuLimit: String
+  cpuRequest: String
+  memoryLimit: String
+  memoryRequest: String
+}
+
 enum ServiceStatus {
   FAILED
   PENDING
@@ -761,11 +800,15 @@ input UpdateProjectInput {
 }
 
 input UpdateServiceInput {
+  args: [String!]
+  command: [String!]
   env: [ServiceEnvVarInput!]
+  healthCheck: ServiceHealthCheckInput
   image: String
   name: String
   ports: [ServicePortInput!]
   replicas: Int
+  resources: ServiceResourcesInput
 }
 
 input UpdateWorkspaceInput {
