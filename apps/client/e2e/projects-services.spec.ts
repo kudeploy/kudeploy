@@ -167,6 +167,25 @@ test.describe("workspace Projects and Services", () => {
     );
     await expect(page.getByTestId("service-network-page")).toBeVisible();
 
+    await page.getByTestId("service-metrics-tab").click();
+    await expect(page).toHaveURL(
+      new RegExp(
+        `/workspaces/${workspaceId}/projects/project-e2e/services/service-e2e/metrics$`,
+      ),
+    );
+    await expect(page.getByTestId("service-metrics-page")).toBeVisible();
+    await expect(page.getByTestId("service-cpu-metrics-card")).toContainText(
+      "125m",
+    );
+    await expect(
+      page.getByTestId("service-network-metrics-card"),
+    ).toContainText("接收");
+    await page.getByLabel("时间范围").click();
+    for (const option of ["1h", "3h", "6h", "12h", "24h", "3d", "7d"]) {
+      await expect(page.getByRole("option", { name: option })).toBeVisible();
+    }
+    await page.keyboard.press("Escape");
+
     await page.getByTestId("service-settings-tab").click();
     await expect(page).toHaveURL(
       new RegExp(
@@ -310,6 +329,61 @@ async function mockProjectsAndServicesGraphql(page: Page) {
                 service.projectId === variables.projectId &&
                 service.id === variables.id,
             ) ?? null,
+        });
+        return;
+      }
+      case "getServiceMetricsFromServiceMetricsRoute": {
+        await fulfill(route, {
+          service: {
+            id: variables.id,
+            metrics: {
+              available: true,
+              rangeSeconds: variables.rangeSeconds ?? 3600,
+              stepSeconds: variables.stepSeconds ?? 300,
+              cpuLimitMillicores: 500,
+              memoryLimitBytes: 536_870_912,
+              cpuUsageMillicores: [
+                {
+                  timestamp: "2026-06-06T00:00:00.000Z",
+                  value: 100,
+                },
+                {
+                  timestamp: "2026-06-06T00:05:00.000Z",
+                  value: 125,
+                },
+              ],
+              memoryUsageBytes: [
+                {
+                  timestamp: "2026-06-06T00:00:00.000Z",
+                  value: 201_326_592,
+                },
+                {
+                  timestamp: "2026-06-06T00:05:00.000Z",
+                  value: 268_435_456,
+                },
+              ],
+              networkReceiveBytesPerSecond: [
+                {
+                  timestamp: "2026-06-06T00:00:00.000Z",
+                  value: 1024,
+                },
+                {
+                  timestamp: "2026-06-06T00:05:00.000Z",
+                  value: 2048,
+                },
+              ],
+              networkTransmitBytesPerSecond: [
+                {
+                  timestamp: "2026-06-06T00:00:00.000Z",
+                  value: 512,
+                },
+                {
+                  timestamp: "2026-06-06T00:05:00.000Z",
+                  value: 1024,
+                },
+              ],
+            },
+          },
         });
         return;
       }

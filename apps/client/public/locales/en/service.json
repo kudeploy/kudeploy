@@ -40,6 +40,36 @@
     "description": "Configure exposed ports and health checks.",
     "ports": "Ports"
   },
+  "metrics": {
+    "description": "Observe recent resource usage, limits, and network throughput.",
+    "range": "Time range",
+    "ranges": {
+      "one_hour": "1h",
+      "three_hours": "3h",
+      "six_hours": "6h",
+      "twelve_hours": "12h",
+      "day": "24h",
+      "three_days": "3d",
+      "seven_days": "7d"
+    },
+    "loading": "Loading metrics",
+    "updated": "Updated {{time}}",
+    "unavailable": "Metrics data source unavailable",
+    "error": "Metrics failed to load",
+    "empty": "No metrics yet",
+    "cpu": "CPU",
+    "memory": "Memory",
+    "network": "Network",
+    "network_description": "Ingress and egress throughput per second.",
+    "usage": "Usage",
+    "limit": "Limit",
+    "limit_value": "Limit {{value}}",
+    "receive": "Receive",
+    "transmit": "Transmit",
+    "no_limit": "No limit set",
+    "current": "Current",
+    "used_of_limit": "{{percent}} used"
+  },
   "settings": {
     "description": "Manage service metadata, scale, resources, and deletion.",
     "general": {

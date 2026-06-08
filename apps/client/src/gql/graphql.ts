@@ -231,6 +231,12 @@ export enum DomainStatus {
   VERIFIED = "VERIFIED",
 }
 
+export type KubernetesMetricPoint = {
+  __typename?: "KubernetesMetricPoint";
+  timestamp: Scalars["DateTime"]["output"];
+  value: Scalars["Float"]["output"];
+};
+
 export type Mutation = {
   __typename?: "Mutation";
   acceptWorkspaceInvite: AcceptWorkspaceInviteResult;
@@ -574,6 +580,7 @@ export type Service = {
   healthCheck?: Maybe<ServiceHealthCheck>;
   id: Scalars["ID"]["output"];
   image: Scalars["String"]["output"];
+  metrics: ServiceMetrics;
   name: Scalars["String"]["output"];
   ports: Array<ServicePort>;
   projectId: Scalars["ID"]["output"];
@@ -581,6 +588,11 @@ export type Service = {
   resources?: Maybe<ServiceResources>;
   status: ServiceStatus;
   updatedAt: Scalars["DateTime"]["output"];
+};
+
+export type ServiceMetricsArgs = {
+  rangeSeconds?: InputMaybe<Scalars["Int"]["input"]>;
+  stepSeconds?: InputMaybe<Scalars["Int"]["input"]>;
 };
 
 export type ServiceConnection = {
@@ -630,6 +642,19 @@ export enum ServiceHealthCheckType {
   HTTP = "HTTP",
   TCP = "TCP",
 }
+
+export type ServiceMetrics = {
+  __typename?: "ServiceMetrics";
+  available: Scalars["Boolean"]["output"];
+  cpuLimitMillicores?: Maybe<Scalars["Float"]["output"]>;
+  cpuUsageMillicores: Array<KubernetesMetricPoint>;
+  memoryLimitBytes?: Maybe<Scalars["Float"]["output"]>;
+  memoryUsageBytes: Array<KubernetesMetricPoint>;
+  networkReceiveBytesPerSecond: Array<KubernetesMetricPoint>;
+  networkTransmitBytesPerSecond: Array<KubernetesMetricPoint>;
+  rangeSeconds: Scalars["Int"]["output"];
+  stepSeconds: Scalars["Int"]["output"];
+};
 
 /** Ordering options for service connections */
 export type ServiceOrder = {
@@ -1620,6 +1645,49 @@ export type GetServiceFromServiceLayoutQuery = {
       targetPort?: number | null;
     }>;
     env: Array<{ __typename?: "ServiceEnvVar"; key: string; value: string }>;
+  } | null;
+};
+
+export type GetServiceMetricsFromServiceMetricsRouteQueryVariables = Exact<{
+  projectId: Scalars["ID"]["input"];
+  id: Scalars["ID"]["input"];
+  rangeSeconds?: InputMaybe<Scalars["Int"]["input"]>;
+  stepSeconds?: InputMaybe<Scalars["Int"]["input"]>;
+}>;
+
+export type GetServiceMetricsFromServiceMetricsRouteQuery = {
+  __typename?: "Query";
+  service?: {
+    __typename?: "Service";
+    id: string;
+    metrics: {
+      __typename?: "ServiceMetrics";
+      available: boolean;
+      rangeSeconds: number;
+      stepSeconds: number;
+      cpuLimitMillicores?: number | null;
+      memoryLimitBytes?: number | null;
+      cpuUsageMillicores: Array<{
+        __typename?: "KubernetesMetricPoint";
+        timestamp: any;
+        value: number;
+      }>;
+      memoryUsageBytes: Array<{
+        __typename?: "KubernetesMetricPoint";
+        timestamp: any;
+        value: number;
+      }>;
+      networkReceiveBytesPerSecond: Array<{
+        __typename?: "KubernetesMetricPoint";
+        timestamp: any;
+        value: number;
+      }>;
+      networkTransmitBytesPerSecond: Array<{
+        __typename?: "KubernetesMetricPoint";
+        timestamp: any;
+        value: number;
+      }>;
+    };
   } | null;
 };
 
@@ -5138,6 +5206,210 @@ export const GetServiceFromServiceLayoutDocument = {
 } as unknown as DocumentNode<
   GetServiceFromServiceLayoutQuery,
   GetServiceFromServiceLayoutQueryVariables
+>;
+export const GetServiceMetricsFromServiceMetricsRouteDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "getServiceMetricsFromServiceMetricsRoute" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "projectId" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "rangeSeconds" },
+          },
+          type: { kind: "NamedType", name: { kind: "Name", value: "Int" } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "stepSeconds" },
+          },
+          type: { kind: "NamedType", name: { kind: "Name", value: "Int" } },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "service" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "projectId" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "projectId" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "id" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "id" },
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "metrics" },
+                  arguments: [
+                    {
+                      kind: "Argument",
+                      name: { kind: "Name", value: "rangeSeconds" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "rangeSeconds" },
+                      },
+                    },
+                    {
+                      kind: "Argument",
+                      name: { kind: "Name", value: "stepSeconds" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "stepSeconds" },
+                      },
+                    },
+                  ],
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "available" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "rangeSeconds" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "stepSeconds" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "cpuLimitMillicores" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "memoryLimitBytes" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "cpuUsageMillicores" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "timestamp" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "value" },
+                            },
+                          ],
+                        },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "memoryUsageBytes" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "timestamp" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "value" },
+                            },
+                          ],
+                        },
+                      },
+                      {
+                        kind: "Field",
+                        name: {
+                          kind: "Name",
+                          value: "networkReceiveBytesPerSecond",
+                        },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "timestamp" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "value" },
+                            },
+                          ],
+                        },
+                      },
+                      {
+                        kind: "Field",
+                        name: {
+                          kind: "Name",
+                          value: "networkTransmitBytesPerSecond",
+                        },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "timestamp" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "value" },
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  GetServiceMetricsFromServiceMetricsRouteQuery,
+  GetServiceMetricsFromServiceMetricsRouteQueryVariables
 >;
 export const UpdateServiceNetworkFromServiceNetworkRouteDocument = {
   kind: "Document",

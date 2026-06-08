@@ -40,6 +40,36 @@
     "description": "配置暴露端口和健康检查。",
     "ports": "端口"
   },
+  "metrics": {
+    "description": "观察服务最近的资源用量、限制和网络吞吐。",
+    "range": "时间范围",
+    "ranges": {
+      "one_hour": "1h",
+      "three_hours": "3h",
+      "six_hours": "6h",
+      "twelve_hours": "12h",
+      "day": "24h",
+      "three_days": "3d",
+      "seven_days": "7d"
+    },
+    "loading": "正在加载指标",
+    "updated": "最近更新 {{time}}",
+    "unavailable": "指标数据源不可用",
+    "error": "指标加载失败",
+    "empty": "暂无指标数据",
+    "cpu": "CPU",
+    "memory": "内存",
+    "network": "网络",
+    "network_description": "按秒统计入口和出口流量。",
+    "usage": "使用",
+    "limit": "限制",
+    "limit_value": "限制 {{value}}",
+    "receive": "接收",
+    "transmit": "发送",
+    "no_limit": "未设置限制",
+    "current": "当前",
+    "used_of_limit": "已用 {{percent}}"
+  },
   "settings": {
     "description": "管理服务基础信息、副本、资源限制和删除操作。",
     "general": {

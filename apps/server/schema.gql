@@ -224,6 +224,11 @@ enum DomainStatus {
   VERIFIED
 }
 
+type KubernetesMetricPoint {
+  timestamp: DateTime!
+  value: Float!
+}
+
 type Mutation {
   acceptWorkspaceInvite(
     input: AcceptWorkspaceInviteInput
@@ -662,6 +667,7 @@ type Service {
   healthCheck: ServiceHealthCheck
   id: ID!
   image: String!
+  metrics(rangeSeconds: Int, stepSeconds: Int): ServiceMetrics!
   name: String!
   ports: [ServicePort!]!
   projectId: ID!
@@ -734,6 +740,18 @@ input ServiceHealthCheckInput {
 enum ServiceHealthCheckType {
   HTTP
   TCP
+}
+
+type ServiceMetrics {
+  available: Boolean!
+  cpuLimitMillicores: Float
+  cpuUsageMillicores: [KubernetesMetricPoint!]!
+  memoryLimitBytes: Float
+  memoryUsageBytes: [KubernetesMetricPoint!]!
+  networkReceiveBytesPerSecond: [KubernetesMetricPoint!]!
+  networkTransmitBytesPerSecond: [KubernetesMetricPoint!]!
+  rangeSeconds: Int!
+  stepSeconds: Int!
 }
 
 """
