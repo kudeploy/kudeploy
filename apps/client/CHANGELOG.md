@@ -1,3 +1,13 @@
+## 0.4.0 (2026-06-08)
+
+### 🚀 Features
+
+- add workspace domain management ([02e2b3f](https://github.com/kudeploy/kudeploy/commit/02e2b3f))
+
+### ❤️ Thank You
+
+- Xudong Huang @xudongcc
+
 ## 0.3.2 (2026-06-07)
 
 This was a version bump only for client to align it with other projects, there were no code changes.
