@@ -53,6 +53,7 @@
   "txt": {
     "copied": "Copied",
     "copy": "Copy",
-    "name": "Name"
+    "name": "Name",
+    "value": "Value"
   }
 }

@@ -16,6 +16,8 @@ import { DomainStatus } from './domain-status.enum';
 
 export const DOMAIN_TXT_RESOLVER = Symbol('DOMAIN_TXT_RESOLVER');
 export const DOMAIN_NOW = Symbol('DOMAIN_NOW');
+const DOMAIN_VERIFICATION_TXT_NAME_PREFIX = '_kudeploy';
+const DOMAIN_VERIFICATION_TXT_VALUE_PREFIX = 'domain-verify=';
 
 type TxtResolver = (hostname: string) => Promise<string[][]>;
 type Clock = () => Date;
@@ -72,10 +74,13 @@ export class DomainService extends EntityService<Domain> {
 
   /** 通过 DNS TXT 记录验证域名。 */
   async verifyDomain(domain: Domain): Promise<Domain> {
-    const records = await this.resolveDomainTxt(domain.name);
+    const records = await this.resolveDomainTxt(
+      this.getVerificationTxtName(domain.name),
+    );
     const values = records.map((record) => record.join(''));
+    const expectedValue = this.getVerificationTxtValue(domain);
 
-    if (!values.some((value) => value.includes(domain.verificationToken))) {
+    if (!values.includes(expectedValue)) {
       throw new BadRequestException(
         'Domain TXT record does not contain the verification token',
       );
@@ -95,6 +100,14 @@ export class DomainService extends EntityService<Domain> {
 
   private generateVerificationToken() {
     return randomBytes(16).toString('hex');
+  }
+
+  private getVerificationTxtName(domainName: string) {
+    return `${DOMAIN_VERIFICATION_TXT_NAME_PREFIX}.${domainName}`;
+  }
+
+  private getVerificationTxtValue(domain: Domain) {
+    return `${DOMAIN_VERIFICATION_TXT_VALUE_PREFIX}${domain.verificationToken}`;
   }
 
   private async resolveDomainTxt(name: string) {
