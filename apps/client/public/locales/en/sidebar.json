@@ -1,6 +1,7 @@
 {
   "navigation": {
     "api_keys": "API Keys",
+    "domains": "Domains",
     "member_groups": "Member Groups",
     "members": "Members",
     "projects": "Projects",

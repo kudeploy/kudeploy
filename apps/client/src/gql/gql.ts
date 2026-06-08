@@ -23,6 +23,10 @@ type Documents = {
   "\n  query getCurrentUserFromCurrentUserContext {\n    currentUser {\n      id\n      name\n      email\n    }\n  }\n": typeof types.GetCurrentUserFromCurrentUserContextDocument;
   "\n  query getCurrentWorkspaceFromWorkspaceContext {\n    currentWorkspace {\n      id\n      name\n      features\n      createdAt\n      updatedAt\n    }\n  }\n": typeof types.GetCurrentWorkspaceFromWorkspaceContextDocument;
   "\n  query getCurrentWorkspaceMemberFromWorkspaceMemberContext {\n    currentWorkspaceMember {\n      id\n      role\n      name\n      email\n      permissions\n      effectivePermissions\n      inviteToken\n      status\n      inviteExpiresAt\n      invitedBy {\n        name\n        email\n      }\n      invitedByUserName\n      user {\n        email\n      }\n    }\n  }\n": typeof types.GetCurrentWorkspaceMemberFromWorkspaceMemberContextDocument;
+  "\n  query getDomainsFromDomainsRoute(\n    $after: String\n    $before: String\n    $first: Int\n    $last: Int\n    $filter: DomainFilter\n    $orderBy: DomainOrder\n    $query: String\n  ) {\n    domains(\n      after: $after\n      before: $before\n      first: $first\n      last: $last\n      orderBy: $orderBy\n      filter: $filter\n      query: $query\n    ) {\n      edges {\n        node {\n          id\n          name\n          status\n          verificationToken\n          verifiedAt\n          createdAt\n          updatedAt\n        }\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n        hasPreviousPage\n        startCursor\n      }\n    }\n  }\n": typeof types.GetDomainsFromDomainsRouteDocument;
+  "\n  mutation createDomainFromDomainsRoute($input: CreateDomainInput!) {\n    createDomain(input: $input) {\n      id\n      name\n      status\n      verificationToken\n      verifiedAt\n      createdAt\n      updatedAt\n    }\n  }\n": typeof types.CreateDomainFromDomainsRouteDocument;
+  "\n  mutation verifyDomainFromDomainsRoute($id: ID!) {\n    verifyDomain(id: $id) {\n      id\n      name\n      status\n      verificationToken\n      verifiedAt\n      createdAt\n      updatedAt\n    }\n  }\n": typeof types.VerifyDomainFromDomainsRouteDocument;
+  "\n  mutation deleteDomainFromDomainsRoute($id: ID!) {\n    deleteDomain(id: $id) {\n      id\n      name\n      status\n      verificationToken\n      verifiedAt\n      createdAt\n      updatedAt\n    }\n  }\n": typeof types.DeleteDomainFromDomainsRouteDocument;
   "\n  query getCurrentWorkspaceFromWorkspaceLayout {\n    currentWorkspace {\n      id\n    }\n    currentWorkspaceMember {\n      id\n    }\n  }\n": typeof types.GetCurrentWorkspaceFromWorkspaceLayoutDocument;
   "\n  query getWorkspaceMemberGroupFromMemberGroupRoute($id: ID!, $first: Int) {\n    workspaceMemberGroup(id: $id) {\n      id\n      name\n      description\n      permissions\n      members(first: $first) {\n        edges {\n          node {\n            id\n            name\n            email\n            user {\n              id\n              name\n              email\n            }\n          }\n        }\n      }\n    }\n  }\n": typeof types.GetWorkspaceMemberGroupFromMemberGroupRouteDocument;
   "\n  mutation updateWorkspaceMemberGroupFromMemberGroupRoute(\n    $id: ID!\n    $input: UpdateWorkspaceMemberGroupInput!\n  ) {\n    updateWorkspaceMemberGroup(id: $id, input: $input) {\n      id\n      name\n      description\n      permissions\n    }\n  }\n": typeof types.UpdateWorkspaceMemberGroupFromMemberGroupRouteDocument;
@@ -81,6 +85,14 @@ const documents: Documents = {
     types.GetCurrentWorkspaceFromWorkspaceContextDocument,
   "\n  query getCurrentWorkspaceMemberFromWorkspaceMemberContext {\n    currentWorkspaceMember {\n      id\n      role\n      name\n      email\n      permissions\n      effectivePermissions\n      inviteToken\n      status\n      inviteExpiresAt\n      invitedBy {\n        name\n        email\n      }\n      invitedByUserName\n      user {\n        email\n      }\n    }\n  }\n":
     types.GetCurrentWorkspaceMemberFromWorkspaceMemberContextDocument,
+  "\n  query getDomainsFromDomainsRoute(\n    $after: String\n    $before: String\n    $first: Int\n    $last: Int\n    $filter: DomainFilter\n    $orderBy: DomainOrder\n    $query: String\n  ) {\n    domains(\n      after: $after\n      before: $before\n      first: $first\n      last: $last\n      orderBy: $orderBy\n      filter: $filter\n      query: $query\n    ) {\n      edges {\n        node {\n          id\n          name\n          status\n          verificationToken\n          verifiedAt\n          createdAt\n          updatedAt\n        }\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n        hasPreviousPage\n        startCursor\n      }\n    }\n  }\n":
+    types.GetDomainsFromDomainsRouteDocument,
+  "\n  mutation createDomainFromDomainsRoute($input: CreateDomainInput!) {\n    createDomain(input: $input) {\n      id\n      name\n      status\n      verificationToken\n      verifiedAt\n      createdAt\n      updatedAt\n    }\n  }\n":
+    types.CreateDomainFromDomainsRouteDocument,
+  "\n  mutation verifyDomainFromDomainsRoute($id: ID!) {\n    verifyDomain(id: $id) {\n      id\n      name\n      status\n      verificationToken\n      verifiedAt\n      createdAt\n      updatedAt\n    }\n  }\n":
+    types.VerifyDomainFromDomainsRouteDocument,
+  "\n  mutation deleteDomainFromDomainsRoute($id: ID!) {\n    deleteDomain(id: $id) {\n      id\n      name\n      status\n      verificationToken\n      verifiedAt\n      createdAt\n      updatedAt\n    }\n  }\n":
+    types.DeleteDomainFromDomainsRouteDocument,
   "\n  query getCurrentWorkspaceFromWorkspaceLayout {\n    currentWorkspace {\n      id\n    }\n    currentWorkspaceMember {\n      id\n    }\n  }\n":
     types.GetCurrentWorkspaceFromWorkspaceLayoutDocument,
   "\n  query getWorkspaceMemberGroupFromMemberGroupRoute($id: ID!, $first: Int) {\n    workspaceMemberGroup(id: $id) {\n      id\n      name\n      description\n      permissions\n      members(first: $first) {\n        edges {\n          node {\n            id\n            name\n            email\n            user {\n              id\n              name\n              email\n            }\n          }\n        }\n      }\n    }\n  }\n":
@@ -227,6 +239,30 @@ export function graphql(
 export function graphql(
   source: "\n  query getCurrentWorkspaceMemberFromWorkspaceMemberContext {\n    currentWorkspaceMember {\n      id\n      role\n      name\n      email\n      permissions\n      effectivePermissions\n      inviteToken\n      status\n      inviteExpiresAt\n      invitedBy {\n        name\n        email\n      }\n      invitedByUserName\n      user {\n        email\n      }\n    }\n  }\n",
 ): (typeof documents)["\n  query getCurrentWorkspaceMemberFromWorkspaceMemberContext {\n    currentWorkspaceMember {\n      id\n      role\n      name\n      email\n      permissions\n      effectivePermissions\n      inviteToken\n      status\n      inviteExpiresAt\n      invitedBy {\n        name\n        email\n      }\n      invitedByUserName\n      user {\n        email\n      }\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(
+  source: "\n  query getDomainsFromDomainsRoute(\n    $after: String\n    $before: String\n    $first: Int\n    $last: Int\n    $filter: DomainFilter\n    $orderBy: DomainOrder\n    $query: String\n  ) {\n    domains(\n      after: $after\n      before: $before\n      first: $first\n      last: $last\n      orderBy: $orderBy\n      filter: $filter\n      query: $query\n    ) {\n      edges {\n        node {\n          id\n          name\n          status\n          verificationToken\n          verifiedAt\n          createdAt\n          updatedAt\n        }\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n        hasPreviousPage\n        startCursor\n      }\n    }\n  }\n",
+): (typeof documents)["\n  query getDomainsFromDomainsRoute(\n    $after: String\n    $before: String\n    $first: Int\n    $last: Int\n    $filter: DomainFilter\n    $orderBy: DomainOrder\n    $query: String\n  ) {\n    domains(\n      after: $after\n      before: $before\n      first: $first\n      last: $last\n      orderBy: $orderBy\n      filter: $filter\n      query: $query\n    ) {\n      edges {\n        node {\n          id\n          name\n          status\n          verificationToken\n          verifiedAt\n          createdAt\n          updatedAt\n        }\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n        hasPreviousPage\n        startCursor\n      }\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(
+  source: "\n  mutation createDomainFromDomainsRoute($input: CreateDomainInput!) {\n    createDomain(input: $input) {\n      id\n      name\n      status\n      verificationToken\n      verifiedAt\n      createdAt\n      updatedAt\n    }\n  }\n",
+): (typeof documents)["\n  mutation createDomainFromDomainsRoute($input: CreateDomainInput!) {\n    createDomain(input: $input) {\n      id\n      name\n      status\n      verificationToken\n      verifiedAt\n      createdAt\n      updatedAt\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(
+  source: "\n  mutation verifyDomainFromDomainsRoute($id: ID!) {\n    verifyDomain(id: $id) {\n      id\n      name\n      status\n      verificationToken\n      verifiedAt\n      createdAt\n      updatedAt\n    }\n  }\n",
+): (typeof documents)["\n  mutation verifyDomainFromDomainsRoute($id: ID!) {\n    verifyDomain(id: $id) {\n      id\n      name\n      status\n      verificationToken\n      verifiedAt\n      createdAt\n      updatedAt\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(
+  source: "\n  mutation deleteDomainFromDomainsRoute($id: ID!) {\n    deleteDomain(id: $id) {\n      id\n      name\n      status\n      verificationToken\n      verifiedAt\n      createdAt\n      updatedAt\n    }\n  }\n",
+): (typeof documents)["\n  mutation deleteDomainFromDomainsRoute($id: ID!) {\n    deleteDomain(id: $id) {\n      id\n      name\n      status\n      verificationToken\n      verifiedAt\n      createdAt\n      updatedAt\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

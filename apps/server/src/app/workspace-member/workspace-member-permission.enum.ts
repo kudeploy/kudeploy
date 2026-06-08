@@ -6,6 +6,8 @@ import { registerEnumType } from '@nest-boot/graphql';
 export enum WorkspaceMemberPermission {
   /** 管理工作区基础信息。 */
   MANAGE_WORKSPACE = 'MANAGE_WORKSPACE',
+  /** 管理工作区自定义域名。 */
+  MANAGE_DOMAINS = 'MANAGE_DOMAINS',
   /** 管理工作区成员。 */
   MANAGE_MEMBERS = 'MANAGE_MEMBERS',
 }

@@ -13,6 +13,7 @@ import { Field, ID, ObjectType } from '@nest-boot/graphql';
 import { Policy, PolicyCommand } from '@nest-boot/row-level-security';
 import { Sonyflake } from 'sonyflake-js';
 
+import { Domain } from '@/app/domain/domain.entity';
 import { WorkspaceMember } from '@/app/workspace-member/workspace-member.entity';
 import { WorkspaceMemberGroup } from '@/app/workspace-member-group/workspace-member-group.entity';
 import { SoftDeletePolicy } from '@/common/decorators/soft-delete-policy.decorator';
@@ -90,4 +91,8 @@ export class Workspace {
   /** 工作区成员组集合。 */
   @OneToMany(() => WorkspaceMemberGroup, (group) => group.workspace)
   memberGroups = new Collection<WorkspaceMemberGroup>(this);
+
+  /** 工作区绑定域名集合。 */
+  @OneToMany(() => Domain, (domain) => domain.workspace)
+  domains = new Collection<Domain>(this);
 }

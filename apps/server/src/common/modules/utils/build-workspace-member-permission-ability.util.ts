@@ -1,7 +1,11 @@
-import { PermissionAbilityBuilder, PermissionAction } from '@nest-boot/permission';
+import {
+  PermissionAbilityBuilder,
+  PermissionAction,
+} from '@nest-boot/permission';
 import { RequestContext } from '@nest-boot/request-context';
 
 import { ApiKey } from '@/app/api-key/api-key.entity';
+import { Domain } from '@/app/domain/domain.entity';
 import { User } from '@/app/user/user.entity';
 import { Workspace } from '@/app/workspace/workspace.entity';
 import { WorkspaceMemberRole } from '@/app/workspace-member/enums/workspace-member-role.enum';
@@ -61,6 +65,10 @@ export function buildWorkspaceMemberPermissionAbility(
     can(PermissionAction.MANAGE, 'Workspace', {
       id: workspaceMember.workspace.id,
     });
+  }
+
+  if (permissions.includes(WorkspaceMemberPermission.MANAGE_DOMAINS)) {
+    can(PermissionAction.MANAGE, Domain);
   }
 
   if (permissions.includes(WorkspaceMemberPermission.MANAGE_MEMBERS)) {

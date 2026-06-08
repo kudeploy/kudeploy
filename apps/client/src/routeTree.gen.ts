@@ -25,6 +25,7 @@ import { Route as AuthenticatedWorkspacesWorkspaceIdSettingsPageRouteImport } fr
 import { Route as AuthenticatedWorkspacesWorkspaceIdProjectsPageRouteImport } from './app/_authenticated/workspaces/$workspaceId/projects/page'
 import { Route as AuthenticatedWorkspacesWorkspaceIdMembersPageRouteImport } from './app/_authenticated/workspaces/$workspaceId/members/page'
 import { Route as AuthenticatedWorkspacesWorkspaceIdMemberGroupsPageRouteImport } from './app/_authenticated/workspaces/$workspaceId/member-groups/page'
+import { Route as AuthenticatedWorkspacesWorkspaceIdDomainsPageRouteImport } from './app/_authenticated/workspaces/$workspaceId/domains/page'
 import { Route as AuthenticatedWorkspacesWorkspaceIdApiKeysPageRouteImport } from './app/_authenticated/workspaces/$workspaceId/api-keys/page'
 import { Route as AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdPageRouteImport } from './app/_authenticated/workspaces/$workspaceId/projects/$projectId/page'
 import { Route as AuthenticatedWorkspacesWorkspaceIdMembersMemberIdPageRouteImport } from './app/_authenticated/workspaces/$workspaceId/members/$memberId/page'
@@ -124,6 +125,12 @@ const AuthenticatedWorkspacesWorkspaceIdMemberGroupsPageRoute =
     getParentRoute: () =>
       AuthenticatedWorkspacesWorkspaceIdMemberGroupsLayoutRoute,
   } as any)
+const AuthenticatedWorkspacesWorkspaceIdDomainsPageRoute =
+  AuthenticatedWorkspacesWorkspaceIdDomainsPageRouteImport.update({
+    id: '/domains/',
+    path: '/domains/',
+    getParentRoute: () => AuthenticatedWorkspacesWorkspaceIdLayoutRoute,
+  } as any)
 const AuthenticatedWorkspacesWorkspaceIdApiKeysPageRoute =
   AuthenticatedWorkspacesWorkspaceIdApiKeysPageRouteImport.update({
     id: '/',
@@ -188,6 +195,7 @@ export interface FileRoutesByFullPath {
   '/workspaces/$workspaceId/': typeof AuthenticatedWorkspacesWorkspaceIdPageRoute
   '/workspaces/create/': typeof AuthenticatedWorkspacesCreatePageRoute
   '/workspaces/$workspaceId/api-keys/': typeof AuthenticatedWorkspacesWorkspaceIdApiKeysPageRoute
+  '/workspaces/$workspaceId/domains/': typeof AuthenticatedWorkspacesWorkspaceIdDomainsPageRoute
   '/workspaces/$workspaceId/member-groups/': typeof AuthenticatedWorkspacesWorkspaceIdMemberGroupsPageRoute
   '/workspaces/$workspaceId/members/': typeof AuthenticatedWorkspacesWorkspaceIdMembersPageRoute
   '/workspaces/$workspaceId/projects/': typeof AuthenticatedWorkspacesWorkspaceIdProjectsPageRoute
@@ -208,6 +216,7 @@ export interface FileRoutesByTo {
   '/workspaces/$workspaceId': typeof AuthenticatedWorkspacesWorkspaceIdPageRoute
   '/workspaces/create': typeof AuthenticatedWorkspacesCreatePageRoute
   '/workspaces/$workspaceId/api-keys': typeof AuthenticatedWorkspacesWorkspaceIdApiKeysPageRoute
+  '/workspaces/$workspaceId/domains': typeof AuthenticatedWorkspacesWorkspaceIdDomainsPageRoute
   '/workspaces/$workspaceId/member-groups': typeof AuthenticatedWorkspacesWorkspaceIdMemberGroupsPageRoute
   '/workspaces/$workspaceId/members': typeof AuthenticatedWorkspacesWorkspaceIdMembersPageRoute
   '/workspaces/$workspaceId/projects': typeof AuthenticatedWorkspacesWorkspaceIdProjectsPageRoute
@@ -234,6 +243,7 @@ export interface FileRoutesById {
   '/_authenticated/workspaces/$workspaceId/': typeof AuthenticatedWorkspacesWorkspaceIdPageRoute
   '/_authenticated/workspaces/create/': typeof AuthenticatedWorkspacesCreatePageRoute
   '/_authenticated/workspaces/$workspaceId/api-keys/': typeof AuthenticatedWorkspacesWorkspaceIdApiKeysPageRoute
+  '/_authenticated/workspaces/$workspaceId/domains/': typeof AuthenticatedWorkspacesWorkspaceIdDomainsPageRoute
   '/_authenticated/workspaces/$workspaceId/member-groups/': typeof AuthenticatedWorkspacesWorkspaceIdMemberGroupsPageRoute
   '/_authenticated/workspaces/$workspaceId/members/': typeof AuthenticatedWorkspacesWorkspaceIdMembersPageRoute
   '/_authenticated/workspaces/$workspaceId/projects/': typeof AuthenticatedWorkspacesWorkspaceIdProjectsPageRoute
@@ -260,6 +270,7 @@ export interface FileRouteTypes {
     | '/workspaces/$workspaceId/'
     | '/workspaces/create/'
     | '/workspaces/$workspaceId/api-keys/'
+    | '/workspaces/$workspaceId/domains/'
     | '/workspaces/$workspaceId/member-groups/'
     | '/workspaces/$workspaceId/members/'
     | '/workspaces/$workspaceId/projects/'
@@ -280,6 +291,7 @@ export interface FileRouteTypes {
     | '/workspaces/$workspaceId'
     | '/workspaces/create'
     | '/workspaces/$workspaceId/api-keys'
+    | '/workspaces/$workspaceId/domains'
     | '/workspaces/$workspaceId/member-groups'
     | '/workspaces/$workspaceId/members'
     | '/workspaces/$workspaceId/projects'
@@ -305,6 +317,7 @@ export interface FileRouteTypes {
     | '/_authenticated/workspaces/$workspaceId/'
     | '/_authenticated/workspaces/create/'
     | '/_authenticated/workspaces/$workspaceId/api-keys/'
+    | '/_authenticated/workspaces/$workspaceId/domains/'
     | '/_authenticated/workspaces/$workspaceId/member-groups/'
     | '/_authenticated/workspaces/$workspaceId/members/'
     | '/_authenticated/workspaces/$workspaceId/projects/'
@@ -437,6 +450,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedWorkspacesWorkspaceIdMemberGroupsPageRouteImport
       parentRoute: typeof AuthenticatedWorkspacesWorkspaceIdMemberGroupsLayoutRoute
     }
+    '/_authenticated/workspaces/$workspaceId/domains/': {
+      id: '/_authenticated/workspaces/$workspaceId/domains/'
+      path: '/domains'
+      fullPath: '/workspaces/$workspaceId/domains/'
+      preLoaderRoute: typeof AuthenticatedWorkspacesWorkspaceIdDomainsPageRouteImport
+      parentRoute: typeof AuthenticatedWorkspacesWorkspaceIdLayoutRoute
+    }
     '/_authenticated/workspaces/$workspaceId/api-keys/': {
       id: '/_authenticated/workspaces/$workspaceId/api-keys/'
       path: '/'
@@ -548,6 +568,7 @@ interface AuthenticatedWorkspacesWorkspaceIdLayoutRouteChildren {
   AuthenticatedWorkspacesWorkspaceIdMemberGroupsLayoutRoute: typeof AuthenticatedWorkspacesWorkspaceIdMemberGroupsLayoutRouteWithChildren
   AuthenticatedWorkspacesWorkspaceIdMembersLayoutRoute: typeof AuthenticatedWorkspacesWorkspaceIdMembersLayoutRouteWithChildren
   AuthenticatedWorkspacesWorkspaceIdPageRoute: typeof AuthenticatedWorkspacesWorkspaceIdPageRoute
+  AuthenticatedWorkspacesWorkspaceIdDomainsPageRoute: typeof AuthenticatedWorkspacesWorkspaceIdDomainsPageRoute
   AuthenticatedWorkspacesWorkspaceIdProjectsPageRoute: typeof AuthenticatedWorkspacesWorkspaceIdProjectsPageRoute
   AuthenticatedWorkspacesWorkspaceIdSettingsPageRoute: typeof AuthenticatedWorkspacesWorkspaceIdSettingsPageRoute
   AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdPageRoute: typeof AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdPageRoute
@@ -565,6 +586,8 @@ const AuthenticatedWorkspacesWorkspaceIdLayoutRouteChildren: AuthenticatedWorksp
       AuthenticatedWorkspacesWorkspaceIdMembersLayoutRouteWithChildren,
     AuthenticatedWorkspacesWorkspaceIdPageRoute:
       AuthenticatedWorkspacesWorkspaceIdPageRoute,
+    AuthenticatedWorkspacesWorkspaceIdDomainsPageRoute:
+      AuthenticatedWorkspacesWorkspaceIdDomainsPageRoute,
     AuthenticatedWorkspacesWorkspaceIdProjectsPageRoute:
       AuthenticatedWorkspacesWorkspaceIdProjectsPageRoute,
     AuthenticatedWorkspacesWorkspaceIdSettingsPageRoute:

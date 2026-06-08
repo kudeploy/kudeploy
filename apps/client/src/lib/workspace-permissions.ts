@@ -11,6 +11,10 @@ export const workspacePermissions: Record<
     name: t("permission:manage_workspace.name"),
     description: t("permission:manage_workspace.description"),
   },
+  [WorkspacePermission.MANAGE_DOMAINS]: {
+    name: t("permission:manage_domains.name"),
+    description: t("permission:manage_domains.description"),
+  },
   [WorkspacePermission.MANAGE_MEMBERS]: {
     name: t("permission:manage_members.name"),
     description: t("permission:manage_members.description"),

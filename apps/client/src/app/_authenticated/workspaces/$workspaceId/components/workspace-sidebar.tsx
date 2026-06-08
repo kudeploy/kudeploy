@@ -1,4 +1,11 @@
-import { FolderKanban, KeyRound, Settings, User, Users } from "lucide-react";
+import {
+  FolderKanban,
+  Globe,
+  KeyRound,
+  Settings,
+  User,
+  Users,
+} from "lucide-react";
 
 import { linkOptions, useParams } from "@tanstack/react-router";
 import { t } from "i18next";
@@ -67,6 +74,15 @@ export const WorkspaceSidebar: FC<ComponentProps<typeof Sidebar>> = ({
             params: { workspaceId },
           }),
           testId: "workspace-sidebar-api-keys-link",
+        },
+        {
+          title: t("sidebar:navigation.domains"),
+          icon: Globe,
+          link: linkOptions({
+            to: "/workspaces/$workspaceId/domains",
+            params: { workspaceId },
+          }),
+          testId: "workspace-sidebar-domains-link",
         },
         {
           title: t("sidebar:navigation.members"),

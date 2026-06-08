@@ -35,6 +35,11 @@ export type Scalars = {
   /** A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format. */
   DateTime: { input: any; output: any };
   /**
+   * A filter for Domain that accepts MongoDB query syntax.
+   * Supported fields: name, status, created_at
+   */
+  DomainFilter: { input: any; output: any };
+  /**
    * A filter for Project that accepts MongoDB query syntax.
    * Supported fields: name, createdAt
    */
@@ -132,6 +137,10 @@ export type CreateApiKeyResult = {
   entity: ApiKey;
 };
 
+export type CreateDomainInput = {
+  name: Scalars["String"]["input"];
+};
+
 export type CreateProjectInput = {
   name: Scalars["String"]["input"];
 };
@@ -167,12 +176,64 @@ export type CreateWorkspaceMemberGroupInput = {
   permissions?: InputMaybe<Array<WorkspacePermission>>;
 };
 
+export type Domain = {
+  __typename?: "Domain";
+  createdAt: Scalars["DateTime"]["output"];
+  id: Scalars["ID"]["output"];
+  name: Scalars["String"]["output"];
+  status: DomainStatus;
+  updatedAt: Scalars["DateTime"]["output"];
+  verificationToken: Scalars["String"]["output"];
+  verifiedAt?: Maybe<Scalars["DateTime"]["output"]>;
+};
+
+export type DomainConnection = {
+  __typename?: "DomainConnection";
+  /** A list of edges. */
+  edges: Array<DomainEdge>;
+  /** Information to aid in pagination. */
+  pageInfo: PageInfo;
+  /** Identifies the total count of items in the connection. */
+  totalCount: Scalars["Int"]["output"];
+};
+
+/** An auto-generated type which holds one Domain and a cursor during pagination. */
+export type DomainEdge = {
+  __typename?: "DomainEdge";
+  /** A cursor for use in pagination. */
+  cursor: Scalars["String"]["output"];
+  /** The item at the end of DomainEdge. */
+  node: Domain;
+};
+
+/** Ordering options for domain connections */
+export type DomainOrder = {
+  /** The ordering direction. */
+  direction: OrderDirection;
+  /** The field to order domains by. */
+  field: DomainOrderField;
+};
+
+/** Properties by which domain connections can be ordered. */
+export enum DomainOrderField {
+  CREATED_AT = "CREATED_AT",
+  ID = "ID",
+  NAME = "NAME",
+  STATUS = "STATUS",
+}
+
+export enum DomainStatus {
+  PENDING = "PENDING",
+  VERIFIED = "VERIFIED",
+}
+
 export type Mutation = {
   __typename?: "Mutation";
   acceptWorkspaceInvite: AcceptWorkspaceInviteResult;
   addMembersToWorkspaceMemberGroup: WorkspaceMemberGroup;
   addWorkspaceMember: WorkspaceMember;
   createApiKey: CreateApiKeyResult;
+  createDomain: Domain;
   createProject: Project;
   createService: Service;
   createServiceAccountWorkspaceMember: WorkspaceMember;
@@ -180,6 +241,7 @@ export type Mutation = {
   createWorkspaceInvite: WorkspaceMember;
   createWorkspaceMemberGroup: WorkspaceMemberGroup;
   deleteApiKey: ApiKey;
+  deleteDomain: Domain;
   deleteProject: Project;
   deleteService: Service;
   deleteWorkspace: Workspace;
@@ -194,6 +256,7 @@ export type Mutation = {
   updateWorkspace: Workspace;
   updateWorkspaceMember?: Maybe<WorkspaceMember>;
   updateWorkspaceMemberGroup: WorkspaceMemberGroup;
+  verifyDomain: Domain;
 };
 
 export type MutationAcceptWorkspaceInviteArgs = {
@@ -212,6 +275,10 @@ export type MutationAddWorkspaceMemberArgs = {
 
 export type MutationCreateApiKeyArgs = {
   input: CreateApiKeyInput;
+};
+
+export type MutationCreateDomainArgs = {
+  input: CreateDomainInput;
 };
 
 export type MutationCreateProjectArgs = {
@@ -239,6 +306,10 @@ export type MutationCreateWorkspaceMemberGroupArgs = {
 };
 
 export type MutationDeleteApiKeyArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type MutationDeleteDomainArgs = {
   id: Scalars["ID"]["input"];
 };
 
@@ -292,6 +363,10 @@ export type MutationUpdateWorkspaceMemberArgs = {
 export type MutationUpdateWorkspaceMemberGroupArgs = {
   id: Scalars["ID"]["input"];
   input: UpdateWorkspaceMemberGroupInput;
+};
+
+export type MutationVerifyDomainArgs = {
+  id: Scalars["ID"]["input"];
 };
 
 export enum OrderDirection {
@@ -367,6 +442,8 @@ export type Query = {
   currentUser: User;
   currentWorkspace?: Maybe<Workspace>;
   currentWorkspaceMember?: Maybe<WorkspaceMember>;
+  domain?: Maybe<Domain>;
+  domains: DomainConnection;
   project?: Maybe<Project>;
   projects: ProjectConnection;
   service?: Maybe<Service>;
@@ -391,6 +468,20 @@ export type QueryApiKeysArgs = {
   first?: InputMaybe<Scalars["Int"]["input"]>;
   last?: InputMaybe<Scalars["Int"]["input"]>;
   orderBy?: InputMaybe<ApiKeyOrder>;
+  query?: InputMaybe<Scalars["String"]["input"]>;
+};
+
+export type QueryDomainArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type QueryDomainsArgs = {
+  after?: InputMaybe<Scalars["String"]["input"]>;
+  before?: InputMaybe<Scalars["String"]["input"]>;
+  filter?: InputMaybe<Scalars["DomainFilter"]["input"]>;
+  first?: InputMaybe<Scalars["Int"]["input"]>;
+  last?: InputMaybe<Scalars["Int"]["input"]>;
+  orderBy?: InputMaybe<DomainOrder>;
   query?: InputMaybe<Scalars["String"]["input"]>;
 };
 
@@ -773,6 +864,7 @@ export enum WorkspaceOrderField {
 }
 
 export enum WorkspacePermission {
+  MANAGE_DOMAINS = "MANAGE_DOMAINS",
   MANAGE_MEMBERS = "MANAGE_MEMBERS",
   MANAGE_WORKSPACE = "MANAGE_WORKSPACE",
 }
@@ -974,6 +1066,97 @@ export type GetCurrentWorkspaceMemberFromWorkspaceMemberContextQuery = {
     invitedBy?: { __typename?: "User"; name: string; email: string } | null;
     user?: { __typename?: "User"; email: string } | null;
   } | null;
+};
+
+export type GetDomainsFromDomainsRouteQueryVariables = Exact<{
+  after?: InputMaybe<Scalars["String"]["input"]>;
+  before?: InputMaybe<Scalars["String"]["input"]>;
+  first?: InputMaybe<Scalars["Int"]["input"]>;
+  last?: InputMaybe<Scalars["Int"]["input"]>;
+  filter?: InputMaybe<Scalars["DomainFilter"]["input"]>;
+  orderBy?: InputMaybe<DomainOrder>;
+  query?: InputMaybe<Scalars["String"]["input"]>;
+}>;
+
+export type GetDomainsFromDomainsRouteQuery = {
+  __typename?: "Query";
+  domains: {
+    __typename?: "DomainConnection";
+    edges: Array<{
+      __typename?: "DomainEdge";
+      node: {
+        __typename?: "Domain";
+        id: string;
+        name: string;
+        status: DomainStatus;
+        verificationToken: string;
+        verifiedAt?: any | null;
+        createdAt: any;
+        updatedAt: any;
+      };
+    }>;
+    pageInfo: {
+      __typename?: "PageInfo";
+      endCursor?: string | null;
+      hasNextPage: boolean;
+      hasPreviousPage: boolean;
+      startCursor?: string | null;
+    };
+  };
+};
+
+export type CreateDomainFromDomainsRouteMutationVariables = Exact<{
+  input: CreateDomainInput;
+}>;
+
+export type CreateDomainFromDomainsRouteMutation = {
+  __typename?: "Mutation";
+  createDomain: {
+    __typename?: "Domain";
+    id: string;
+    name: string;
+    status: DomainStatus;
+    verificationToken: string;
+    verifiedAt?: any | null;
+    createdAt: any;
+    updatedAt: any;
+  };
+};
+
+export type VerifyDomainFromDomainsRouteMutationVariables = Exact<{
+  id: Scalars["ID"]["input"];
+}>;
+
+export type VerifyDomainFromDomainsRouteMutation = {
+  __typename?: "Mutation";
+  verifyDomain: {
+    __typename?: "Domain";
+    id: string;
+    name: string;
+    status: DomainStatus;
+    verificationToken: string;
+    verifiedAt?: any | null;
+    createdAt: any;
+    updatedAt: any;
+  };
+};
+
+export type DeleteDomainFromDomainsRouteMutationVariables = Exact<{
+  id: Scalars["ID"]["input"];
+}>;
+
+export type DeleteDomainFromDomainsRouteMutation = {
+  __typename?: "Mutation";
+  deleteDomain: {
+    __typename?: "Domain";
+    id: string;
+    name: string;
+    status: DomainStatus;
+    verificationToken: string;
+    verifiedAt?: any | null;
+    createdAt: any;
+    updatedAt: any;
+  };
 };
 
 export type GetCurrentWorkspaceFromWorkspaceLayoutQueryVariables = Exact<{
@@ -2485,6 +2668,403 @@ export const GetCurrentWorkspaceMemberFromWorkspaceMemberContextDocument = {
 } as unknown as DocumentNode<
   GetCurrentWorkspaceMemberFromWorkspaceMemberContextQuery,
   GetCurrentWorkspaceMemberFromWorkspaceMemberContextQueryVariables
+>;
+export const GetDomainsFromDomainsRouteDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "getDomainsFromDomainsRoute" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "after" },
+          },
+          type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "before" },
+          },
+          type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "first" },
+          },
+          type: { kind: "NamedType", name: { kind: "Name", value: "Int" } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "last" } },
+          type: { kind: "NamedType", name: { kind: "Name", value: "Int" } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "filter" },
+          },
+          type: {
+            kind: "NamedType",
+            name: { kind: "Name", value: "DomainFilter" },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "orderBy" },
+          },
+          type: {
+            kind: "NamedType",
+            name: { kind: "Name", value: "DomainOrder" },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "query" },
+          },
+          type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "domains" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "after" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "after" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "before" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "before" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "first" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "first" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "last" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "last" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "orderBy" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "orderBy" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "filter" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "filter" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "query" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "query" },
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "edges" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "node" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "id" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "name" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "status" },
+                            },
+                            {
+                              kind: "Field",
+                              name: {
+                                kind: "Name",
+                                value: "verificationToken",
+                              },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "verifiedAt" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "createdAt" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "updatedAt" },
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "pageInfo" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "endCursor" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "hasNextPage" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "hasPreviousPage" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "startCursor" },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  GetDomainsFromDomainsRouteQuery,
+  GetDomainsFromDomainsRouteQueryVariables
+>;
+export const CreateDomainFromDomainsRouteDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "mutation",
+      name: { kind: "Name", value: "createDomainFromDomainsRoute" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "input" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "CreateDomainInput" },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "createDomain" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "input" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "input" },
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "name" } },
+                { kind: "Field", name: { kind: "Name", value: "status" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "verificationToken" },
+                },
+                { kind: "Field", name: { kind: "Name", value: "verifiedAt" } },
+                { kind: "Field", name: { kind: "Name", value: "createdAt" } },
+                { kind: "Field", name: { kind: "Name", value: "updatedAt" } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  CreateDomainFromDomainsRouteMutation,
+  CreateDomainFromDomainsRouteMutationVariables
+>;
+export const VerifyDomainFromDomainsRouteDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "mutation",
+      name: { kind: "Name", value: "verifyDomainFromDomainsRoute" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "verifyDomain" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "id" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "id" },
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "name" } },
+                { kind: "Field", name: { kind: "Name", value: "status" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "verificationToken" },
+                },
+                { kind: "Field", name: { kind: "Name", value: "verifiedAt" } },
+                { kind: "Field", name: { kind: "Name", value: "createdAt" } },
+                { kind: "Field", name: { kind: "Name", value: "updatedAt" } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  VerifyDomainFromDomainsRouteMutation,
+  VerifyDomainFromDomainsRouteMutationVariables
+>;
+export const DeleteDomainFromDomainsRouteDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "mutation",
+      name: { kind: "Name", value: "deleteDomainFromDomainsRoute" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "deleteDomain" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "id" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "id" },
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "name" } },
+                { kind: "Field", name: { kind: "Name", value: "status" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "verificationToken" },
+                },
+                { kind: "Field", name: { kind: "Name", value: "verifiedAt" } },
+                { kind: "Field", name: { kind: "Name", value: "createdAt" } },
+                { kind: "Field", name: { kind: "Name", value: "updatedAt" } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  DeleteDomainFromDomainsRouteMutation,
+  DeleteDomainFromDomainsRouteMutationVariables
 >;
 export const GetCurrentWorkspaceFromWorkspaceLayoutDocument = {
   kind: "Document",

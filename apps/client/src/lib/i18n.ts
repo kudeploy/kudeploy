@@ -26,6 +26,7 @@ i18n
       "auth",
       "sidebar",
       "api-key",
+      "domain",
       "permission",
       "project",
       "service",

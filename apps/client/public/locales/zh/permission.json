@@ -3,6 +3,10 @@
     "description": "一键选择或取消所有权限",
     "name": "所有权限"
   },
+  "manage_domains": {
+    "description": "可以创建、验证和删除工作空间域名",
+    "name": "管理域名"
+  },
   "manage_members": {
     "description": "可以添加、删除和修改工作空间成员",
     "name": "管理成员"
