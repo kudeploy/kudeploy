@@ -1,3 +1,13 @@
+## 1.5.1 (2026-06-08)
+
+### 🩹 Fixes
+
+- use prefixed domain verification txt record ([df7181f](https://github.com/kudeploy/kudeploy/commit/df7181f))
+
+### ❤️ Thank You
+
+- Xudong Huang @xudongcc
+
 ## 1.5.0 (2026-06-08)
 
 ### 🚀 Features
