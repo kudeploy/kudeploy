@@ -88,7 +88,7 @@ describe('DomainService', () => {
     expect(em.flush).not.toHaveBeenCalled();
   });
 
-  it('marks a domain as verified when TXT records contain its token', async () => {
+  it('marks a domain as verified when the prefixed TXT record matches exactly', async () => {
     const verifiedAt = new Date('2026-06-08T00:00:00.000Z');
     const domain = {
       name: 'example.com',
@@ -98,18 +98,18 @@ describe('DomainService', () => {
     } as Domain;
     const { service, em, resolveTxt } = createService({
       now: verifiedAt,
-      txtRecords: [['domain-token']],
+      txtRecords: [['domain-verify=domain-token']],
     });
 
     await expect(service.verifyDomain(domain)).resolves.toBe(domain);
 
-    expect(resolveTxt).toHaveBeenCalledWith('example.com');
+    expect(resolveTxt).toHaveBeenCalledWith('_kudeploy.example.com');
     expect(domain.status).toBe(DomainStatus.VERIFIED);
     expect(domain.verifiedAt).toBe(verifiedAt);
     expect(em.flush).toHaveBeenCalled();
   });
 
-  it('rejects verification when TXT records do not contain the token', async () => {
+  it('rejects verification when TXT records do not exactly match the verification value', async () => {
     const domain = {
       name: 'example.com',
       status: DomainStatus.PENDING,
@@ -117,7 +117,10 @@ describe('DomainService', () => {
       verifiedAt: null,
     } as Domain;
     const { service, em } = createService({
-      txtRecords: [['other-token']],
+      txtRecords: [
+        ['domain-token'],
+        ['kudeploy-domain-verification=domain-token'],
+      ],
     });
 
     await expect(service.verifyDomain(domain)).rejects.toBeInstanceOf(

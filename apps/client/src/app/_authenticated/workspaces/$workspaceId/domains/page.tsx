@@ -254,8 +254,8 @@ function DomainsComponent() {
     setCreateDialogOpen(open);
   };
 
-  const handleCopyToken = async (domain: DomainRow) => {
-    await navigator.clipboard.writeText(domain.verificationToken);
+  const handleCopyVerificationValue = async (domain: DomainRow) => {
+    await navigator.clipboard.writeText(getDomainVerificationTxtValue(domain));
     setCopiedDomainId(domain.id);
     setTimeout(() => setCopiedDomainId(null), 2000);
   };
@@ -378,24 +378,29 @@ function DomainsComponent() {
             cell: ({ row }) => {
               const domain = row.original;
               const copied = copiedDomainId === domain.id;
+              const txtName = getDomainVerificationTxtName(domain);
+              const txtValue = getDomainVerificationTxtValue(domain);
 
               return (
                 <div className="flex min-w-0 flex-col gap-2">
                   <div className="text-muted-foreground text-xs">
                     {t("domain:txt.name")}:{" "}
                     <code className="text-foreground break-all">
-                      {domain.name}
+                      {txtName}
                     </code>
                   </div>
-                  <div className="flex min-w-0 items-center gap-2">
-                    <code className="bg-muted max-w-60 truncate rounded px-2 py-1 text-xs">
-                      {domain.verificationToken}
+                  <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs">
+                    <span className="text-muted-foreground">
+                      {t("domain:txt.value")}:
+                    </span>
+                    <code className="bg-muted text-foreground break-all rounded px-2 py-1">
+                      {txtValue}
                     </code>
                     <Button
                       type="button"
                       size="sm"
                       variant="outline"
-                      onClick={() => handleCopyToken(domain)}
+                      onClick={() => handleCopyVerificationValue(domain)}
                     >
                       {copied ? (
                         <Check data-icon="inline-start" />
@@ -537,4 +542,12 @@ function getDomainStatus(status: DomainStatus): DomainStatusView {
   }
 
   return { color: "amber", label: "pending" };
+}
+
+function getDomainVerificationTxtName(domain: DomainRow) {
+  return `_kudeploy.${domain.name}`;
+}
+
+function getDomainVerificationTxtValue(domain: DomainRow) {
+  return `domain-verify=${domain.verificationToken}`;
 }
