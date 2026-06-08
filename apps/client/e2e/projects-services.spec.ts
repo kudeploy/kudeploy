@@ -1,5 +1,9 @@
 import { expect, test } from "@playwright/test";
-import type { Page, Route as PlaywrightRoute } from "@playwright/test";
+import type {
+  Page,
+  Route as PlaywrightRoute,
+  WebSocketRoute,
+} from "@playwright/test";
 
 import { registerUser } from "./utils/auth";
 import { uniqueSeed } from "./utils/unique";
@@ -53,6 +57,7 @@ test.describe("workspace Projects and Services", () => {
   }) => {
     const seed = uniqueSeed("projects");
     const workspaceName = `Projects Workspace ${seed}`;
+    const terminalSocket = await mockServiceTerminalSocket(page);
 
     await registerUser(page, {
       email: `${seed}@example.com`,
@@ -166,6 +171,34 @@ test.describe("workspace Projects and Services", () => {
       ),
     );
     await expect(page.getByTestId("service-network-page")).toBeVisible();
+
+    await page.getByTestId("service-terminal-tab").click();
+    await expect(page).toHaveURL(
+      new RegExp(
+        `/workspaces/${workspaceId}/projects/project-e2e/services/service-e2e/terminal$`,
+      ),
+    );
+    await expect(page.getByTestId("service-terminal-page")).toBeVisible();
+    await expect(page.getByTestId("service-terminal-status")).toBeVisible();
+    await expect
+      .poll(() => terminalSocket.events.filter((event) => event[0] === "start"))
+      .toHaveLength(1);
+
+    await page.locator(".xterm").click();
+    await page.keyboard.type("echo before-start");
+    await expect
+      .poll(() => terminalSocket.events.filter((event) => event[0] === "data"))
+      .toHaveLength(0);
+
+    terminalSocket.start();
+    await expect(page.getByTestId("service-terminal-status")).toContainText(
+      "已连接",
+    );
+    await page.locator(".xterm").click();
+    await page.keyboard.type("echo ready");
+    await expect
+      .poll(() => terminalSocket.events.filter((event) => event[0] === "data"))
+      .not.toHaveLength(0);
 
     await page.getByTestId("service-metrics-tab").click();
     await expect(page).toHaveURL(
@@ -463,4 +496,47 @@ async function fulfill(route: PlaywrightRoute, data: unknown) {
     status: 200,
     body: JSON.stringify({ data }),
   });
+}
+
+async function mockServiceTerminalSocket(page: Page) {
+  const events: Array<[string, unknown]> = [];
+  let socket: WebSocketRoute | null = null;
+
+  await page.routeWebSocket(
+    (url) => url.pathname === "/socket.io/",
+    (ws) => {
+      socket = ws;
+      ws.send(
+        '0{"sid":"service-terminal-e2e","upgrades":[],"pingInterval":25000,"pingTimeout":20000,"maxPayload":1000000}',
+      );
+      ws.onMessage((message) => {
+        const packet = message.toString();
+
+        if (packet === "3") {
+          return;
+        }
+
+        if (packet.startsWith("40/service-terminal")) {
+          ws.send(
+            '40/service-terminal,{"sid":"service-terminal-namespace-e2e"}',
+          );
+          return;
+        }
+
+        if (packet.startsWith("42/service-terminal,")) {
+          const event = JSON.parse(
+            packet.slice("42/service-terminal,".length),
+          ) as [string, unknown];
+          events.push(event);
+        }
+      });
+    },
+  );
+
+  return {
+    events,
+    start: () => {
+      socket?.send('42/service-terminal,["started"]');
+    },
+  };
 }

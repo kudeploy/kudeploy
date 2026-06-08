@@ -16,5 +16,6 @@ import { ServiceService } from './service.service';
     ProjectModule,
   ],
   providers: [ServiceResolver, ServiceService],
+  exports: [ServiceService],
 })
 export class ServiceModule {}

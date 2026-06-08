@@ -8,6 +8,7 @@ import { AuthModule } from '@/app/auth/auth.module';
 import { DomainModule } from '@/app/domain/domain.module';
 import { ProjectModule } from '@/app/project/project.module';
 import { ServiceModule } from '@/app/service/service.module';
+import { ServiceTerminalModule } from '@/app/service-terminal/service-terminal.module';
 import { UserModule } from '@/app/user/user.module';
 import { WorkspaceModule } from '@/app/workspace/workspace.module';
 import { WorkspaceMemberModule } from '@/app/workspace-member/workspace-member.module';
@@ -29,6 +30,7 @@ import { CommonModule } from '@/common/common.module';
     DomainModule,
     ProjectModule,
     ServiceModule,
+    ServiceTerminalModule,
   ],
   providers: [
     {

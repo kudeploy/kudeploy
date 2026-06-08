@@ -40,6 +40,16 @@
     "description": "Configure exposed ports and health checks.",
     "ports": "Ports"
   },
+  "terminal": {
+    "description": "Open an interactive shell inside the service pod.",
+    "title": "Terminal",
+    "error": "Terminal connection failed",
+    "status": {
+      "connecting": "Connecting",
+      "connected": "Connected",
+      "disconnected": "Disconnected"
+    }
+  },
   "metrics": {
     "description": "Observe recent resource usage, limits, and network throughput.",
     "range": "Time range",

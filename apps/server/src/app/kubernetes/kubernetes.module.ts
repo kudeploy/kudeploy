@@ -1,6 +1,7 @@
 import {
   CoreV1Api,
   CustomObjectsApi,
+  Exec,
   KubeConfig,
 } from '@kubernetes/client-node';
 import { Module } from '@nestjs/common';
@@ -33,7 +34,12 @@ import { Module } from '@nestjs/common';
       useFactory: (kubeConfig: KubeConfig) =>
         kubeConfig.makeApiClient(CoreV1Api),
     },
+    {
+      provide: Exec,
+      inject: [KubeConfig],
+      useFactory: (kubeConfig: KubeConfig) => new Exec(kubeConfig),
+    },
   ],
-  exports: [KubeConfig, CustomObjectsApi, CoreV1Api],
+  exports: [KubeConfig, CustomObjectsApi, CoreV1Api, Exec],
 })
 export class KubernetesModule {}

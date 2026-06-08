@@ -40,6 +40,16 @@
     "description": "配置暴露端口和健康检查。",
     "ports": "端口"
   },
+  "terminal": {
+    "description": "进入服务 Pod 的交互式终端。",
+    "title": "终端",
+    "error": "终端连接失败",
+    "status": {
+      "connecting": "正在连接",
+      "connected": "已连接",
+      "disconnected": "未连接"
+    }
+  },
   "metrics": {
     "description": "观察服务最近的资源用量、限制和网络吞吐。",
     "range": "时间范围",
