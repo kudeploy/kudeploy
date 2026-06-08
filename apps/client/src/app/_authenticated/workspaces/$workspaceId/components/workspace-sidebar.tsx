@@ -50,7 +50,7 @@ export const WorkspaceSidebar: FC<ComponentProps<typeof Sidebar>> = ({
     items: Array<SidebarItem>;
   }> = [
     {
-      title: t("sidebar:navigation.resources"),
+      title: t("sidebar:navigation.platform"),
       items: [
         {
           title: t("sidebar:navigation.projects"),
@@ -60,6 +60,15 @@ export const WorkspaceSidebar: FC<ComponentProps<typeof Sidebar>> = ({
             params: { workspaceId },
           }),
           testId: "workspace-sidebar-projects-link",
+        },
+        {
+          title: t("sidebar:navigation.domains"),
+          icon: Globe,
+          link: linkOptions({
+            to: "/workspaces/$workspaceId/domains",
+            params: { workspaceId },
+          }),
+          testId: "workspace-sidebar-domains-link",
         },
       ],
     },
@@ -74,15 +83,6 @@ export const WorkspaceSidebar: FC<ComponentProps<typeof Sidebar>> = ({
             params: { workspaceId },
           }),
           testId: "workspace-sidebar-api-keys-link",
-        },
-        {
-          title: t("sidebar:navigation.domains"),
-          icon: Globe,
-          link: linkOptions({
-            to: "/workspaces/$workspaceId/domains",
-            params: { workspaceId },
-          }),
-          testId: "workspace-sidebar-domains-link",
         },
         {
           title: t("sidebar:navigation.members"),
