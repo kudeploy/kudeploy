@@ -12,13 +12,10 @@ import { Module } from '@nestjs/common';
       useFactory: () => {
         const kubeConfig = new KubeConfig();
 
-        try {
+        kubeConfig.loadFromDefault();
+
+        if (!kubeConfig.getCurrentCluster()) {
           kubeConfig.loadFromCluster();
-          if (!kubeConfig.getCurrentCluster()) {
-            kubeConfig.loadFromDefault();
-          }
-        } catch {
-          kubeConfig.loadFromDefault();
         }
 
         return kubeConfig;
