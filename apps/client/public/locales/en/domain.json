@@ -1,0 +1,58 @@
+{
+  "action": {
+    "verify": "Verify"
+  },
+  "create": {
+    "button": "Add Domain",
+    "description": "Add a domain to this workspace. Configure the TXT record shown in the list, then verify it.",
+    "title": "Add Domain"
+  },
+  "delete": {
+    "description": "Delete {{name}}? This action cannot be undone.",
+    "title": "Delete Domain"
+  },
+  "description": "Bind and verify custom domains for this workspace.",
+  "filter": {
+    "items": {
+      "name": {
+        "label": "Domain",
+        "placeholder": "Search domain"
+      }
+    },
+    "search": {
+      "placeholder": "Search domains"
+    }
+  },
+  "form": {
+    "name": {
+      "invalid": "Enter a valid domain such as example.com",
+      "label": "Domain",
+      "placeholder": "example.com",
+      "required": "Domain is required",
+      "too_long": "Domain is too long"
+    }
+  },
+  "not_verified": "Not verified",
+  "status": {
+    "pending": "Pending",
+    "verified": "Verified"
+  },
+  "table": {
+    "created_at": "Created",
+    "name": "Domain",
+    "status": "Status",
+    "txt_record": "TXT Record",
+    "verified_at": "Verified"
+  },
+  "title": "Domains",
+  "toast": {
+    "created_success": "Domain added",
+    "deleted_success": "Domain deleted",
+    "verified_success": "Domain verified"
+  },
+  "txt": {
+    "copied": "Copied",
+    "copy": "Copy",
+    "name": "Name"
+  }
+}

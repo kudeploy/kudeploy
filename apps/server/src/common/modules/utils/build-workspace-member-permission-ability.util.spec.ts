@@ -7,6 +7,7 @@ import { RequestContext } from '@nest-boot/request-context';
 import { subject } from '@casl/ability';
 
 import { ApiKey } from '@/app/api-key/api-key.entity';
+import { Domain } from '@/app/domain/domain.entity';
 import { User } from '@/app/user/user.entity';
 import { Workspace } from '@/app/workspace/workspace.entity';
 import { WorkspaceMemberRole } from '@/app/workspace-member/enums/workspace-member-role.enum';
@@ -117,6 +118,7 @@ describe('buildWorkspaceMemberPermissionAbility', () => {
     );
 
     expect(ability.can(PermissionAction.READ, Workspace)).toBe(true);
+    expect(ability.can(PermissionAction.MANAGE, Domain)).toBe(false);
     expect(ability.can(PermissionAction.MANAGE, Workspace)).toBe(true);
     expect(
       ability.can(
@@ -138,6 +140,20 @@ describe('buildWorkspaceMemberPermissionAbility', () => {
       ability.can(PermissionAction.MANAGE, WorkspaceMemberGroupMember),
     ).toBe(true);
     expect(ability.can(PermissionAction.CREATE, ApiKey)).toBe(true);
+  });
+
+  it('grants domain management with the dedicated permission', () => {
+    const ability = buildAbility({
+      role: WorkspaceMemberRole.MEMBER,
+      permissions: [WorkspaceMemberPermission.MANAGE_DOMAINS],
+      workspace: {
+        id: 'workspace_1',
+      } as WorkspaceMember['workspace'],
+    });
+
+    expect(ability.can(PermissionAction.MANAGE, Domain)).toBe(true);
+    expect(ability.can(PermissionAction.MANAGE, Workspace)).toBe(false);
+    expect(ability.can(PermissionAction.MANAGE, WorkspaceMember)).toBe(false);
   });
 
   it('uses provided effective permissions', () => {

@@ -3,6 +3,10 @@
     "description": "Select or deselect all permissions at once",
     "name": "All Permissions"
   },
+  "manage_domains": {
+    "description": "Can create, verify, and delete workspace domains",
+    "name": "Manage Domains"
+  },
   "manage_members": {
     "description": "Can add, delete, and modify workspace members",
     "name": "Manage Members"

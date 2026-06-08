@@ -1,0 +1,58 @@
+{
+  "action": {
+    "verify": "验证"
+  },
+  "create": {
+    "button": "添加域名",
+    "description": "为此工作空间添加域名。先配置列表中显示的 TXT 记录，然后执行验证。",
+    "title": "添加域名"
+  },
+  "delete": {
+    "description": "删除 {{name}}？此操作无法撤销。",
+    "title": "删除域名"
+  },
+  "description": "为此工作空间绑定并验证自定义域名。",
+  "filter": {
+    "items": {
+      "name": {
+        "label": "域名",
+        "placeholder": "搜索域名"
+      }
+    },
+    "search": {
+      "placeholder": "搜索域名"
+    }
+  },
+  "form": {
+    "name": {
+      "invalid": "请输入有效域名，例如 example.com",
+      "label": "域名",
+      "placeholder": "example.com",
+      "required": "域名是必填的",
+      "too_long": "域名过长"
+    }
+  },
+  "not_verified": "未验证",
+  "status": {
+    "pending": "待验证",
+    "verified": "已验证"
+  },
+  "table": {
+    "created_at": "创建时间",
+    "name": "域名",
+    "status": "状态",
+    "txt_record": "TXT 记录",
+    "verified_at": "验证时间"
+  },
+  "title": "域名",
+  "toast": {
+    "created_success": "域名添加成功",
+    "deleted_success": "域名删除成功",
+    "verified_success": "域名验证成功"
+  },
+  "txt": {
+    "copied": "已复制",
+    "copy": "复制",
+    "name": "名称"
+  }
+}
