@@ -1,3 +1,7 @@
+## 0.6.0 (2026-06-09)
+
+This was a version bump only for helm-chart to align it with other projects, there were no code changes.
+
 ## 0.5.2 (2026-06-09)
 
 This was a version bump only for helm-chart to align it with other projects, there were no code changes.

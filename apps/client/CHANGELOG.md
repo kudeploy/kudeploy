@@ -1,3 +1,13 @@
+## 0.5.0 (2026-06-09)
+
+### 🚀 Features
+
+- add service deployments ([d391a04](https://github.com/kudeploy/kudeploy/commit/d391a04))
+
+### ❤️ Thank You
+
+- Xudong Huang @xudongcc
+
 ## 0.4.1 (2026-06-08)
 
 ### 🩹 Fixes
