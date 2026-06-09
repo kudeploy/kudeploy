@@ -1,9 +1,15 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@apollo/client/react";
 import { createFileRoute } from "@tanstack/react-router";
+import {
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { Activity, RefreshCw } from "lucide-react";
 import { t } from "i18next";
+import type { ColumnDef } from "@tanstack/react-table";
 
 import { Page } from "@/components/fabric-ui/page";
 import { Button } from "@/components/ui/button";
@@ -22,11 +28,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { graphql } from "@/gql";
+import { cn } from "@/lib/utils";
 
 const GET_SERVICE_LOGS_FROM_SERVICE_LOGS_ROUTE = graphql(`
   query getServiceLogsFromServiceLogsRoute(
@@ -240,67 +255,162 @@ function LogEntries({
   entries,
   loading,
 }: {
-  entries: readonly LogEntry[];
+  entries: ReadonlyArray<LogEntry>;
   loading: boolean;
 }) {
-  return (
-    <div className="max-h-[640px] overflow-auto">
-      <div className="min-w-[720px]">
-        <div className="bg-background text-muted-foreground sticky top-0 z-10 grid grid-cols-[11rem_14rem_minmax(0,1fr)] gap-3 border-b px-4 py-2 text-xs font-medium">
-          <div>{t("service:logs.columns.time")}</div>
-          <div>{t("service:logs.columns.deployment")}</div>
-          <div>{t("service:logs.columns.message")}</div>
-        </div>
-        {loading ? (
-          <div className="bg-muted/50 flex h-96 items-center justify-center text-sm">
-            {t("service:logs.loading")}
-          </div>
-        ) : entries.length ? (
-          <div className="divide-y">
-            {entries.map((entry, index) => {
-              const deployment = entry.deploymentName ?? "-";
-              const timestamp = toTimestamp(entry.timestamp);
+  const data = useMemo(() => [...entries], [entries]);
+  const columns = useMemo<Array<ColumnDef<LogEntry>>>(
+    () => [
+      {
+        id: "time",
+        size: 176,
+        header: () => t("service:logs.columns.time"),
+        cell: ({ row }) => {
+          const timestamp = toTimestamp(row.original.timestamp);
 
-              return (
-                <div
-                  key={`${timestamp}-${deployment}-${index}`}
-                  className="hover:bg-muted/50 grid grid-cols-[11rem_14rem_minmax(0,1fr)] gap-3 px-4 py-2 text-xs transition-colors"
+          return (
+            <time
+              className="text-muted-foreground font-mono tabular-nums"
+              dateTime={timestamp}
+              title={timestamp}
+            >
+              {dayjs(row.original.timestamp).format("YYYY-MM-DD HH:mm:ss")}
+            </time>
+          );
+        },
+      },
+      {
+        id: "deployment",
+        size: 224,
+        header: () => t("service:logs.columns.deployment"),
+        cell: ({ row }) => (
+          <DeploymentCell
+            deployment={row.original.deploymentName ?? "-"}
+            index={row.index}
+          />
+        ),
+      },
+      {
+        id: "message",
+        header: () => t("service:logs.columns.message"),
+        cell: ({ row }) => (
+          <pre className="min-w-0 font-mono break-words whitespace-pre-wrap">
+            {row.original.message}
+          </pre>
+        ),
+      },
+    ],
+    [],
+  );
+  const table = useReactTable({
+    data,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+  });
+
+  return (
+    <div className="max-h-160 overflow-auto">
+      <Table className="table-fixed text-xs">
+        <colgroup>
+          {table.getVisibleLeafColumns().map((column) => (
+            <col
+              key={column.id}
+              style={
+                column.id === "message"
+                  ? undefined
+                  : { width: column.getSize() }
+              }
+            />
+          ))}
+        </colgroup>
+        <TableHeader>
+          {table.getHeaderGroups().map((headerGroup) => (
+            <TableRow key={headerGroup.id} className="hover:bg-transparent">
+              {headerGroup.headers.map((header) => (
+                <TableHead
+                  key={header.id}
+                  className={cn(
+                    "bg-background text-muted-foreground sticky top-0 z-10 h-auto px-4 py-2 text-xs font-medium",
+                    header.column.id === "message"
+                      ? "whitespace-normal"
+                      : "whitespace-nowrap",
+                  )}
                 >
-                  <time
-                    className="text-muted-foreground font-mono tabular-nums"
-                    dateTime={timestamp}
-                    title={timestamp}
+                  {header.isPlaceholder
+                    ? null
+                    : flexRender(
+                        header.column.columnDef.header,
+                        header.getContext(),
+                      )}
+                </TableHead>
+              ))}
+            </TableRow>
+          ))}
+        </TableHeader>
+        <TableBody>
+          {loading ? (
+            <TableRow className="hover:bg-transparent">
+              <TableCell
+                className="bg-muted/50 h-96 text-center text-sm"
+                colSpan={columns.length}
+              >
+                {t("service:logs.loading")}
+              </TableCell>
+            </TableRow>
+          ) : table.getRowModel().rows.length ? (
+            table.getRowModel().rows.map((row) => (
+              <TableRow key={row.id} className="group">
+                {row.getVisibleCells().map((cell) => (
+                  <TableCell
+                    key={cell.id}
+                    className={cn(
+                      "group-hover:bg-muted/50 px-4 py-2 text-xs transition-colors",
+                      cell.column.id === "message" && "whitespace-normal",
+                      cell.column.id === "deployment" &&
+                        "overflow-hidden whitespace-nowrap",
+                      cell.column.id === "time" && "whitespace-nowrap",
+                    )}
                   >
-                    {dayjs(entry.timestamp).format("YYYY-MM-DD HH:mm:ss")}
-                  </time>
-                  <Tooltip>
-                    <TooltipTrigger
-                      render={
-                        <div className="text-muted-foreground min-w-0 truncate font-mono">
-                          {deployment}
-                        </div>
-                      }
-                    />
-                    <TooltipContent align="start">
-                      <span className="font-mono break-words">
-                        {deployment}
-                      </span>
-                    </TooltipContent>
-                  </Tooltip>
-                  <pre className="min-w-0 font-mono break-words whitespace-pre-wrap">
-                    {entry.message}
-                  </pre>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="border-border text-muted-foreground flex h-96 items-center justify-center border-dashed text-sm">
-            {t("service:logs.empty")}
-          </div>
-        )}
-      </div>
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))
+          ) : (
+            <TableRow className="hover:bg-transparent">
+              <TableCell
+                className="border-border text-muted-foreground h-96 border-dashed text-center text-sm"
+                colSpan={columns.length}
+              >
+                {t("service:logs.empty")}
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
     </div>
+  );
+}
+
+function DeploymentCell({
+  deployment,
+  index,
+}: {
+  deployment: string;
+  index: number;
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        className="text-muted-foreground flex min-h-6 w-full min-w-0 items-center overflow-hidden bg-transparent p-0 text-left font-mono outline-none"
+        data-testid={`service-log-deployment-${index}`}
+      >
+        <span className="block min-w-0 flex-1 truncate">{deployment}</span>
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>{deployment}</p>
+      </TooltipContent>
+    </Tooltip>
   );
 }
 

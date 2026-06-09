@@ -10,6 +10,7 @@ import { t } from "i18next";
 import appCss from "../styles.css?url";
 import type i18n from "i18next";
 import type { ApolloClientIntegration } from "@apollo/client-integration-tanstack-start";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { ToastProvider } from "@/components/fabric-ui/toast";
 import { AlertDialogProvider } from "@/components/fabric-ui/alert-dialog";
 
@@ -57,7 +58,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 
       <body className="bg-background min-h-screen">
         <AlertDialogProvider>
-          <ToastProvider>{children}</ToastProvider>
+          <TooltipProvider>
+            <ToastProvider>{children}</ToastProvider>
+          </TooltipProvider>
         </AlertDialogProvider>
 
         <TanStackDevtools

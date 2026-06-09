@@ -360,13 +360,41 @@ test.describe("workspace Projects and Services", () => {
     await expect(page.getByTestId("service-logs-page")).toContainText(
       "deployment-v1",
     );
+    const logsTable = page.getByTestId("service-logs-page").getByRole("table");
+    await expect(logsTable).toBeVisible();
+    await expect(
+      logsTable.getByRole("columnheader", { name: "时间" }),
+    ).toBeVisible();
+    await expect(
+      logsTable.getByRole("columnheader", { name: "部署" }),
+    ).toBeVisible();
+    await expect(
+      logsTable.getByRole("columnheader", { name: "消息" }),
+    ).toBeVisible();
     const deploymentCell = page.getByText(
       "deployment-v1-with-a-very-long-generated-name",
     );
+    const deploymentTrigger = page.getByTestId("service-log-deployment-0");
+    await expect
+      .poll(async () => {
+        const cellBox = await deploymentTrigger
+          .locator("xpath=ancestor::td")
+          .boundingBox();
+        const textBox = await deploymentTrigger.locator("span").boundingBox();
+
+        if (!cellBox || !textBox) {
+          return false;
+        }
+
+        return textBox.x + textBox.width <= cellBox.x + cellBox.width + 1;
+      })
+      .toBe(true);
     await deploymentCell.hover();
-    await expect(page.getByRole("tooltip")).toContainText(
-      "deployment-v1-with-a-very-long-generated-name",
-    );
+    await expect(
+      page.locator('[data-slot="tooltip-content"]').filter({
+        hasText: "deployment-v1-with-a-very-long-generated-name",
+      }),
+    ).toBeVisible();
     const logRow = page.getByText("API booted").locator("..");
     await logRow.hover();
     await expect
