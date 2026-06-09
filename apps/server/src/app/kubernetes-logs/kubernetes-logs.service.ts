@@ -183,11 +183,12 @@ function toConnection({
       )
     : rows;
   const sortedRows = [...filteredRows].sort(compareServiceLogsDesc);
-  const hasMore = rows.length > limit || rows.length >= MAX_PAGE_SIZE;
   const pageRows =
     mode === 'forward'
       ? sortedRows.slice(0, limit)
       : sortedRows.slice(Math.max(sortedRows.length - limit, 0));
+  const hasMore =
+    pageRows.length > 0 && (rows.length > limit || rows.length >= MAX_PAGE_SIZE);
   const edges = pageRows.map((node) => ({
     cursor: encodeServiceLogCursor(node),
     node,

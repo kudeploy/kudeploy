@@ -198,6 +198,40 @@ describe('KubernetesLogsService', () => {
     );
   });
 
+  it('does not advertise another older page when cursor filtering removes every fetched row', async () => {
+    const { service, victoriaLogsClient } = createService();
+    const cursorLog = log({
+      id: '8'.repeat(32),
+      message: 'cursor',
+      rawTime: '2026-06-08T16:46:23.123456789Z',
+    });
+    const filteredRows = Array.from({ length: 1001 }, (_, index) =>
+      log({
+        id: `f${index.toString().padStart(31, '0')}`,
+        message: `newer same timestamp ${index}`,
+        rawTime: cursorLog.rawTime,
+      }),
+    );
+
+    victoriaLogsClient.query.mockResolvedValue(filteredRows);
+
+    await expect(
+      service.getServiceLogs(workspace(), 'project-1', 'service-1', {
+        after: encodeServiceLogCursor(cursorLog),
+        first: 1000,
+        now: new Date('2026-06-08T17:00:00.000Z'),
+      }),
+    ).resolves.toMatchObject({
+      edges: [],
+      pageInfo: {
+        endCursor: null,
+        hasNextPage: false,
+        hasPreviousPage: true,
+        startCursor: null,
+      },
+    });
+  });
+
   it('loads newer logs with last and before by using the cursor time as the start bound', async () => {
     const { service, victoriaLogsClient } = createService();
     const firstReturned = log({
