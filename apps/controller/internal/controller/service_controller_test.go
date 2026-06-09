@@ -37,11 +37,12 @@ import (
 
 var _ = Describe("Service Controller", func() {
 	const (
-		namespaceName       = "whoami"
-		serviceName         = "whoami"
-		firstDeploymentName = "whoami-00001"
-		externalTeam        = "platform"
-		workspaceID         = "workspace-main"
+		namespaceName        = "whoami"
+		serviceName          = "whoami"
+		firstDeploymentName  = "whoami-00001"
+		secondDeploymentName = "whoami-00002"
+		externalTeam         = "platform"
+		workspaceID          = "workspace-main"
 	)
 
 	ctx := context.Background()
@@ -72,6 +73,7 @@ var _ = Describe("Service Controller", func() {
 				Name:       serviceName,
 				Namespace:  namespaceName,
 				Generation: 1,
+				UID:        types.UID("service-uid"),
 			},
 			Spec: kudeployv1alpha1.ServiceSpec{
 				Replicas: ptrInt32(2),
@@ -143,6 +145,25 @@ var _ = Describe("Service Controller", func() {
 		}
 	}
 
+	deploymentLabels := func(name, state string) map[string]string {
+		labels := deploymentManagedLabels(namespaceName, serviceName, name)
+		labels[routingStateLabel] = state
+		return labels
+	}
+
+	ownDeployment := func(service *kudeployv1alpha1.Service, deployment *kudeployv1alpha1.Deployment) {
+		controller := true
+		deployment.OwnerReferences = []metav1.OwnerReference{
+			{
+				APIVersion: kudeployv1alpha1.GroupVersion.String(),
+				Kind:       "Service",
+				Name:       service.Name,
+				UID:        service.UID,
+				Controller: &controller,
+			},
+		}
+	}
+
 	It("creates the first versioned Kudeploy Deployment and a stable Kubernetes Service", func() {
 		service := newService()
 		service.Labels = map[string]string{
@@ -159,6 +180,7 @@ var _ = Describe("Service Controller", func() {
 		Expect(kudeployDeployment.Labels).To(HaveKeyWithValue("kudeploy.com/service", serviceName))
 		Expect(kudeployDeployment.Labels).To(HaveKeyWithValue("kudeploy.com/deployment", firstDeploymentName))
 		Expect(kudeployDeployment.Labels).To(HaveKeyWithValue("kudeploy.com/workspace-id", workspaceID))
+		Expect(kudeployDeployment.Labels).To(HaveKeyWithValue(routingStateLabel, routingStatePending))
 		Expect(kudeployDeployment.Labels).To(HaveKeyWithValue("app.kubernetes.io/managed-by", "kudeploy"))
 		Expect(kudeployDeployment.Spec.ServiceName).To(Equal(serviceName))
 		Expect(kudeployDeployment.Spec.Version).To(Equal(int64(1)))
@@ -259,7 +281,7 @@ var _ = Describe("Service Controller", func() {
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      firstDeploymentName,
 				Namespace: namespaceName,
-				Labels:    deploymentManagedLabels(namespaceName, serviceName, firstDeploymentName),
+				Labels:    deploymentLabels(firstDeploymentName, routingStatePending),
 			},
 			Spec: kudeployv1alpha1.DeploymentSpec{
 				ServiceName: serviceName,
@@ -279,6 +301,7 @@ var _ = Describe("Service Controller", func() {
 				},
 			},
 		}
+		ownDeployment(service, kudeployDeployment)
 		kubernetesService := buildKubernetesService(service, nil)
 		reconciler := newReconciler(service, kudeployDeployment, kubernetesService)
 
@@ -290,6 +313,9 @@ var _ = Describe("Service Controller", func() {
 			deploymentLabel: firstDeploymentName,
 		}))
 
+		Expect(reconciler.Get(ctx, types.NamespacedName{Name: firstDeploymentName, Namespace: namespaceName}, kudeployDeployment)).To(Succeed())
+		Expect(kudeployDeployment.Labels).To(HaveKeyWithValue(routingStateLabel, routingStateActive))
+
 		Expect(reconciler.Get(ctx, serviceKey, service)).To(Succeed())
 		Expect(service.Status.ActiveVersion).To(Equal(int64(1)))
 		Expect(service.Status.ActiveDeploymentName).To(Equal(firstDeploymentName))
@@ -298,6 +324,161 @@ var _ = Describe("Service Controller", func() {
 			HaveField("Status", metav1.ConditionTrue),
 			HaveField("Reason", "DeploymentReady"),
 		)))
+	})
+
+	It("marks the latest Deployment active and previous active Deployment reserve after the latest is ready", func() {
+		service := newService()
+		service.Generation = 2
+		service.Labels = map[string]string{
+			projectLabel:   namespaceName,
+			managedByLabel: managedByLabelValue,
+		}
+		service.Status.ObservedGeneration = 2
+		service.Status.LatestVersion = 2
+		service.Status.LatestDeploymentName = secondDeploymentName
+		service.Status.LatestEnvSecretHash = envSecretHash(nil)
+		service.Status.ActiveVersion = 1
+		service.Status.ActiveDeploymentName = firstDeploymentName
+
+		previousDeployment := &kudeployv1alpha1.Deployment{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      firstDeploymentName,
+				Namespace: namespaceName,
+				Labels:    deploymentLabels(firstDeploymentName, routingStateActive),
+			},
+			Spec: kudeployv1alpha1.DeploymentSpec{
+				ServiceName: serviceName,
+				Version:     1,
+				Image:       "ghcr.io/kudeploy/whoami:latest",
+				Ports:       []kudeployv1alpha1.ServicePort{{Port: 80, TargetPort: 8080}},
+			},
+		}
+		latestDeployment := &kudeployv1alpha1.Deployment{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      secondDeploymentName,
+				Namespace: namespaceName,
+				Labels:    deploymentLabels(secondDeploymentName, routingStatePending),
+			},
+			Spec: kudeployv1alpha1.DeploymentSpec{
+				ServiceName: serviceName,
+				Version:     2,
+				Image:       "ghcr.io/kudeploy/whoami:v2",
+				Ports:       []kudeployv1alpha1.ServicePort{{Port: 80, TargetPort: 8080}},
+			},
+			Status: kudeployv1alpha1.DeploymentStatus{
+				KubernetesDeploymentName: secondDeploymentName,
+				Conditions: []metav1.Condition{
+					{
+						Type:               "Ready",
+						Status:             metav1.ConditionTrue,
+						Reason:             "KubernetesDeploymentAvailable",
+						LastTransitionTime: metav1.Now(),
+					},
+				},
+			},
+		}
+		ownDeployment(service, previousDeployment)
+		ownDeployment(service, latestDeployment)
+		kubernetesService := buildKubernetesService(service, map[string]string{
+			deploymentLabel: firstDeploymentName,
+		})
+		reconciler := newReconciler(service, previousDeployment, latestDeployment, kubernetesService)
+
+		_, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: serviceKey})
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(reconciler.Get(ctx, serviceKey, kubernetesService)).To(Succeed())
+		Expect(kubernetesService.Spec.Selector).To(Equal(map[string]string{
+			deploymentLabel: secondDeploymentName,
+		}))
+
+		Expect(reconciler.Get(ctx, types.NamespacedName{Name: firstDeploymentName, Namespace: namespaceName}, previousDeployment)).To(Succeed())
+		Expect(previousDeployment.Labels).To(HaveKeyWithValue(routingStateLabel, routingStateReserve))
+
+		Expect(reconciler.Get(ctx, types.NamespacedName{Name: secondDeploymentName, Namespace: namespaceName}, latestDeployment)).To(Succeed())
+		Expect(latestDeployment.Labels).To(HaveKeyWithValue(routingStateLabel, routingStateActive))
+
+		Expect(reconciler.Get(ctx, serviceKey, service)).To(Succeed())
+		Expect(service.Status.ActiveVersion).To(Equal(int64(2)))
+		Expect(service.Status.ActiveDeploymentName).To(Equal(secondDeploymentName))
+	})
+
+	It("does not change routing state for deployments not owned by the Service", func() {
+		service := newService()
+		service.Generation = 2
+		service.Labels = map[string]string{
+			projectLabel:   namespaceName,
+			managedByLabel: managedByLabelValue,
+		}
+		service.Status.ObservedGeneration = 2
+		service.Status.LatestVersion = 2
+		service.Status.LatestDeploymentName = secondDeploymentName
+		service.Status.LatestEnvSecretHash = envSecretHash(nil)
+		service.Status.ActiveVersion = 1
+		service.Status.ActiveDeploymentName = firstDeploymentName
+
+		previousDeployment := &kudeployv1alpha1.Deployment{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      firstDeploymentName,
+				Namespace: namespaceName,
+				Labels:    deploymentLabels(firstDeploymentName, routingStateActive),
+			},
+			Spec: kudeployv1alpha1.DeploymentSpec{
+				ServiceName: serviceName,
+				Version:     1,
+				Image:       "ghcr.io/kudeploy/whoami:latest",
+				Ports:       []kudeployv1alpha1.ServicePort{{Port: 80, TargetPort: 8080}},
+			},
+		}
+		latestDeployment := &kudeployv1alpha1.Deployment{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      secondDeploymentName,
+				Namespace: namespaceName,
+				Labels:    deploymentLabels(secondDeploymentName, routingStatePending),
+			},
+			Spec: kudeployv1alpha1.DeploymentSpec{
+				ServiceName: serviceName,
+				Version:     2,
+				Image:       "ghcr.io/kudeploy/whoami:v2",
+				Ports:       []kudeployv1alpha1.ServicePort{{Port: 80, TargetPort: 8080}},
+			},
+			Status: kudeployv1alpha1.DeploymentStatus{
+				KubernetesDeploymentName: secondDeploymentName,
+				Conditions: []metav1.Condition{
+					{
+						Type:               "Ready",
+						Status:             metav1.ConditionTrue,
+						Reason:             "KubernetesDeploymentAvailable",
+						LastTransitionTime: metav1.Now(),
+					},
+				},
+			},
+		}
+		orphanDeployment := &kudeployv1alpha1.Deployment{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "external-00001",
+				Namespace: namespaceName,
+				Labels:    deploymentLabels("external-00001", routingStateActive),
+			},
+			Spec: kudeployv1alpha1.DeploymentSpec{
+				ServiceName: serviceName,
+				Version:     99,
+				Image:       "ghcr.io/kudeploy/external:latest",
+				Ports:       []kudeployv1alpha1.ServicePort{{Port: 80, TargetPort: 8080}},
+			},
+		}
+		ownDeployment(service, previousDeployment)
+		ownDeployment(service, latestDeployment)
+		kubernetesService := buildKubernetesService(service, map[string]string{
+			deploymentLabel: firstDeploymentName,
+		})
+		reconciler := newReconciler(service, previousDeployment, latestDeployment, orphanDeployment, kubernetesService)
+
+		_, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: serviceKey})
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(reconciler.Get(ctx, types.NamespacedName{Name: "external-00001", Namespace: namespaceName}, orphanDeployment)).To(Succeed())
+		Expect(orphanDeployment.Labels).To(HaveKeyWithValue(routingStateLabel, routingStateActive))
 	})
 
 	It("preserves external metadata on runtime ServiceAccounts and stable Kubernetes Services", func() {
@@ -335,6 +516,7 @@ var _ = Describe("Service Controller", func() {
 				},
 			},
 		}
+		ownDeployment(service, kudeployDeployment)
 
 		kubernetesService := buildKubernetesService(service, nil)
 		kubernetesService.Labels["team"] = externalTeam
@@ -373,28 +555,46 @@ var _ = Describe("Service Controller", func() {
 		service.Status.ActiveDeploymentName = firstDeploymentName
 		service.Spec.Image = "ghcr.io/kudeploy/whoami:v2"
 
+		activeDeployment := &kudeployv1alpha1.Deployment{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      firstDeploymentName,
+				Namespace: namespaceName,
+				Labels:    deploymentLabels(firstDeploymentName, routingStateReserve),
+			},
+			Spec: kudeployv1alpha1.DeploymentSpec{
+				ServiceName: serviceName,
+				Version:     1,
+				Image:       "ghcr.io/kudeploy/whoami:latest",
+				Ports:       []kudeployv1alpha1.ServicePort{{Port: 80, TargetPort: 8080}},
+			},
+		}
+		ownDeployment(service, activeDeployment)
 		kubernetesService := buildKubernetesService(service, map[string]string{
 			deploymentLabel: firstDeploymentName,
 		})
-		reconciler := newReconciler(service, kubernetesService)
+		reconciler := newReconciler(service, activeDeployment, kubernetesService)
 
 		_, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: serviceKey})
 		Expect(err).NotTo(HaveOccurred())
 
 		newDeployment := &kudeployv1alpha1.Deployment{}
-		Expect(reconciler.Get(ctx, types.NamespacedName{Name: "whoami-00002", Namespace: namespaceName}, newDeployment)).To(Succeed())
+		Expect(reconciler.Get(ctx, types.NamespacedName{Name: secondDeploymentName, Namespace: namespaceName}, newDeployment)).To(Succeed())
 		Expect(newDeployment.Spec.Version).To(Equal(int64(2)))
 		Expect(newDeployment.Spec.Image).To(Equal("ghcr.io/kudeploy/whoami:v2"))
+		Expect(newDeployment.Labels).To(HaveKeyWithValue(routingStateLabel, routingStatePending))
 
 		Expect(reconciler.Get(ctx, serviceKey, kubernetesService)).To(Succeed())
 		Expect(kubernetesService.Spec.Selector).To(Equal(map[string]string{
 			deploymentLabel: firstDeploymentName,
 		}))
 
+		Expect(reconciler.Get(ctx, types.NamespacedName{Name: firstDeploymentName, Namespace: namespaceName}, activeDeployment)).To(Succeed())
+		Expect(activeDeployment.Labels).To(HaveKeyWithValue(routingStateLabel, routingStateActive))
+
 		Expect(reconciler.Get(ctx, serviceKey, service)).To(Succeed())
 		Expect(service.Status.ObservedGeneration).To(Equal(int64(2)))
 		Expect(service.Status.LatestVersion).To(Equal(int64(2)))
-		Expect(service.Status.LatestDeploymentName).To(Equal("whoami-00002"))
+		Expect(service.Status.LatestDeploymentName).To(Equal(secondDeploymentName))
 		Expect(service.Status.ActiveVersion).To(Equal(int64(1)))
 		Expect(service.Status.ActiveDeploymentName).To(Equal(firstDeploymentName))
 	})
@@ -423,8 +623,9 @@ var _ = Describe("Service Controller", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		newDeployment := &kudeployv1alpha1.Deployment{}
-		Expect(reconciler.Get(ctx, types.NamespacedName{Name: "whoami-00002", Namespace: namespaceName}, newDeployment)).To(Succeed())
+		Expect(reconciler.Get(ctx, types.NamespacedName{Name: secondDeploymentName, Namespace: namespaceName}, newDeployment)).To(Succeed())
 		Expect(newDeployment.Spec.Version).To(Equal(int64(2)))
+		Expect(newDeployment.Labels).To(HaveKeyWithValue(routingStateLabel, routingStatePending))
 		Expect(newDeployment.Spec.Env).To(ConsistOf(corev1.EnvVar{Name: "LOG_LEVEL", Value: "debug"}))
 		Expect(newDeployment.Spec.EnvFrom).To(ConsistOf(corev1.EnvFromSource{
 			ConfigMapRef: &corev1.ConfigMapEnvSource{
@@ -440,7 +641,7 @@ var _ = Describe("Service Controller", func() {
 		Expect(reconciler.Get(ctx, serviceKey, service)).To(Succeed())
 		Expect(service.Status.ObservedGeneration).To(Equal(int64(1)))
 		Expect(service.Status.LatestVersion).To(Equal(int64(2)))
-		Expect(service.Status.LatestDeploymentName).To(Equal("whoami-00002"))
+		Expect(service.Status.LatestDeploymentName).To(Equal(secondDeploymentName))
 		Expect(service.Status.LatestEnvSecretHash).To(Equal(envSecretHash(map[string][]byte{"TOKEN": []byte("new")})))
 		Expect(service.Status.ActiveVersion).To(Equal(int64(1)))
 		Expect(service.Status.ActiveDeploymentName).To(Equal(firstDeploymentName))

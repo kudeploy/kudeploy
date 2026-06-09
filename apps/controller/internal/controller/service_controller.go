@@ -39,6 +39,10 @@ const (
 	serviceReadyCondition = "Ready"
 	serviceLabel          = "kudeploy.com/service"
 	deploymentLabel       = "kudeploy.com/deployment"
+	routingStateLabel     = "kudeploy.com/routing-state"
+	routingStatePending   = "pending"
+	routingStateActive    = "active"
+	routingStateReserve   = "reserve"
 )
 
 // ServiceReconciler reconciles a Service object.
@@ -119,6 +123,9 @@ func (r *ServiceReconciler) reconcileNewServiceVersion(ctx context.Context, serv
 	if err := r.createOrUpdateKubernetesService(ctx, service, activeDeploymentSelector(service)); err != nil {
 		return ctrl.Result{}, err
 	}
+	if err := r.syncDeploymentRoutingStates(ctx, service, service.Status.ActiveDeploymentName, deploymentName); err != nil {
+		return ctrl.Result{}, err
+	}
 
 	originalService := service.DeepCopy()
 	service.Status.ObservedGeneration = service.Generation
@@ -192,6 +199,9 @@ func (r *ServiceReconciler) reconcileServiceTraffic(ctx context.Context, service
 		if err := r.createOrUpdateRuntimeServiceAccount(ctx, service); err != nil {
 			return ctrl.Result{}, err
 		}
+		if err := r.syncDeploymentRoutingStates(ctx, service, service.Status.ActiveDeploymentName, latestKudeployDeployment.Name); err != nil {
+			return ctrl.Result{}, err
+		}
 		originalService := service.DeepCopy()
 		service.Status.ServiceAccountName = runtimeServiceAccountNameFor(service.Name)
 		meta.SetStatusCondition(&service.Status.Conditions, metav1.Condition{
@@ -208,6 +218,9 @@ func (r *ServiceReconciler) reconcileServiceTraffic(ctx context.Context, service
 		return ctrl.Result{}, err
 	}
 	if err := r.createOrUpdateRuntimeServiceAccount(ctx, service); err != nil {
+		return ctrl.Result{}, err
+	}
+	if err := r.syncDeploymentRoutingStates(ctx, service, latestKudeployDeployment.Name, ""); err != nil {
 		return ctrl.Result{}, err
 	}
 
@@ -306,6 +319,43 @@ func (r *ServiceReconciler) createOrUpdateKubernetesService(ctx context.Context,
 	return nil
 }
 
+func (r *ServiceReconciler) syncDeploymentRoutingStates(ctx context.Context, service *kudeployv1alpha1.Service, activeName, pendingName string) error {
+	deploymentList := &kudeployv1alpha1.DeploymentList{}
+	if err := r.List(ctx, deploymentList, client.InNamespace(service.Namespace), client.MatchingLabels{serviceLabel: service.Name}); err != nil {
+		return err
+	}
+
+	for index := range deploymentList.Items {
+		kudeployDeployment := &deploymentList.Items[index]
+		if !metav1.IsControlledBy(kudeployDeployment, service) {
+			continue
+		}
+		state := routingStateReserve
+		switch {
+		case activeName != "" && kudeployDeployment.Name == activeName:
+			state = routingStateActive
+		case pendingName != "" && kudeployDeployment.Name == pendingName:
+			state = routingStatePending
+		}
+		if err := r.patchDeploymentRoutingState(ctx, kudeployDeployment, state); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *ServiceReconciler) patchDeploymentRoutingState(ctx context.Context, kudeployDeployment *kudeployv1alpha1.Deployment, state string) error {
+	if kudeployDeployment.Labels[routingStateLabel] == state {
+		return nil
+	}
+	originalKudeployDeployment := kudeployDeployment.DeepCopy()
+	if kudeployDeployment.Labels == nil {
+		kudeployDeployment.Labels = map[string]string{}
+	}
+	kudeployDeployment.Labels[routingStateLabel] = state
+	return ignoreConflict(r.Patch(ctx, kudeployDeployment, client.MergeFrom(originalKudeployDeployment)))
+}
+
 func ensureServiceMetadata(service *kudeployv1alpha1.Service, workspaceID string) bool {
 	changed := false
 	if service.Labels == nil {
@@ -327,11 +377,13 @@ func ensureServiceMetadata(service *kudeployv1alpha1.Service, workspaceID string
 }
 
 func buildKudeployDeployment(kudeployService *kudeployv1alpha1.Service, version int64, name string) *kudeployv1alpha1.Deployment {
+	labels := deploymentManagedLabels(kudeployService.Namespace, kudeployService.Name, name, workspaceIDFromLabels(kudeployService.Labels))
+	labels[routingStateLabel] = routingStatePending
 	return &kudeployv1alpha1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: kudeployService.Namespace,
-			Labels:    deploymentManagedLabels(kudeployService.Namespace, kudeployService.Name, name, workspaceIDFromLabels(kudeployService.Labels)),
+			Labels:    labels,
 		},
 		Spec: kudeployv1alpha1.DeploymentSpec{
 			ServiceName:        kudeployService.Name,

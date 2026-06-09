@@ -89,7 +89,7 @@ func (r *DeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, err
 	}
 
-	kubernetesDeployment := buildKubernetesDeployment(kudeployDeployment)
+	kubernetesDeployment := buildKubernetesDeployment(kudeployDeployment, replicasFor(kudeployDeployment))
 	if err := controllerutil.SetControllerReference(kudeployDeployment, kubernetesDeployment, r.Scheme); err != nil {
 		return ctrl.Result{}, err
 	}
@@ -230,6 +230,9 @@ func (r *DeploymentReconciler) updateDeploymentStatus(ctx context.Context, kudep
 
 func ensureDeploymentMetadata(kudeployDeployment *kudeployv1alpha1.Deployment, workspaceID string) bool {
 	labels := deploymentManagedLabels(kudeployDeployment.Namespace, kudeployDeployment.Spec.ServiceName, kudeployDeployment.Name, workspaceID)
+	if routingState := kudeployDeployment.Labels[routingStateLabel]; routingState != "" {
+		labels[routingStateLabel] = routingState
+	}
 	mergedLabels := mergeManagedLabels(labels, kudeployDeployment.Labels)
 	if equality.Semantic.DeepEqual(kudeployDeployment.Labels, mergedLabels) {
 		return false
@@ -238,7 +241,7 @@ func ensureDeploymentMetadata(kudeployDeployment *kudeployv1alpha1.Deployment, w
 	return true
 }
 
-func buildKubernetesDeployment(kudeployDeployment *kudeployv1alpha1.Deployment) *appsv1.Deployment {
+func buildKubernetesDeployment(kudeployDeployment *kudeployv1alpha1.Deployment, replicas *int32) *appsv1.Deployment {
 	labels := deploymentManagedLabels(kudeployDeployment.Namespace, kudeployDeployment.Spec.ServiceName, kudeployDeployment.Name, workspaceIDFromLabels(kudeployDeployment.Labels))
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -247,7 +250,7 @@ func buildKubernetesDeployment(kudeployDeployment *kudeployv1alpha1.Deployment) 
 			Labels:    labels,
 		},
 		Spec: appsv1.DeploymentSpec{
-			Replicas:             replicasFor(kudeployDeployment),
+			Replicas:             replicas,
 			RevisionHistoryLimit: ptrInt32(0),
 			Strategy: appsv1.DeploymentStrategy{
 				Type: appsv1.RollingUpdateDeploymentStrategyType,
@@ -290,6 +293,9 @@ func buildKubernetesDeployment(kudeployDeployment *kudeployv1alpha1.Deployment) 
 }
 
 func replicasFor(kudeployDeployment *kudeployv1alpha1.Deployment) *int32 {
+	if kudeployDeployment.Labels[routingStateLabel] == routingStateReserve {
+		return ptrInt32(0)
+	}
 	if kudeployDeployment.Spec.Replicas == nil {
 		return ptrInt32(1)
 	}
