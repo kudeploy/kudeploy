@@ -129,7 +129,6 @@
     "columns": {
       "time": "时间",
       "deployment": "部署",
-      "runtime": "Pod / 容器",
       "message": "消息"
     }
   },

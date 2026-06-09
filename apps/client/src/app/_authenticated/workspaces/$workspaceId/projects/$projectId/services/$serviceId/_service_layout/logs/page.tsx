@@ -40,8 +40,6 @@ const GET_SERVICE_LOGS_FROM_SERVICE_LOGS_ROUTE = graphql(`
           timestamp
           message
           namespace
-          podName
-          containerName
           deploymentName
         }
       }
@@ -94,11 +92,9 @@ export const Route = createFileRoute(
 });
 
 type LogEntry = {
-  containerName?: string | null;
   deploymentName?: string | null;
   message: string;
   namespace?: string | null;
-  podName?: string | null;
   timestamp: string | number | Date;
 };
 
@@ -244,11 +240,10 @@ function LogEntries({
 }) {
   return (
     <div className="max-h-[640px] overflow-auto">
-      <div className="min-w-[960px]">
-        <div className="bg-background text-muted-foreground sticky top-0 z-10 grid grid-cols-[11rem_14rem_14rem_minmax(0,1fr)] gap-3 border-b px-4 py-2 text-xs font-medium">
+      <div className="min-w-[720px]">
+        <div className="bg-background text-muted-foreground sticky top-0 z-10 grid grid-cols-[11rem_14rem_minmax(0,1fr)] gap-3 border-b px-4 py-2 text-xs font-medium">
           <div>{t("service:logs.columns.time")}</div>
           <div>{t("service:logs.columns.deployment")}</div>
-          <div>{t("service:logs.columns.runtime")}</div>
           <div>{t("service:logs.columns.message")}</div>
         </div>
         {loading ? (
@@ -259,13 +254,12 @@ function LogEntries({
           <div className="divide-y">
             {entries.map((entry, index) => {
               const deployment = entry.deploymentName ?? "-";
-              const runtime = formatRuntime(entry);
               const timestamp = toTimestamp(entry.timestamp);
 
               return (
                 <div
-                  key={`${timestamp}-${entry.podName ?? "pod"}-${index}`}
-                  className="hover:bg-muted/50 grid grid-cols-[11rem_14rem_14rem_minmax(0,1fr)] gap-3 px-4 py-2 text-xs transition-colors"
+                  key={`${timestamp}-${deployment}-${index}`}
+                  className="hover:bg-muted/50 grid grid-cols-[11rem_14rem_minmax(0,1fr)] gap-3 px-4 py-2 text-xs transition-colors"
                 >
                   <time
                     className="text-muted-foreground font-mono tabular-nums"
@@ -279,12 +273,6 @@ function LogEntries({
                     title={deployment}
                   >
                     {deployment}
-                  </div>
-                  <div
-                    className="text-muted-foreground min-w-0 truncate font-mono"
-                    title={runtime}
-                  >
-                    {runtime}
                   </div>
                   <pre className="min-w-0 font-mono break-words whitespace-pre-wrap">
                     {entry.message}
@@ -301,13 +289,6 @@ function LogEntries({
       </div>
     </div>
   );
-}
-
-function formatRuntime(entry: LogEntry): string {
-  const pod = entry.podName ?? "-";
-  const container = entry.containerName;
-
-  return container ? `${pod} / ${container}` : pod;
 }
 
 function toTimestamp(value: string | number | Date): string {

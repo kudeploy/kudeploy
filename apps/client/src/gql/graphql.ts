@@ -1928,8 +1928,6 @@ export type GetServiceLogsFromServiceLogsRouteQuery = {
         timestamp: any;
         message: string;
         namespace?: string | null;
-        podName?: string | null;
-        containerName?: string | null;
         deploymentName?: string | null;
       }>;
     };
@@ -6240,14 +6238,6 @@ export const GetServiceLogsFromServiceLogsRouteDocument = {
                             {
                               kind: "Field",
                               name: { kind: "Name", value: "namespace" },
-                            },
-                            {
-                              kind: "Field",
-                              name: { kind: "Name", value: "podName" },
-                            },
-                            {
-                              kind: "Field",
-                              name: { kind: "Name", value: "containerName" },
                             },
                             {
                               kind: "Field",

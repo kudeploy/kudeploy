@@ -129,7 +129,6 @@
     "columns": {
       "time": "Time",
       "deployment": "Deployment",
-      "runtime": "Pod / Container",
       "message": "Message"
     }
   },
