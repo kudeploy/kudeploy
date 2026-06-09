@@ -106,22 +106,13 @@
     }
   },
   "logs": {
-    "description": "Review Kubernetes container logs across every deployment version for this service.",
     "loading": "Loading logs",
     "loading_older": "Loading older logs",
-    "loading_newer": "Loading latest logs",
-    "pull_older": "Pull down for older logs",
-    "release_older": "Release to load older logs",
-    "pull_newer": "Pull up for latest logs",
-    "release_newer": "Release to load latest logs",
-    "paused": "Auto-follow paused",
     "updated": "Updated {{time}} with {{count}} lines",
     "unavailable": "Logs data source unavailable",
     "error": "Logs failed to load",
     "empty": "No logs yet",
     "refresh": "Refresh logs",
-    "recent": "Recent logs",
-    "recent_description": "Chronological service logs across all deployment versions.",
     "columns": {
       "time": "Time",
       "deployment": "Deployment",

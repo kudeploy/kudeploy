@@ -106,22 +106,13 @@
     }
   },
   "logs": {
-    "description": "查看服务所有部署版本的 Kubernetes 容器日志。",
     "loading": "正在加载日志",
     "loading_older": "正在加载更早日志",
-    "loading_newer": "正在加载最新日志",
-    "pull_older": "继续下拉加载更早日志",
-    "release_older": "释放加载更早日志",
-    "pull_newer": "继续上拉加载最新日志",
-    "release_newer": "释放加载最新日志",
-    "paused": "已暂停自动跟随",
     "updated": "最近更新 {{time}}，共 {{count}} 行",
     "unavailable": "日志数据源不可用",
     "error": "日志加载失败",
     "empty": "暂无日志",
     "refresh": "刷新日志",
-    "recent": "最近日志",
-    "recent_description": "按服务维度展示所有部署版本的连续日志。",
     "columns": {
       "time": "时间",
       "deployment": "部署",
