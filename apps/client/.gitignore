@@ -11,5 +11,4 @@ dist-ssr
 .vinxi
 todos.json
 
-!src/app/**/logs/
-!src/app/**/logs/page.tsx
+!logs
