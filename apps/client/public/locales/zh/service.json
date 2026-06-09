@@ -105,6 +105,28 @@
       "disconnected": "未连接"
     }
   },
+  "logs": {
+    "description": "查看服务所有部署版本的 Kubernetes 容器日志。",
+    "range": "时间范围",
+    "limit": "日志条数",
+    "ranges": {
+      "one_hour": "1h",
+      "three_hours": "3h",
+      "six_hours": "6h",
+      "twelve_hours": "12h",
+      "day": "24h",
+      "three_days": "3d",
+      "seven_days": "7d"
+    },
+    "loading": "正在加载日志",
+    "updated": "最近更新 {{time}}，共 {{count}} 行",
+    "unavailable": "日志数据源不可用",
+    "error": "日志加载失败",
+    "empty": "暂无日志",
+    "refresh": "刷新日志",
+    "recent": "最近日志",
+    "recent_description": "按服务维度展示所有部署版本的最新日志。"
+  },
   "metrics": {
     "description": "观察服务最近的资源用量、限制和网络吞吐。",
     "range": "时间范围",

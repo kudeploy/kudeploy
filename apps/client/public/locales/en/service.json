@@ -105,6 +105,28 @@
       "disconnected": "Disconnected"
     }
   },
+  "logs": {
+    "description": "Review Kubernetes container logs across every deployment version for this service.",
+    "range": "Time range",
+    "limit": "Log lines",
+    "ranges": {
+      "one_hour": "1h",
+      "three_hours": "3h",
+      "six_hours": "6h",
+      "twelve_hours": "12h",
+      "day": "24h",
+      "three_days": "3d",
+      "seven_days": "7d"
+    },
+    "loading": "Loading logs",
+    "updated": "Updated {{time}} with {{count}} lines",
+    "unavailable": "Logs data source unavailable",
+    "error": "Logs failed to load",
+    "empty": "No logs yet",
+    "refresh": "Refresh logs",
+    "recent": "Recent logs",
+    "recent_description": "Latest logs for this service across all deployment versions."
+  },
   "metrics": {
     "description": "Observe recent resource usage, limits, and network throughput.",
     "range": "Time range",

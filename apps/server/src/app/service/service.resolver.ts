@@ -14,6 +14,7 @@ import {
   KubernetesMetricsService,
   ServiceMetrics,
 } from '@/app/kubernetes-metrics';
+import { KubernetesLogsService, ServiceLogs } from '@/app/kubernetes-logs';
 import { Workspace } from '@/app/workspace/workspace.entity';
 import { CurrentWorkspace } from '@/common/decorators/current-workspace.decorator';
 
@@ -30,6 +31,7 @@ import { ServiceService } from './service.service';
 export class ServiceResolver {
   constructor(
     private readonly serviceService: ServiceService,
+    private readonly kubernetesLogsService: KubernetesLogsService,
     private readonly kubernetesMetricsService: KubernetesMetricsService,
   ) {}
 
@@ -86,6 +88,27 @@ export class ServiceResolver {
     @Args({ name: 'id', type: () => ID }) id: string,
   ): Promise<Service> {
     return await this.serviceService.deleteService(workspace, projectId, id);
+  }
+
+  @Can(PermissionAction.READ, Service)
+  @ResolveField(() => ServiceLogs)
+  async logs(
+    @CurrentWorkspace() workspace: Workspace,
+    @Parent() service: Service,
+    @Args({ name: 'rangeSeconds', type: () => Int, nullable: true })
+    rangeSeconds?: number | null,
+    @Args({ name: 'limit', type: () => Int, nullable: true })
+    limit?: number | null,
+  ): Promise<ServiceLogs> {
+    return await this.kubernetesLogsService.getServiceLogs(
+      workspace,
+      service.projectId,
+      service.id,
+      {
+        limit,
+        rangeSeconds,
+      },
+    );
   }
 
   @Can(PermissionAction.READ, Service)

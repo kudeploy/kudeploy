@@ -354,6 +354,12 @@ test.describe("workspace Projects and Services", () => {
       ),
     );
     await expect(page.getByTestId("service-logs-page")).toBeVisible();
+    await expect(page.getByTestId("service-logs-page")).toContainText(
+      "API booted",
+    );
+    await expect(page.getByTestId("service-logs-page")).toContainText(
+      "deployment-v1",
+    );
 
     await page.getByTestId("service-metrics-tab").click();
     await expect(page).toHaveURL(
@@ -531,6 +537,29 @@ async function mockProjectsAndServicesGraphql(page: Page) {
                 deployment.serviceId === variables.serviceId,
             ),
           ),
+        });
+        return;
+      }
+      case "getServiceLogsFromServiceLogsRoute": {
+        await fulfill(route, {
+          service: {
+            id: variables.id,
+            logs: {
+              available: true,
+              rangeSeconds: variables.rangeSeconds ?? 3600,
+              limit: variables.limit ?? 200,
+              entries: [
+                {
+                  timestamp: "2026-06-06T00:00:00.000Z",
+                  message: "API booted",
+                  namespace: variables.projectId,
+                  podName: "api-75d4db5d87-lkxgh",
+                  containerName: "api",
+                  deploymentName: "deployment-v1",
+                },
+              ],
+            },
+          },
         });
         return;
       }

@@ -697,6 +697,7 @@ export type Service = {
   healthCheck?: Maybe<ServiceHealthCheck>;
   id: Scalars["ID"]["output"];
   image: Scalars["String"]["output"];
+  logs: ServiceLogs;
   metrics: ServiceMetrics;
   name: Scalars["String"]["output"];
   ports: Array<ServicePort>;
@@ -705,6 +706,11 @@ export type Service = {
   resources?: Maybe<ServiceResources>;
   status: ServiceStatus;
   updatedAt: Scalars["DateTime"]["output"];
+};
+
+export type ServiceLogsArgs = {
+  limit?: InputMaybe<Scalars["Int"]["input"]>;
+  rangeSeconds?: InputMaybe<Scalars["Int"]["input"]>;
 };
 
 export type ServiceMetricsArgs = {
@@ -759,6 +765,24 @@ export enum ServiceHealthCheckType {
   HTTP = "HTTP",
   TCP = "TCP",
 }
+
+export type ServiceLogEntry = {
+  __typename?: "ServiceLogEntry";
+  containerName?: Maybe<Scalars["String"]["output"]>;
+  deploymentName?: Maybe<Scalars["String"]["output"]>;
+  message: Scalars["String"]["output"];
+  namespace?: Maybe<Scalars["String"]["output"]>;
+  podName?: Maybe<Scalars["String"]["output"]>;
+  timestamp: Scalars["DateTime"]["output"];
+};
+
+export type ServiceLogs = {
+  __typename?: "ServiceLogs";
+  available: Scalars["Boolean"]["output"];
+  entries: Array<ServiceLogEntry>;
+  limit: Scalars["Int"]["output"];
+  rangeSeconds: Scalars["Int"]["output"];
+};
 
 export type ServiceMetrics = {
   __typename?: "ServiceMetrics";
@@ -1880,6 +1904,36 @@ export type UpdateServiceEnvironmentFromServiceEnvironmentRouteMutation = {
     updatedAt: any;
     env: Array<{ __typename?: "ServiceEnvVar"; key: string; value: string }>;
   };
+};
+
+export type GetServiceLogsFromServiceLogsRouteQueryVariables = Exact<{
+  projectId: Scalars["ID"]["input"];
+  id: Scalars["ID"]["input"];
+  rangeSeconds?: InputMaybe<Scalars["Int"]["input"]>;
+  limit?: InputMaybe<Scalars["Int"]["input"]>;
+}>;
+
+export type GetServiceLogsFromServiceLogsRouteQuery = {
+  __typename?: "Query";
+  service?: {
+    __typename?: "Service";
+    id: string;
+    logs: {
+      __typename?: "ServiceLogs";
+      available: boolean;
+      rangeSeconds: number;
+      limit: number;
+      entries: Array<{
+        __typename?: "ServiceLogEntry";
+        timestamp: any;
+        message: string;
+        namespace?: string | null;
+        podName?: string | null;
+        containerName?: string | null;
+        deploymentName?: string | null;
+      }>;
+    };
+  } | null;
 };
 
 export type GetServiceMetricsFromServiceMetricsRouteQueryVariables = Exact<{
@@ -6063,6 +6117,158 @@ export const UpdateServiceEnvironmentFromServiceEnvironmentRouteDocument = {
 } as unknown as DocumentNode<
   UpdateServiceEnvironmentFromServiceEnvironmentRouteMutation,
   UpdateServiceEnvironmentFromServiceEnvironmentRouteMutationVariables
+>;
+export const GetServiceLogsFromServiceLogsRouteDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "getServiceLogsFromServiceLogsRoute" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "projectId" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "rangeSeconds" },
+          },
+          type: { kind: "NamedType", name: { kind: "Name", value: "Int" } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "limit" },
+          },
+          type: { kind: "NamedType", name: { kind: "Name", value: "Int" } },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "service" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "projectId" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "projectId" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "id" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "id" },
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "logs" },
+                  arguments: [
+                    {
+                      kind: "Argument",
+                      name: { kind: "Name", value: "rangeSeconds" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "rangeSeconds" },
+                      },
+                    },
+                    {
+                      kind: "Argument",
+                      name: { kind: "Name", value: "limit" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "limit" },
+                      },
+                    },
+                  ],
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "available" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "rangeSeconds" },
+                      },
+                      { kind: "Field", name: { kind: "Name", value: "limit" } },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "entries" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "timestamp" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "message" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "namespace" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "podName" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "containerName" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "deploymentName" },
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  GetServiceLogsFromServiceLogsRouteQuery,
+  GetServiceLogsFromServiceLogsRouteQueryVariables
 >;
 export const GetServiceMetricsFromServiceMetricsRouteDocument = {
   kind: "Document",

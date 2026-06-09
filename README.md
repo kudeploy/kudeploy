@@ -109,6 +109,7 @@ Common local development values:
 APP_URL=http://localhost:3000
 DATABASE_URL=postgresql://postgres:secret@localhost:5432/kudeploy
 PROMETHEUS_URL=http://vmsingle-vmks-victoria-metrics-k8s-stack.monitoring.svc.cluster.local:8428
+VICTORIA_LOGS_URL=http://vlsingle-victoria-logs-single.logging.svc.cluster.local:9428
 ```
 
 The client reads `apps/client/.env.development` by default. Its `API_URL`
