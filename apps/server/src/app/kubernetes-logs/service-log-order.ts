@@ -31,6 +31,13 @@ export function compareServiceLogsDesc(
   return compareServiceLogsAsc(right, left);
 }
 
+export function compareServiceLogToCursor(
+  log: ServiceLog,
+  cursor: ServiceLogCursorPayload,
+): number {
+  return compareSortTuples(serviceLogCursorPayload(log), cursor);
+}
+
 function compareSortTuples(
   left: ServiceLogCursorPayload,
   right: ServiceLogCursorPayload,

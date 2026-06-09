@@ -28,7 +28,9 @@ export class PrometheusClient {
   constructor(private readonly configService: ConfigService) {}
 
   isConfigured(): boolean {
-    return Boolean(this.prometheusUrl());
+    this.prometheusUrl();
+
+    return true;
   }
 
   async queryRange(
@@ -63,20 +65,20 @@ export class PrometheusClient {
 
   private buildUrl(path: string): URL {
     const baseUrl = this.prometheusUrl();
-    if (!baseUrl) {
-      throw new Error('PROMETHEUS_URL is not configured');
-    }
-
     const url = new URL(baseUrl);
     url.pathname = `${url.pathname.replace(/\/$/, '')}${path}`;
 
     return url;
   }
 
-  private prometheusUrl(): string | null {
-    const url = this.configService.get<string>('PROMETHEUS_URL')?.trim();
+  private prometheusUrl(): string {
+    const url = this.configService.getOrThrow<string>('PROMETHEUS_URL').trim();
 
-    return url?.length ? url : null;
+    if (!url) {
+      throw new Error('PROMETHEUS_URL is not configured');
+    }
+
+    return url;
   }
 }
 

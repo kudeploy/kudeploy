@@ -689,7 +689,7 @@ async function mockProjectsAndServicesGraphql(page: Page) {
       case "getServiceLogsFromServiceLogsRoute": {
         serviceLogRequests.push(variables);
         const initialLogs =
-          variables.first === 100 &&
+          variables.first === 1000 &&
           variables.last == null &&
           variables.after == null &&
           variables.before == null;

@@ -7,6 +7,8 @@ import { buildServiceLogsQuery } from './logsql';
 import type { ServiceLogCursorPayload } from './service-log-order';
 import {
   compareServiceLogsDesc,
+  compareServiceLogToCursor,
+  rawTimeToEpochNanoseconds,
   serviceLogCursorPayload,
 } from './service-log-order';
 import { VictoriaLogsClient } from './victoria-logs.client';
@@ -23,6 +25,7 @@ const DEFAULT_PAGE_SIZE = 1000;
 const MIN_PAGE_SIZE = 1000;
 const MAX_PAGE_SIZE = 10_000;
 const MAX_LOOKBACK_MS = 30 * 24 * 60 * 60 * 1000;
+const NANOS_PER_SECOND = 1_000_000_000n;
 
 @Injectable()
 export class KubernetesLogsService {
@@ -165,7 +168,14 @@ function toConnection({
   mode: 'backward' | 'forward';
   rows: ServiceLog[];
 }): ServiceLogConnection {
-  const sortedRows = [...rows].sort(compareServiceLogsDesc);
+  const filteredRows = cursor
+    ? rows.filter((row) =>
+        mode === 'forward'
+          ? compareServiceLogToCursor(row, cursor) < 0
+          : compareServiceLogToCursor(row, cursor) > 0,
+      )
+    : rows;
+  const sortedRows = [...filteredRows].sort(compareServiceLogsDesc);
   const hasMore = rows.length > limit || rows.length >= MAX_PAGE_SIZE;
   const pageRows =
     mode === 'forward'
@@ -222,7 +232,9 @@ function cursorEnd(
     return now;
   }
 
-  return new Date(cursor.t).getTime() > now.getTime() ? now : cursor.t;
+  const end = addOneNanosecond(cursor.t);
+
+  return new Date(end).getTime() > now.getTime() ? now : end;
 }
 
 function clampPageSize(value: number | null | undefined): number {
@@ -231,4 +243,23 @@ function clampPageSize(value: number | null | undefined): number {
   }
 
   return Math.min(MAX_PAGE_SIZE, Math.max(MIN_PAGE_SIZE, Math.floor(value)));
+}
+
+function addOneNanosecond(rawTime: string): string {
+  const epochNanoseconds = rawTimeToEpochNanoseconds(rawTime);
+
+  if (epochNanoseconds == null) {
+    return new Date(new Date(rawTime).getTime() + 1).toISOString();
+  }
+
+  return epochNanosecondsToRawTime(epochNanoseconds + 1n);
+}
+
+function epochNanosecondsToRawTime(epochNanoseconds: bigint): string {
+  const seconds = epochNanoseconds / NANOS_PER_SECOND;
+  const nanos = epochNanoseconds % NANOS_PER_SECOND;
+  const date = new Date(Number(seconds) * 1000);
+  const timestamp = date.toISOString().replace(/\.\d{3}Z$/, '');
+
+  return `${timestamp}.${nanos.toString().padStart(9, '0')}Z`;
 }

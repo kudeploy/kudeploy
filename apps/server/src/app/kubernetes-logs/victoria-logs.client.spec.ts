@@ -136,16 +136,16 @@ describe('VictoriaLogsClient', () => {
     expect(body.get('limit')).toBe('501');
   });
 
-  it('reports when the VictoriaLogs URL is not configured', async () => {
-    const client = createClient('');
+  it('throws when the VictoriaLogs URL is not configured', async () => {
+    const client = createClient(null);
 
-    expect(client.isConfigured()).toBe(false);
+    expect(() => client.isConfigured()).toThrow('VICTORIA_LOGS_URL');
     await expect(
       client.query('error', {
         limit: 100,
         order: 'asc',
       }),
-    ).rejects.toThrow('VICTORIA_LOGS_URL is not configured');
+    ).rejects.toThrow('VICTORIA_LOGS_URL');
   });
 
   it('throws when VictoriaLogs returns an error status', async () => {
@@ -165,11 +165,18 @@ describe('VictoriaLogsClient', () => {
   });
 });
 
-function createClient(victoriaLogsUrl: string): VictoriaLogsClient {
+function createClient(victoriaLogsUrl: string | null): VictoriaLogsClient {
   const configService = {
     get: jest.fn((key: string) =>
-      key === 'VICTORIA_LOGS_URL' ? victoriaLogsUrl : undefined,
+      key === 'VICTORIA_LOGS_URL' ? (victoriaLogsUrl ?? undefined) : undefined,
     ),
+    getOrThrow: jest.fn((key: string) => {
+      if (key === 'VICTORIA_LOGS_URL' && victoriaLogsUrl) {
+        return victoriaLogsUrl;
+      }
+
+      throw new Error(`${key} is not configured`);
+    }),
   };
 
   return new VictoriaLogsClient(configService as unknown as ConfigService);

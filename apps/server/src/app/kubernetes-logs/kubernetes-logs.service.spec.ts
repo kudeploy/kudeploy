@@ -138,9 +138,62 @@ describe('KubernetesLogsService', () => {
     expect(victoriaLogsClient.query).toHaveBeenCalledWith(
       expect.not.stringContaining('_time:<'),
       expect.objectContaining({
-        end: '2026-06-08T16:46:23.123456789Z',
+        end: '2026-06-08T16:46:23.123456790Z',
         limit: 1001,
         order: 'desc',
+      }),
+    );
+  });
+
+  it('keeps same-timestamp rows after the cursor when loading older logs', async () => {
+    const { service, victoriaLogsClient } = createService();
+    const cursorLog = log({
+      id: '8'.repeat(32),
+      message: 'cursor',
+      rawTime: '2026-06-08T16:46:23.123456789Z',
+    });
+    const duplicateCursor = log({
+      id: cursorLog.id,
+      message: 'duplicate cursor',
+      rawTime: cursorLog.rawTime,
+    });
+    const sameTimestampOlderId = log({
+      id: '2'.repeat(32),
+      message: 'same timestamp older id',
+      rawTime: cursorLog.rawTime,
+    });
+    const olderTimestamp = log({
+      id: 'f'.repeat(32),
+      message: 'older timestamp',
+      rawTime: '2026-06-08T16:46:22.999999999Z',
+    });
+
+    victoriaLogsClient.query.mockResolvedValue([
+      duplicateCursor,
+      sameTimestampOlderId,
+      olderTimestamp,
+    ]);
+
+    await expect(
+      service.getServiceLogs(workspace(), 'project-1', 'service-1', {
+        after: encodeServiceLogCursor(cursorLog),
+        first: 1000,
+        now: new Date('2026-06-08T17:00:00.000Z'),
+      }),
+    ).resolves.toMatchObject({
+      edges: [
+        {
+          node: sameTimestampOlderId,
+        },
+        {
+          node: olderTimestamp,
+        },
+      ],
+    });
+    expect(victoriaLogsClient.query).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        end: '2026-06-08T16:46:23.123456790Z',
       }),
     );
   });

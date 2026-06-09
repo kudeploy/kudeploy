@@ -35,7 +35,9 @@ export class VictoriaLogsClient {
   constructor(private readonly configService: ConfigService) {}
 
   isConfigured(): boolean {
-    return Boolean(this.victoriaLogsUrl());
+    this.victoriaLogsUrl();
+
+    return true;
   }
 
   async query(query: string, options: QueryOptions): Promise<ServiceLog[]> {
@@ -73,20 +75,22 @@ export class VictoriaLogsClient {
 
   private buildUrl(path: string): URL {
     const baseUrl = this.victoriaLogsUrl();
-    if (!baseUrl) {
-      throw new Error('VICTORIA_LOGS_URL is not configured');
-    }
-
     const url = new URL(baseUrl);
     url.pathname = `${url.pathname.replace(/\/$/, '')}${path}`;
 
     return url;
   }
 
-  private victoriaLogsUrl(): string | null {
-    const url = this.configService.get<string>('VICTORIA_LOGS_URL')?.trim();
+  private victoriaLogsUrl(): string {
+    const url = this.configService
+      .getOrThrow<string>('VICTORIA_LOGS_URL')
+      .trim();
 
-    return url?.length ? url : null;
+    if (!url) {
+      throw new Error('VICTORIA_LOGS_URL is not configured');
+    }
+
+    return url;
   }
 }
 
