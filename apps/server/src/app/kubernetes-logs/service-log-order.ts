@@ -2,6 +2,9 @@ import { ServiceLog } from './kubernetes-logs.object';
 
 export interface ServiceLogCursorPayload {
   id: string;
+  mh: string;
+  sh: string;
+  sid: string;
   t: string;
 }
 
@@ -10,6 +13,9 @@ export function serviceLogCursorPayload(
 ): ServiceLogCursorPayload {
   return {
     id: log.id,
+    mh: log.messageHash ?? '',
+    sh: log.streamHash ?? '',
+    sid: log.streamId ?? '',
     t: log.rawTime,
   };
 }
@@ -48,7 +54,49 @@ function compareSortTuples(
     return timeComparison;
   }
 
+  const streamHashComparison = compareSortValues(left.sh, right.sh);
+  if (streamHashComparison !== 0) {
+    return streamHashComparison;
+  }
+
+  const messageHashComparison = compareSortValues(left.mh, right.mh);
+  if (messageHashComparison !== 0) {
+    return messageHashComparison;
+  }
+
+  const streamIdComparison = left.sid.localeCompare(right.sid);
+  if (streamIdComparison !== 0) {
+    return streamIdComparison;
+  }
+
   return left.id.localeCompare(right.id);
+}
+
+function compareSortValues(left: string, right: string): number {
+  const leftNumber = toBigInt(left);
+  const rightNumber = toBigInt(right);
+
+  if (leftNumber != null && rightNumber != null) {
+    if (leftNumber === rightNumber) {
+      return 0;
+    }
+
+    return leftNumber < rightNumber ? -1 : 1;
+  }
+
+  return left.localeCompare(right);
+}
+
+function toBigInt(value: string): bigint | null {
+  if (!/^-?\d+$/.test(value)) {
+    return null;
+  }
+
+  try {
+    return BigInt(value);
+  } catch {
+    return null;
+  }
 }
 
 function compareRawTimes(left: string, right: string): number {

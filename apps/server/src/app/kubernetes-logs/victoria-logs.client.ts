@@ -9,9 +9,11 @@ import {
   LOG_FIELD_DEPLOYMENT,
   LOG_FIELD_LEVEL,
   LOG_FIELD_MESSAGE,
+  LOG_FIELD_MESSAGE_HASH,
   LOG_FIELD_NAMESPACE,
   LOG_FIELD_POD,
   LOG_FIELD_STREAM,
+  LOG_FIELD_STREAM_HASH,
   LOG_FIELD_STREAM_ID,
   LOG_FIELD_TIME,
 } from './logsql';
@@ -68,7 +70,6 @@ export class VictoriaLogsClient {
     if (options.end) {
       body.set('end', formatTimeBound(options.end));
     }
-    body.set('limit', String(options.limit));
 
     return body;
   }
@@ -112,13 +113,11 @@ function parseJsonLines(
     }
   }
 
-  const sortedEntries = entries.sort((left, right) =>
+  return entries.sort((left, right) =>
     order === 'desc'
       ? compareServiceLogsDesc(left, right)
       : compareServiceLogsAsc(left, right),
   );
-
-  return withUniqueIds(sortedEntries);
 }
 
 function parseJsonLine(line: string): RawLogEntry | null {
@@ -150,6 +149,8 @@ function toServiceLogEntry(entry: RawLogEntry | null): ServiceLog | null {
   const podName = stringField(entry, LOG_FIELD_POD);
   const containerName = stringField(entry, LOG_FIELD_CONTAINER);
   const deploymentName = stringField(entry, LOG_FIELD_DEPLOYMENT);
+  const messageHash = scalarField(entry, LOG_FIELD_MESSAGE_HASH);
+  const streamHash = scalarField(entry, LOG_FIELD_STREAM_HASH);
 
   return {
     containerName,
@@ -162,10 +163,12 @@ function toServiceLogEntry(entry: RawLogEntry | null): ServiceLog | null {
     }),
     level,
     message,
+    messageHash,
     namespace,
     podName,
     rawTime,
     stream,
+    streamHash,
     streamId,
     timestamp,
   };
@@ -190,24 +193,6 @@ function createServiceLogId(input: {
     .digest('hex');
 }
 
-function withUniqueIds(entries: ServiceLog[]): ServiceLog[] {
-  const seenIds = new Map<string, number>();
-
-  return entries.map((entry) => {
-    const count = seenIds.get(entry.id) ?? 0;
-    seenIds.set(entry.id, count + 1);
-
-    if (count === 0) {
-      return entry;
-    }
-
-    return {
-      ...entry,
-      id: `${entry.id}:${count}`,
-    };
-  });
-}
-
 function formatTimeBound(value: Date | string): string {
   return typeof value === 'string' ? value : value.toISOString();
 }
@@ -216,6 +201,20 @@ function stringField(entry: RawLogEntry, field: string): string | null {
   const value = entry[field];
 
   return typeof value === 'string' && value.length ? value : null;
+}
+
+function scalarField(entry: RawLogEntry, field: string): string | null {
+  const value = entry[field];
+
+  if (typeof value === 'string') {
+    return value.length ? value : null;
+  }
+
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return String(value);
+  }
+
+  return null;
 }
 
 function messageField(entry: RawLogEntry, field: string): string | null {

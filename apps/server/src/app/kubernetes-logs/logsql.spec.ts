@@ -26,7 +26,9 @@ describe('logsql', () => {
           order: 'desc',
         },
       ),
-    ).toContain('sort by (_time) desc limit 501');
+    ).toContain(
+      'hash(_stream) as kudeploy_stream_hash | hash(_msg) as kudeploy_message_hash | sort by (_time, kudeploy_stream_hash, kudeploy_message_hash, _stream_id) desc limit 501',
+    );
   });
 
   it('does not add cursor tuple filters to older page queries', () => {
@@ -44,7 +46,9 @@ describe('logsql', () => {
 
     expect(query).not.toContain('_time:<');
     expect(query).not.toContain('_time:=');
-    expect(query).toContain('sort by (_time) desc limit 101');
+    expect(query).toContain(
+      'sort by (_time, kudeploy_stream_hash, kudeploy_message_hash, _stream_id) desc limit 101',
+    );
   });
 
   it('does not add cursor tuple filters to newer page queries', () => {
@@ -62,7 +66,9 @@ describe('logsql', () => {
 
     expect(query).not.toContain('_time:>');
     expect(query).not.toContain('_time:=');
-    expect(query).toContain('sort by (_time) limit 101');
+    expect(query).toContain(
+      'sort by (_time, kudeploy_stream_hash, kudeploy_message_hash, _stream_id) limit 101',
+    );
   });
 
   it('escapes LogsQL string values', () => {

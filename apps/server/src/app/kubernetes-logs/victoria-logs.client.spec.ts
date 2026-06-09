@@ -20,9 +20,9 @@ describe('VictoriaLogsClient', () => {
       ok: true,
       text: async () =>
         [
-          '{"_time":"2026-06-08T16:46:23.000000000Z","_stream":"{pod=\\"pod-1\\"}","_stream_id":"stream-1","_msg":"ready","kubernetes.pod_name":"pod-1"}',
-          '{"_time":"2026-06-08T16:46:22.838035630Z","_stream":"{pod=\\"pod-1\\",container=\\"api\\"}","_stream_id":"stream-1","_msg":"started","kubernetes.pod_namespace":"project-1","kubernetes.pod_name":"pod-1","kubernetes.container_name":"api","kubernetes.pod_labels.kudeploy.com/deployment":"service-1-00002"}',
-          '{"_time":"2026-06-08T16:46:22.838035630Z","_stream":"{pod=\\"pod-1\\",container=\\"api\\"}","_stream_id":"stream-1","_msg":"started again","kubernetes.pod_namespace":"project-1","kubernetes.pod_name":"pod-1","kubernetes.container_name":"api","kubernetes.pod_labels.kudeploy.com/deployment":"service-1-00002"}',
+          '{"_time":"2026-06-08T16:46:23.000000000Z","_stream":"{pod=\\"pod-1\\"}","_stream_id":"stream-1","_msg":"ready","kudeploy_stream_hash":10,"kudeploy_message_hash":20,"kubernetes.pod_name":"pod-1"}',
+          '{"_time":"2026-06-08T16:46:22.838035630Z","_stream":"{pod=\\"pod-1\\",container=\\"api\\"}","_stream_id":"stream-1","_msg":"started","kudeploy_stream_hash":10,"kudeploy_message_hash":20,"kubernetes.pod_namespace":"project-1","kubernetes.pod_name":"pod-1","kubernetes.container_name":"api","kubernetes.pod_labels.kudeploy.com/deployment":"service-1-00002"}',
+          '{"_time":"2026-06-08T16:46:22.838035630Z","_stream":"{pod=\\"pod-1\\",container=\\"api\\"}","_stream_id":"stream-1","_msg":"started again","kudeploy_stream_hash":10,"kudeploy_message_hash":30,"kubernetes.pod_namespace":"project-1","kubernetes.pod_name":"pod-1","kubernetes.container_name":"api","kubernetes.pod_labels.kudeploy.com/deployment":"service-1-00002"}',
           '',
         ].join('\n'),
     });
@@ -45,9 +45,11 @@ describe('VictoriaLogsClient', () => {
       containerName: 'api',
       deploymentName: 'service-1-00002',
       message: 'started',
+      messageHash: '20',
       namespace: 'project-1',
       podName: 'pod-1',
       stream: '{pod="pod-1",container="api"}',
+      streamHash: '10',
       streamId: 'stream-1',
       timestamp: new Date('2026-06-08T16:46:22.838Z'),
     });
@@ -69,7 +71,7 @@ describe('VictoriaLogsClient', () => {
     expect(body.get('query')).toBe('error');
     expect(body.get('start')).toBe('2026-06-08T16:00:00.000Z');
     expect(body.get('end')).toBe('2026-06-08T17:00:00.000Z');
-    expect(body.get('limit')).toBe('100');
+    expect(body.get('limit')).toBeNull();
   });
 
   it('parses log levels from the level field', async () => {
@@ -118,7 +120,7 @@ describe('VictoriaLogsClient', () => {
     ]);
   });
 
-  it('keeps duplicate log rows with distinct response ids', async () => {
+  it('keeps duplicate log rows without mutating their stable ids', async () => {
     fetchMock.mockResolvedValue({
       ok: true,
       text: async () =>
@@ -137,7 +139,7 @@ describe('VictoriaLogsClient', () => {
     expect(result).toHaveLength(2);
     expect(result[0].message).toBe('duplicate');
     expect(result[1].message).toBe('duplicate');
-    expect(result[0].id).not.toBe(result[1].id);
+    expect(result[0].id).toBe(result[1].id);
   });
 
   it('omits optional time bounds when they are not provided', async () => {
@@ -155,7 +157,7 @@ describe('VictoriaLogsClient', () => {
     const body = fetchMock.mock.calls[0][1].body as URLSearchParams;
     expect(body.get('start')).toBeNull();
     expect(body.get('end')).toBeNull();
-    expect(body.get('limit')).toBe('501');
+    expect(body.get('limit')).toBeNull();
   });
 
   it('throws when the VictoriaLogs URL is not configured', async () => {

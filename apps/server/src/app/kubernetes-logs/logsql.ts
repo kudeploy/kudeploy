@@ -11,6 +11,8 @@ export const LOG_FIELD_TIME = '_time';
 export const LOG_FIELD_STREAM = '_stream';
 export const LOG_FIELD_STREAM_ID = '_stream_id';
 export const LOG_FIELD_MESSAGE = '_msg';
+export const LOG_FIELD_STREAM_HASH = 'kudeploy_stream_hash';
+export const LOG_FIELD_MESSAGE_HASH = 'kudeploy_message_hash';
 export const LOG_FIELD_LEVEL = 'level';
 export const LOG_FIELD_NAMESPACE = 'kubernetes.pod_namespace';
 export const LOG_FIELD_POD = 'kubernetes.pod_name';
@@ -29,7 +31,7 @@ export interface ServiceLogsQueryOptions {
   order?: 'asc' | 'desc';
 }
 
-const LOG_FIELDS = [
+const LOG_BASE_FIELDS = [
   LOG_FIELD_TIME,
   LOG_FIELD_STREAM,
   LOG_FIELD_STREAM_ID,
@@ -41,7 +43,14 @@ const LOG_FIELDS = [
   LOG_FIELD_DEPLOYMENT,
 ];
 
-const LOG_SORT_FIELDS = [LOG_FIELD_TIME];
+const LOG_GENERATED_FIELDS = [LOG_FIELD_STREAM_HASH, LOG_FIELD_MESSAGE_HASH];
+
+const LOG_SORT_FIELDS = [
+  LOG_FIELD_TIME,
+  LOG_FIELD_STREAM_HASH,
+  LOG_FIELD_MESSAGE_HASH,
+  LOG_FIELD_STREAM_ID,
+];
 
 export function buildServiceLogsQuery(
   { workspaceId, projectId, serviceId }: ServiceLogsQueryInput,
@@ -60,11 +69,20 @@ export function buildServiceLogsQuery(
 
   if (options.limit != null) {
     pipes.push(
+      `hash(${logsQlField(LOG_FIELD_STREAM)}) as ${logsQlField(LOG_FIELD_STREAM_HASH)}`,
+      `hash(${logsQlField(LOG_FIELD_MESSAGE)}) as ${logsQlField(LOG_FIELD_MESSAGE_HASH)}`,
+    );
+    pipes.push(
       `sort by (${LOG_SORT_FIELDS.map(logsQlField).join(', ')})${options.order === 'desc' ? ' desc' : ''} limit ${options.limit}`,
     );
   }
 
-  pipes.push(`fields ${LOG_FIELDS.map(logsQlField).join(', ')}`);
+  const fields =
+    options.limit != null
+      ? [...LOG_BASE_FIELDS, ...LOG_GENERATED_FIELDS]
+      : LOG_BASE_FIELDS;
+
+  pipes.push(`fields ${fields.map(logsQlField).join(', ')}`);
 
   return pipes.join(' | ');
 }

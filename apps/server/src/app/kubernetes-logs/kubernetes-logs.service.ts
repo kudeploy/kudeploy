@@ -123,6 +123,9 @@ function decodeServiceLogCursor(
     ) {
       return {
         id: (value as ServiceLogCursorPayload).id,
+        mh: stringValue((value as Partial<ServiceLogCursorPayload>).mh),
+        sh: stringValue((value as Partial<ServiceLogCursorPayload>).sh),
+        sid: stringValue((value as Partial<ServiceLogCursorPayload>).sid),
         t: (value as ServiceLogCursorPayload).t,
       };
     }
@@ -217,6 +220,10 @@ function emptyConnection(available: boolean): ServiceLogConnection {
       startCursor: null,
     },
   };
+}
+
+function stringValue(value: unknown): string {
+  return typeof value === 'string' ? value : '';
 }
 
 function cursorStart(

@@ -35,6 +35,12 @@ export class ServiceLog {
 
   @HideField()
   streamId!: string | null;
+
+  @HideField()
+  streamHash!: string | null;
+
+  @HideField()
+  messageHash!: string | null;
 }
 
 @ObjectType()

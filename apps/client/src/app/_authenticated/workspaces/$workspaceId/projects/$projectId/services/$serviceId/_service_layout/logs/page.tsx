@@ -365,7 +365,7 @@ function LogEntries({
 
                   return (
                     <div
-                      key={edge.node.id}
+                      key={`${edge.cursor}:${virtualRow.index}`}
                       ref={(node) => rowVirtualizer.measureElement(node)}
                       className={cn(
                         "group absolute w-full border-b transition-colors",
@@ -531,13 +531,28 @@ function mergeEdges(
   firstEdges: ReadonlyArray<LogEdge>,
   secondEdges: ReadonlyArray<LogEdge>,
 ): Array<LogEdge> {
-  const edgesById = new Map<string, LogEdge>();
+  const remainingCursorCounts = new Map<string, number>();
+  const mergedEdges = [...firstEdges];
 
-  for (const edge of [...firstEdges, ...secondEdges]) {
-    edgesById.set(edge.node.id, edge);
+  for (const edge of firstEdges) {
+    remainingCursorCounts.set(
+      edge.cursor,
+      (remainingCursorCounts.get(edge.cursor) ?? 0) + 1,
+    );
   }
 
-  return [...edgesById.values()];
+  for (const edge of secondEdges) {
+    const remainingCount = remainingCursorCounts.get(edge.cursor) ?? 0;
+
+    if (remainingCount > 0) {
+      remainingCursorCounts.set(edge.cursor, remainingCount - 1);
+      continue;
+    }
+
+    mergedEdges.push(edge);
+  }
+
+  return mergedEdges;
 }
 
 function mergePageInfoForOlder(

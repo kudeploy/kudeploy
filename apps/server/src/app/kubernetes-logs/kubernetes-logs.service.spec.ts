@@ -39,6 +39,9 @@ describe('KubernetesLogsService', () => {
     });
     expect(decodeCursor(encodeServiceLogCursor(ready))).toEqual({
       id: 'b'.repeat(32),
+      mh: '1',
+      sh: '1',
+      sid: 'stream-1',
       t: '2026-06-08T16:46:23.123456789Z',
     });
     expect(victoriaLogsClient.query).toHaveBeenCalledWith(
@@ -424,10 +427,12 @@ function log(input: {
     id: input.id,
     level: null,
     message: input.message,
+    messageHash: '1',
     namespace: 'project-1',
     podName: 'pod-1',
     rawTime: input.rawTime,
     stream: input.stream ?? '{pod="pod-1"}',
+    streamHash: '1',
     streamId: input.streamId ?? 'stream-1',
     timestamp: new Date(input.rawTime),
   };
