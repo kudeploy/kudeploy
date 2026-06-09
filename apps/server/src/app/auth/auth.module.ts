@@ -33,6 +33,6 @@ import { RowLevelSecurityInterceptor } from './row-level-security.interceptor';
       useExisting: RowLevelSecurityInterceptor,
     },
   ],
-  exports: [AuthGuard],
+  exports: [BaseAuthModule, AuthGuard],
 })
 export class AuthModule {}

@@ -1,6 +1,19 @@
-import { Args, ID, Mutation, Query, Resolver } from '@nest-boot/graphql';
+import {
+  Args,
+  ID,
+  Int,
+  Mutation,
+  Parent,
+  Query,
+  ResolveField,
+  Resolver,
+} from '@nest-boot/graphql';
 import { Can, PermissionAction } from '@nest-boot/permission';
 
+import {
+  KubernetesMetricsService,
+  ServiceMetrics,
+} from '@/app/kubernetes-metrics';
 import { Workspace } from '@/app/workspace/workspace.entity';
 import { CurrentWorkspace } from '@/common/decorators/current-workspace.decorator';
 
@@ -15,7 +28,10 @@ import { ServiceService } from './service.service';
 
 @Resolver(() => Service)
 export class ServiceResolver {
-  constructor(private readonly serviceService: ServiceService) {}
+  constructor(
+    private readonly serviceService: ServiceService,
+    private readonly kubernetesMetricsService: KubernetesMetricsService,
+  ) {}
 
   @Can(PermissionAction.READ, Service)
   @Query(() => ServiceConnection)
@@ -70,5 +86,27 @@ export class ServiceResolver {
     @Args({ name: 'id', type: () => ID }) id: string,
   ): Promise<Service> {
     return await this.serviceService.deleteService(workspace, projectId, id);
+  }
+
+  @Can(PermissionAction.READ, Service)
+  @ResolveField(() => ServiceMetrics)
+  async metrics(
+    @CurrentWorkspace() workspace: Workspace,
+    @Parent() service: Service,
+    @Args({ name: 'rangeSeconds', type: () => Int, nullable: true })
+    rangeSeconds?: number | null,
+    @Args({ name: 'stepSeconds', type: () => Int, nullable: true })
+    stepSeconds?: number | null,
+  ): Promise<ServiceMetrics> {
+    return await this.kubernetesMetricsService.getServiceMetrics(
+      workspace,
+      service.projectId,
+      service.id,
+      {
+        activeDeploymentName: service.activeDeploymentName,
+        rangeSeconds,
+        stepSeconds,
+      },
+    );
   }
 }

@@ -10,6 +10,147 @@
     "title": "Service",
     "description": "Saving updates the Service CRD and publishes a new Deployment version."
   },
+  "tabs": {
+    "overview": "Overview",
+    "source": "Source",
+    "environment": "Environment",
+    "network": "Network",
+    "volumes": "Volumes",
+    "deployments": "Deployments",
+    "terminal": "Terminal",
+    "logs": "Logs",
+    "metrics": "Metrics",
+    "settings": "Settings"
+  },
+  "overview": {
+    "description": "Review the current service status and runtime summary.",
+    "status": "Status",
+    "image": "Image",
+    "replicas": "Replicas"
+  },
+  "source": {
+    "title": "Runtime source",
+    "description": "Configure the container image and startup process."
+  },
+  "environment": {
+    "title": "Environment variables",
+    "description": "Manage service environment variables.",
+    "empty": "No environment variables configured."
+  },
+  "network": {
+    "description": "Configure exposed ports and health checks.",
+    "ports": "Ports"
+  },
+  "deployments": {
+    "description": "Review service releases, the active traffic version, and the backing Kubernetes Deployment.",
+    "loading": "Loading deployments",
+    "error": "Deployments failed to load",
+    "summary": "{{count}} deployments",
+    "active": "Current",
+    "latest": "Latest",
+    "version": "v{{version}}",
+    "configuration": "Configuration",
+    "not_configured": "Not configured",
+    "sections": {
+      "runtime": "Runtime",
+      "network": "Network",
+      "resources": "Resources",
+      "environment": "Environment"
+    },
+    "fields": {
+      "status": "Status",
+      "replicas": "Replicas",
+      "created_at": "Created",
+      "kubernetes_deployment": "Kubernetes Deployment",
+      "image": "Image",
+      "command": "Command",
+      "args": "Arguments",
+      "service_account": "Service account",
+      "ports": "Ports",
+      "cpu_request": "CPU request",
+      "cpu_limit": "CPU limit",
+      "memory_request": "Memory request",
+      "memory_limit": "Memory limit",
+      "env": "Environment variables",
+      "env_from": "Environment sources"
+    },
+    "empty": {
+      "title": "No deployments yet",
+      "description": "Deployment history will appear here after the service is released."
+    }
+  },
+  "deployment": {
+    "tabs": {
+      "overview": "Overview",
+      "configuration": "Configuration"
+    },
+    "overview": {
+      "description": "Review this deployment version's status, traffic markers, and backing resources.",
+      "metadata": "Metadata"
+    },
+    "configuration": {
+      "description": "Review the runtime configuration snapshot used by this deployment version."
+    },
+    "fields": {
+      "updated_at": "Updated"
+    }
+  },
+  "terminal": {
+    "description": "Open an interactive shell inside the service pod.",
+    "title": "Terminal",
+    "error": "Terminal connection failed",
+    "status": {
+      "connecting": "Connecting",
+      "connected": "Connected",
+      "disconnected": "Disconnected"
+    }
+  },
+  "metrics": {
+    "description": "Observe recent resource usage, limits, and network throughput.",
+    "range": "Time range",
+    "ranges": {
+      "one_hour": "1h",
+      "three_hours": "3h",
+      "six_hours": "6h",
+      "twelve_hours": "12h",
+      "day": "24h",
+      "three_days": "3d",
+      "seven_days": "7d"
+    },
+    "loading": "Loading metrics",
+    "updated": "Updated {{time}}",
+    "unavailable": "Metrics data source unavailable",
+    "error": "Metrics failed to load",
+    "empty": "No metrics yet",
+    "cpu": "CPU",
+    "memory": "Memory",
+    "network": "Network",
+    "network_description": "Ingress and egress throughput per second.",
+    "usage": "Usage",
+    "limit": "Limit",
+    "limit_value": "Limit {{value}}",
+    "receive": "Receive",
+    "transmit": "Transmit",
+    "no_limit": "No limit set",
+    "current": "Current",
+    "used_of_limit": "{{percent}} used"
+  },
+  "settings": {
+    "description": "Manage service metadata, scale, resources, and deletion.",
+    "general": {
+      "title": "General",
+      "description": "Update the service name and replica count."
+    },
+    "danger_zone": {
+      "title": "Danger zone",
+      "description": "Deleting a service removes its Kubernetes Service CRD.",
+      "delete_button": "Delete service"
+    }
+  },
+  "placeholder": {
+    "description": "This service area is reserved for a future backend capability.",
+    "body": "This page is ready in the service detail layout. The backend API is not implemented yet."
+  },
   "form": {
     "env": "Environment",
     "image": {
@@ -23,6 +164,24 @@
       "placeholder": "api",
       "required": "Name is required"
     },
+    "args": {
+      "label": "Arguments",
+      "placeholder": "start\n--host\n0.0.0.0"
+    },
+    "command": {
+      "label": "Command",
+      "placeholder": "node"
+    },
+    "resources": "Resources",
+    "cpu_request": "CPU request",
+    "cpu_limit": "CPU limit",
+    "memory_request": "Memory request",
+    "memory_limit": "Memory limit",
+    "health_check": "Health check",
+    "health_check_type": "Type",
+    "health_check_port": "Port",
+    "health_check_path": "Path",
+    "health_check_port_required": "Health check port is required",
     "ports": "Ports",
     "port": "Port",
     "replicas": "Replicas",

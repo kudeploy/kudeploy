@@ -10,7 +10,9 @@ import {
 import { Type } from 'class-transformer';
 
 import { ServiceEnvVarInput } from './service-env-var.input';
+import { ServiceHealthCheckInput } from './service-health-check.input';
 import { ServicePortInput } from './service-port.input';
+import { ServiceResourcesInput } from './service-resources.input';
 
 @InputType()
 export class CreateServiceInput {
@@ -30,7 +32,7 @@ export class CreateServiceInput {
   @IsOptional()
   @Min(0)
   @Field(() => Int, { nullable: true })
-  replicas?: number;
+  replicas?: number | null;
 
   @IsArray()
   @ValidateNested({ each: true })
@@ -44,4 +46,28 @@ export class CreateServiceInput {
   @Type(() => ServiceEnvVarInput)
   @Field(() => [ServiceEnvVarInput], { nullable: true })
   env?: ServiceEnvVarInput[];
+
+  @IsArray()
+  @IsOptional()
+  @IsString({ each: true })
+  @Field(() => [String], { nullable: true })
+  command?: string[];
+
+  @IsArray()
+  @IsOptional()
+  @IsString({ each: true })
+  @Field(() => [String], { nullable: true })
+  args?: string[];
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ServiceResourcesInput)
+  @Field(() => ServiceResourcesInput, { nullable: true })
+  resources?: ServiceResourcesInput;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ServiceHealthCheckInput)
+  @Field(() => ServiceHealthCheckInput, { nullable: true })
+  healthCheck?: ServiceHealthCheckInput;
 }

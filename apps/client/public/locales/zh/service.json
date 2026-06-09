@@ -10,6 +10,147 @@
     "title": "服务",
     "description": "保存会更新 Service CRD，并发布新的 Deployment 版本。"
   },
+  "tabs": {
+    "overview": "概览",
+    "source": "来源",
+    "environment": "环境变量",
+    "network": "网络",
+    "volumes": "存储卷",
+    "deployments": "部署",
+    "terminal": "终端",
+    "logs": "日志",
+    "metrics": "指标",
+    "settings": "设置"
+  },
+  "overview": {
+    "description": "查看服务当前状态和运行摘要。",
+    "status": "状态",
+    "image": "镜像",
+    "replicas": "副本数"
+  },
+  "source": {
+    "title": "运行来源",
+    "description": "配置容器镜像和启动过程。"
+  },
+  "environment": {
+    "title": "环境变量",
+    "description": "管理服务环境变量。",
+    "empty": "暂未配置环境变量。"
+  },
+  "network": {
+    "description": "配置暴露端口和健康检查。",
+    "ports": "端口"
+  },
+  "deployments": {
+    "description": "查看服务发布版本、当前流量版本和底层 Kubernetes Deployment。",
+    "loading": "正在加载部署版本",
+    "error": "部署版本加载失败",
+    "summary": "共 {{count}} 个部署版本",
+    "active": "当前",
+    "latest": "最新",
+    "version": "v{{version}}",
+    "configuration": "配置详情",
+    "not_configured": "未配置",
+    "sections": {
+      "runtime": "运行",
+      "network": "网络",
+      "resources": "资源",
+      "environment": "环境"
+    },
+    "fields": {
+      "status": "状态",
+      "replicas": "副本数",
+      "created_at": "创建时间",
+      "kubernetes_deployment": "Kubernetes Deployment",
+      "image": "镜像",
+      "command": "启动命令",
+      "args": "参数",
+      "service_account": "服务账号",
+      "ports": "端口",
+      "cpu_request": "CPU 请求",
+      "cpu_limit": "CPU 限制",
+      "memory_request": "内存请求",
+      "memory_limit": "内存限制",
+      "env": "环境变量",
+      "env_from": "环境来源"
+    },
+    "empty": {
+      "title": "暂无部署版本",
+      "description": "服务发布后会在这里显示部署历史。"
+    }
+  },
+  "deployment": {
+    "tabs": {
+      "overview": "概览",
+      "configuration": "配置"
+    },
+    "overview": {
+      "description": "查看这个部署版本的状态、流量标记和底层资源。",
+      "metadata": "元数据"
+    },
+    "configuration": {
+      "description": "查看这个部署版本发布时的运行配置快照。"
+    },
+    "fields": {
+      "updated_at": "更新时间"
+    }
+  },
+  "terminal": {
+    "description": "进入服务 Pod 的交互式终端。",
+    "title": "终端",
+    "error": "终端连接失败",
+    "status": {
+      "connecting": "正在连接",
+      "connected": "已连接",
+      "disconnected": "未连接"
+    }
+  },
+  "metrics": {
+    "description": "观察服务最近的资源用量、限制和网络吞吐。",
+    "range": "时间范围",
+    "ranges": {
+      "one_hour": "1h",
+      "three_hours": "3h",
+      "six_hours": "6h",
+      "twelve_hours": "12h",
+      "day": "24h",
+      "three_days": "3d",
+      "seven_days": "7d"
+    },
+    "loading": "正在加载指标",
+    "updated": "最近更新 {{time}}",
+    "unavailable": "指标数据源不可用",
+    "error": "指标加载失败",
+    "empty": "暂无指标数据",
+    "cpu": "CPU",
+    "memory": "内存",
+    "network": "网络",
+    "network_description": "按秒统计入口和出口流量。",
+    "usage": "使用",
+    "limit": "限制",
+    "limit_value": "限制 {{value}}",
+    "receive": "接收",
+    "transmit": "发送",
+    "no_limit": "未设置限制",
+    "current": "当前",
+    "used_of_limit": "已用 {{percent}}"
+  },
+  "settings": {
+    "description": "管理服务基础信息、副本、资源限制和删除操作。",
+    "general": {
+      "title": "基础信息",
+      "description": "更新服务名称和副本数。"
+    },
+    "danger_zone": {
+      "title": "危险区域",
+      "description": "删除服务会移除对应的 Kubernetes Service CRD。",
+      "delete_button": "删除服务"
+    }
+  },
+  "placeholder": {
+    "description": "这个服务区域预留给后续后端能力。",
+    "body": "页面已接入服务详情布局；对应后端 API 还未实现。"
+  },
   "form": {
     "env": "环境变量",
     "image": {
@@ -23,6 +164,24 @@
       "placeholder": "api",
       "required": "请输入名称"
     },
+    "args": {
+      "label": "参数",
+      "placeholder": "start\n--host\n0.0.0.0"
+    },
+    "command": {
+      "label": "启动命令",
+      "placeholder": "node"
+    },
+    "resources": "资源限制",
+    "cpu_request": "CPU 请求",
+    "cpu_limit": "CPU 限制",
+    "memory_request": "内存请求",
+    "memory_limit": "内存限制",
+    "health_check": "健康检查",
+    "health_check_type": "类型",
+    "health_check_port": "端口",
+    "health_check_path": "路径",
+    "health_check_port_required": "请输入健康检查端口",
     "ports": "端口",
     "port": "端口",
     "replicas": "副本数",

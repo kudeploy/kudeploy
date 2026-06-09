@@ -11,6 +11,23 @@
     "description": "Editing saves directly to the Project CRD.",
     "services_action": "Services"
   },
+  "tabs": {
+    "services": "Services",
+    "settings": "Settings"
+  },
+  "settings": {
+    "title": "Settings",
+    "description": "Manage the project name and deletion.",
+    "update": {
+      "title": "Project information",
+      "description": "Saving updates the Project CRD directly."
+    },
+    "danger_zone": {
+      "title": "Danger zone",
+      "description": "Deleting the project may let the controller clean up related Kubernetes resources.",
+      "delete_button": "Delete project"
+    }
+  },
   "form": {
     "name": {
       "label": "Name",

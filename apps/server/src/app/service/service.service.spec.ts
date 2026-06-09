@@ -39,6 +39,19 @@ describe('ServiceService', () => {
       name: 'API',
       image: 'ghcr.io/kudeploy/whoami:latest',
       replicas: 2,
+      command: ['pnpm'],
+      args: ['start'],
+      resources: {
+        cpuRequest: '250m',
+        cpuLimit: '500m',
+        memoryRequest: '256Mi',
+        memoryLimit: '512Mi',
+      },
+      healthCheck: {
+        type: 'HTTP',
+        path: '/healthz',
+        port: 8080,
+      },
       ports: [{ port: 80, targetPort: 8080 }],
       env: [{ key: 'NODE_ENV', value: 'production' }],
     });
@@ -68,6 +81,51 @@ describe('ServiceService', () => {
           spec: {
             image: 'ghcr.io/kudeploy/whoami:latest',
             replicas: 2,
+            command: ['pnpm'],
+            args: ['start'],
+            resources: {
+              requests: {
+                cpu: '250m',
+                memory: '256Mi',
+              },
+              limits: {
+                cpu: '500m',
+                memory: '512Mi',
+              },
+            },
+            readinessProbe: {
+              httpGet: {
+                path: '/healthz',
+                port: 8080,
+              },
+              initialDelaySeconds: 0,
+              timeoutSeconds: 3,
+              periodSeconds: 5,
+              successThreshold: 1,
+              failureThreshold: 3,
+            },
+            livenessProbe: {
+              httpGet: {
+                path: '/healthz',
+                port: 8080,
+              },
+              initialDelaySeconds: 0,
+              timeoutSeconds: 3,
+              periodSeconds: 10,
+              successThreshold: 1,
+              failureThreshold: 3,
+            },
+            startupProbe: {
+              httpGet: {
+                path: '/healthz',
+                port: 8080,
+              },
+              initialDelaySeconds: 0,
+              timeoutSeconds: 3,
+              periodSeconds: 10,
+              successThreshold: 1,
+              failureThreshold: 30,
+            },
             ports: [{ port: 80, targetPort: 8080 }],
             env: [{ name: 'NODE_ENV', value: 'production' }],
           },
@@ -85,8 +143,90 @@ describe('ServiceService', () => {
       name: 'API',
       image: 'ghcr.io/kudeploy/whoami:latest',
       replicas: 2,
+      command: ['pnpm'],
+      args: ['start'],
+      resources: {
+        cpuRequest: '250m',
+        cpuLimit: '500m',
+        memoryRequest: '256Mi',
+        memoryLimit: '512Mi',
+      },
+      healthCheck: {
+        type: 'HTTP',
+        path: '/healthz',
+        port: 8080,
+      },
       status: ServiceStatus.PENDING,
     });
+  });
+
+  it('defaults null replicas to one when creating a Service CRD', async () => {
+    const { service, customObjectsApi, projectService } = createService();
+    const workspace = { id: 'workspace_1' } as Workspace;
+
+    projectService.findProject.mockResolvedValue({
+      id: 'project-123',
+      name: 'Payments',
+    } as never);
+    customObjectsApi.patchNamespacedCustomObject.mockResolvedValue(
+      serviceCrd({
+        name: 'service-123',
+        namespace: 'project-123',
+        workspaceId: 'workspace_1',
+        displayName: 'API',
+        replicas: 1,
+      }),
+    );
+
+    await service.createService(workspace, {
+      projectId: 'project-123',
+      name: 'API',
+      image: 'nginx:latest',
+      replicas: null as never,
+      ports: [{ port: 80 }],
+    });
+
+    expect(customObjectsApi.patchNamespacedCustomObject).toHaveBeenCalledWith(
+      expect.objectContaining({
+        body: expect.objectContaining({
+          spec: expect.objectContaining({
+            replicas: 1,
+          }),
+        }),
+      }),
+      expect.any(Object),
+    );
+  });
+
+  it('resets replicas to one when updating a Service CRD with null replicas', async () => {
+    const { service, customObjectsApi, projectService } = createService();
+    const workspace = { id: 'workspace_1' } as Workspace;
+
+    projectService.findProject.mockResolvedValue({
+      id: 'project-123',
+      name: 'Payments',
+    } as never);
+    customObjectsApi.getNamespacedCustomObject.mockResolvedValue(
+      serviceCrd({ replicas: 3 }),
+    );
+    customObjectsApi.patchNamespacedCustomObject.mockResolvedValue(
+      serviceCrd({ replicas: 1 }),
+    );
+
+    await service.updateService(workspace, 'project-123', 'service-123', {
+      replicas: null as never,
+    });
+
+    expect(customObjectsApi.patchNamespacedCustomObject).toHaveBeenCalledWith(
+      expect.objectContaining({
+        body: expect.objectContaining({
+          spec: expect.objectContaining({
+            replicas: 1,
+          }),
+        }),
+      }),
+      expect.any(Object),
+    );
   });
 
   it('filters listed Service CRDs by current workspace and project before returning a connection', async () => {
@@ -207,6 +347,22 @@ describe('ServiceService', () => {
     ).toBe(ServiceStatus.FAILED);
     expect(service.toService(serviceCrd()).status).toBe(ServiceStatus.PENDING);
   });
+
+  it('keeps deployment status names for internal service consumers', () => {
+    const { service } = createService();
+
+    expect(
+      service.toService(
+        serviceCrd({
+          activeDeploymentName: 'service-123-00002',
+          latestDeploymentName: 'service-123-00003',
+        }),
+      ),
+    ).toMatchObject({
+      activeDeploymentName: 'service-123-00002',
+      latestDeploymentName: 'service-123-00003',
+    });
+  });
 });
 
 function createService() {
@@ -238,6 +394,9 @@ function serviceCrd(
     workspaceId?: string;
     displayName?: string;
     image?: string;
+    activeDeploymentName?: string;
+    latestDeploymentName?: string;
+    replicas?: number;
     readyStatus?: 'True' | 'False' | 'Unknown';
     readyReason?: string;
   } = {},
@@ -248,6 +407,9 @@ function serviceCrd(
     workspaceId = 'workspace_1',
     displayName = 'API',
     image = 'nginx:latest',
+    activeDeploymentName,
+    latestDeploymentName,
+    replicas = 2,
     readyStatus,
     readyReason = 'DeploymentReady',
   } = options;
@@ -270,21 +432,46 @@ function serviceCrd(
     },
     spec: {
       image,
-      replicas: 2,
+      replicas,
+      command: ['pnpm'],
+      args: ['start'],
+      resources: {
+        requests: {
+          cpu: '250m',
+          memory: '256Mi',
+        },
+        limits: {
+          cpu: '500m',
+          memory: '512Mi',
+        },
+      },
+      readinessProbe: {
+        httpGet: {
+          path: '/healthz',
+          port: 8080,
+        },
+      },
       ports: [{ port: 80, targetPort: 8080 }],
       env: [{ name: 'NODE_ENV', value: 'production' }],
     },
-    status: readyStatus
-      ? {
-          conditions: [
-            {
-              type: 'Ready',
-              status: readyStatus,
-              reason: readyReason,
-              message: readyReason,
-            },
-          ],
-        }
-      : {},
+    status:
+      readyStatus || activeDeploymentName || latestDeploymentName
+        ? {
+            ...(activeDeploymentName ? { activeDeploymentName } : {}),
+            ...(latestDeploymentName ? { latestDeploymentName } : {}),
+            conditions: [
+              ...(readyStatus
+                ? [
+                    {
+                      type: 'Ready',
+                      status: readyStatus,
+                      reason: readyReason,
+                      message: readyReason,
+                    },
+                  ]
+                : []),
+            ],
+          }
+        : {},
   };
 }
