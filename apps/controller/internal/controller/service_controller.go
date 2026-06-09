@@ -327,6 +327,9 @@ func (r *ServiceReconciler) syncDeploymentRoutingStates(ctx context.Context, ser
 
 	for index := range deploymentList.Items {
 		kudeployDeployment := &deploymentList.Items[index]
+		if !metav1.IsControlledBy(kudeployDeployment, service) {
+			continue
+		}
 		state := routingStateReserve
 		switch {
 		case activeName != "" && kudeployDeployment.Name == activeName:

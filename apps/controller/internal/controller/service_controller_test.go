@@ -73,6 +73,7 @@ var _ = Describe("Service Controller", func() {
 				Name:       serviceName,
 				Namespace:  namespaceName,
 				Generation: 1,
+				UID:        types.UID("service-uid"),
 			},
 			Spec: kudeployv1alpha1.ServiceSpec{
 				Replicas: ptrInt32(2),
@@ -148,6 +149,19 @@ var _ = Describe("Service Controller", func() {
 		labels := deploymentManagedLabels(namespaceName, serviceName, name)
 		labels[routingStateLabel] = state
 		return labels
+	}
+
+	ownDeployment := func(service *kudeployv1alpha1.Service, deployment *kudeployv1alpha1.Deployment) {
+		controller := true
+		deployment.OwnerReferences = []metav1.OwnerReference{
+			{
+				APIVersion: kudeployv1alpha1.GroupVersion.String(),
+				Kind:       "Service",
+				Name:       service.Name,
+				UID:        service.UID,
+				Controller: &controller,
+			},
+		}
 	}
 
 	It("creates the first versioned Kudeploy Deployment and a stable Kubernetes Service", func() {
@@ -287,6 +301,7 @@ var _ = Describe("Service Controller", func() {
 				},
 			},
 		}
+		ownDeployment(service, kudeployDeployment)
 		kubernetesService := buildKubernetesService(service, nil)
 		reconciler := newReconciler(service, kudeployDeployment, kubernetesService)
 
@@ -362,6 +377,8 @@ var _ = Describe("Service Controller", func() {
 				},
 			},
 		}
+		ownDeployment(service, previousDeployment)
+		ownDeployment(service, latestDeployment)
 		kubernetesService := buildKubernetesService(service, map[string]string{
 			deploymentLabel: firstDeploymentName,
 		})
@@ -384,6 +401,84 @@ var _ = Describe("Service Controller", func() {
 		Expect(reconciler.Get(ctx, serviceKey, service)).To(Succeed())
 		Expect(service.Status.ActiveVersion).To(Equal(int64(2)))
 		Expect(service.Status.ActiveDeploymentName).To(Equal(secondDeploymentName))
+	})
+
+	It("does not change routing state for deployments not owned by the Service", func() {
+		service := newService()
+		service.Generation = 2
+		service.Labels = map[string]string{
+			projectLabel:   namespaceName,
+			managedByLabel: managedByLabelValue,
+		}
+		service.Status.ObservedGeneration = 2
+		service.Status.LatestVersion = 2
+		service.Status.LatestDeploymentName = secondDeploymentName
+		service.Status.LatestEnvSecretHash = envSecretHash(nil)
+		service.Status.ActiveVersion = 1
+		service.Status.ActiveDeploymentName = firstDeploymentName
+
+		previousDeployment := &kudeployv1alpha1.Deployment{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      firstDeploymentName,
+				Namespace: namespaceName,
+				Labels:    deploymentLabels(firstDeploymentName, routingStateActive),
+			},
+			Spec: kudeployv1alpha1.DeploymentSpec{
+				ServiceName: serviceName,
+				Version:     1,
+				Image:       "ghcr.io/kudeploy/whoami:latest",
+				Ports:       []kudeployv1alpha1.ServicePort{{Port: 80, TargetPort: 8080}},
+			},
+		}
+		latestDeployment := &kudeployv1alpha1.Deployment{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      secondDeploymentName,
+				Namespace: namespaceName,
+				Labels:    deploymentLabels(secondDeploymentName, routingStatePending),
+			},
+			Spec: kudeployv1alpha1.DeploymentSpec{
+				ServiceName: serviceName,
+				Version:     2,
+				Image:       "ghcr.io/kudeploy/whoami:v2",
+				Ports:       []kudeployv1alpha1.ServicePort{{Port: 80, TargetPort: 8080}},
+			},
+			Status: kudeployv1alpha1.DeploymentStatus{
+				KubernetesDeploymentName: secondDeploymentName,
+				Conditions: []metav1.Condition{
+					{
+						Type:               "Ready",
+						Status:             metav1.ConditionTrue,
+						Reason:             "KubernetesDeploymentAvailable",
+						LastTransitionTime: metav1.Now(),
+					},
+				},
+			},
+		}
+		orphanDeployment := &kudeployv1alpha1.Deployment{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "external-00001",
+				Namespace: namespaceName,
+				Labels:    deploymentLabels("external-00001", routingStateActive),
+			},
+			Spec: kudeployv1alpha1.DeploymentSpec{
+				ServiceName: serviceName,
+				Version:     99,
+				Image:       "ghcr.io/kudeploy/external:latest",
+				Ports:       []kudeployv1alpha1.ServicePort{{Port: 80, TargetPort: 8080}},
+			},
+		}
+		ownDeployment(service, previousDeployment)
+		ownDeployment(service, latestDeployment)
+		kubernetesService := buildKubernetesService(service, map[string]string{
+			deploymentLabel: firstDeploymentName,
+		})
+		reconciler := newReconciler(service, previousDeployment, latestDeployment, orphanDeployment, kubernetesService)
+
+		_, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: serviceKey})
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(reconciler.Get(ctx, types.NamespacedName{Name: "external-00001", Namespace: namespaceName}, orphanDeployment)).To(Succeed())
+		Expect(orphanDeployment.Labels).To(HaveKeyWithValue(routingStateLabel, routingStateActive))
 	})
 
 	It("preserves external metadata on runtime ServiceAccounts and stable Kubernetes Services", func() {
@@ -421,6 +516,7 @@ var _ = Describe("Service Controller", func() {
 				},
 			},
 		}
+		ownDeployment(service, kudeployDeployment)
 
 		kubernetesService := buildKubernetesService(service, nil)
 		kubernetesService.Labels["team"] = externalTeam
@@ -472,6 +568,7 @@ var _ = Describe("Service Controller", func() {
 				Ports:       []kudeployv1alpha1.ServicePort{{Port: 80, TargetPort: 8080}},
 			},
 		}
+		ownDeployment(service, activeDeployment)
 		kubernetesService := buildKubernetesService(service, map[string]string{
 			deploymentLabel: firstDeploymentName,
 		})
