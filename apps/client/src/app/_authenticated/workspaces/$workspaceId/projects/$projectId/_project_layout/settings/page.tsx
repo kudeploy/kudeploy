@@ -8,8 +8,7 @@ import {
 import { t } from "i18next";
 import { toast } from "sonner";
 
-import { ProjectTabs } from "../../components/project-tabs";
-import { StatusBadge } from "../../components/status-badge";
+import { StatusBadge } from "../../../components/status-badge";
 import { alertDialog } from "@/components/fabric-ui/alert-dialog";
 import { Button } from "@/components/fabric-ui/button";
 import { Input } from "@/components/fabric-ui/input";
@@ -47,7 +46,7 @@ const DELETE_PROJECT_FROM_PROJECT_ROUTE = graphql(`
 `);
 
 export const Route = createFileRoute(
-  "/_authenticated/workspaces/$workspaceId/projects/$projectId/settings/",
+  "/_authenticated/workspaces/$workspaceId/projects/$projectId/_project_layout/settings/",
 )({
   component: ProjectSettingsComponent,
   beforeLoad: () => {
@@ -125,7 +124,6 @@ function ProjectSettingsComponent() {
 
   return (
     <>
-      <ProjectTabs workspaceId={workspaceId} projectId={projectId} />
       <Page
         title={t("project:settings.title")}
         description={t("project:settings.description")}

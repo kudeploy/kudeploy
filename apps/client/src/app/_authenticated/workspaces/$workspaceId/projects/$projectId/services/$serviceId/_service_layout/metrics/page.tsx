@@ -128,7 +128,7 @@ const networkChartConfig = {
 } satisfies ChartConfig;
 
 export const Route = createFileRoute(
-  "/_authenticated/workspaces/$workspaceId/projects/$projectId/services/$serviceId/metrics/",
+  "/_authenticated/workspaces/$workspaceId/projects/$projectId/services/$serviceId/_service_layout/metrics/",
 )({
   component: ServiceMetricsComponent,
   beforeLoad: () => ({ title: null }),

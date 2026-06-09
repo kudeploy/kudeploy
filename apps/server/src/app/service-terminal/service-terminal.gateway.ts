@@ -32,9 +32,8 @@ interface ServiceTerminalStartPayload {
   serviceId?: string | null;
 }
 
-const SERVICE_TERMINAL_SHELLS = [
-  ['/bin/sh'],
-];
+const SERVICE_TERMINAL_SHELLS = [['/bin/sh']];
+const SERVICE_DEPLOYMENT_LABEL = 'kudeploy.com/deployment';
 const SHELL_STARTUP_GRACE_MS = 1500;
 const NO_INTERACTIVE_SHELL_MESSAGE =
   'Unable to start an interactive shell in this container. Ensure the image includes /bin/sh.';
@@ -118,7 +117,12 @@ export class ServiceTerminalGateway
           return;
         }
 
-        const pod = await this.findServicePod(workspace, projectId, serviceId);
+        const pod = await this.findServicePod(
+          workspace,
+          projectId,
+          serviceId,
+          service.activeDeploymentName ?? service.latestDeploymentName,
+        );
         const podName = pod.metadata?.name;
         const containerName = pod.spec?.containers?.[0]?.name;
 
@@ -280,6 +284,7 @@ export class ServiceTerminalGateway
     workspace: Workspace,
     projectId: string,
     serviceId: string,
+    deploymentName?: string | null,
   ): Promise<V1Pod> {
     const list = await this.coreV1Api.listNamespacedPod({
       namespace: projectId,
@@ -290,12 +295,19 @@ export class ServiceTerminalGateway
       }),
     });
 
-    const pod = (list.items ?? []).find(
+    const runningPods = (list.items ?? []).filter(
       (item) =>
         item.status?.phase === 'Running' &&
         item.metadata?.name &&
         item.spec?.containers?.[0]?.name,
     );
+    const pod = deploymentName
+      ? runningPods.find(
+          (item) =>
+            item.metadata?.labels?.[SERVICE_DEPLOYMENT_LABEL] ===
+            deploymentName,
+        )
+      : runningPods[0];
 
     if (!pod) {
       throw new ServiceTerminalUserError(

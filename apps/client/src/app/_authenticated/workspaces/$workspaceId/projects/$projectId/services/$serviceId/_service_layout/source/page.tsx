@@ -34,7 +34,7 @@ const UPDATE_SERVICE_SOURCE_FROM_SERVICE_SOURCE_ROUTE = graphql(`
 `);
 
 export const Route = createFileRoute(
-  "/_authenticated/workspaces/$workspaceId/projects/$projectId/services/$serviceId/source/",
+  "/_authenticated/workspaces/$workspaceId/projects/$projectId/services/$serviceId/_service_layout/source/",
 )({
   component: ServiceSourceComponent,
   beforeLoad: () => ({ title: null }),

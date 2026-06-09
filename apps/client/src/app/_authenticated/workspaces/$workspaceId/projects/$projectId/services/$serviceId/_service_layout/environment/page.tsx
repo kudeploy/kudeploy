@@ -40,7 +40,7 @@ const UPDATE_SERVICE_ENVIRONMENT_FROM_SERVICE_ENVIRONMENT_ROUTE = graphql(`
 `);
 
 export const Route = createFileRoute(
-  "/_authenticated/workspaces/$workspaceId/projects/$projectId/services/$serviceId/environment/",
+  "/_authenticated/workspaces/$workspaceId/projects/$projectId/services/$serviceId/_service_layout/environment/",
 )({
   component: ServiceEnvironmentComponent,
   beforeLoad: () => ({ title: null }),

@@ -35,6 +35,11 @@ export type Scalars = {
   /** A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format. */
   DateTime: { input: any; output: any };
   /**
+   * A filter for Deployment that accepts MongoDB query syntax.
+   * Supported fields: version, image, status, createdAt
+   */
+  DeploymentFilter: { input: any; output: any };
+  /**
    * A filter for Domain that accepts MongoDB query syntax.
    * Supported fields: name, status, created_at
    */
@@ -179,6 +184,99 @@ export type CreateWorkspaceMemberGroupInput = {
   name: Scalars["String"]["input"];
   permissions?: InputMaybe<Array<WorkspacePermission>>;
 };
+
+export type Deployment = {
+  __typename?: "Deployment";
+  active: Scalars["Boolean"]["output"];
+  args: Array<Scalars["String"]["output"]>;
+  command: Array<Scalars["String"]["output"]>;
+  createdAt: Scalars["DateTime"]["output"];
+  env: Array<DeploymentEnvVar>;
+  envFrom: Array<DeploymentEnvFrom>;
+  id: Scalars["ID"]["output"];
+  image: Scalars["String"]["output"];
+  kubernetesDeploymentName?: Maybe<Scalars["String"]["output"]>;
+  latest: Scalars["Boolean"]["output"];
+  ports: Array<DeploymentPort>;
+  projectId: Scalars["ID"]["output"];
+  replicas?: Maybe<Scalars["Int"]["output"]>;
+  resources?: Maybe<DeploymentResources>;
+  serviceAccountName?: Maybe<Scalars["String"]["output"]>;
+  serviceId: Scalars["ID"]["output"];
+  status: DeploymentStatus;
+  updatedAt: Scalars["DateTime"]["output"];
+  version: Scalars["Int"]["output"];
+};
+
+export type DeploymentConnection = {
+  __typename?: "DeploymentConnection";
+  /** A list of edges. */
+  edges: Array<DeploymentEdge>;
+  /** Information to aid in pagination. */
+  pageInfo: PageInfo;
+  /** Identifies the total count of items in the connection. */
+  totalCount: Scalars["Int"]["output"];
+};
+
+/** An auto-generated type which holds one Deployment and a cursor during pagination. */
+export type DeploymentEdge = {
+  __typename?: "DeploymentEdge";
+  /** A cursor for use in pagination. */
+  cursor: Scalars["String"]["output"];
+  /** The item at the end of DeploymentEdge. */
+  node: Deployment;
+};
+
+export type DeploymentEnvFrom = {
+  __typename?: "DeploymentEnvFrom";
+  kind: Scalars["String"]["output"];
+  name: Scalars["String"]["output"];
+  prefix?: Maybe<Scalars["String"]["output"]>;
+};
+
+export type DeploymentEnvVar = {
+  __typename?: "DeploymentEnvVar";
+  name: Scalars["String"]["output"];
+  value?: Maybe<Scalars["String"]["output"]>;
+};
+
+/** Ordering options for deployment connections */
+export type DeploymentOrder = {
+  /** The ordering direction. */
+  direction: OrderDirection;
+  /** The field to order deployments by. */
+  field: DeploymentOrderField;
+};
+
+/** Properties by which deployment connections can be ordered. */
+export enum DeploymentOrderField {
+  CREATED_AT = "CREATED_AT",
+  ID = "ID",
+  STATUS = "STATUS",
+  VERSION = "VERSION",
+}
+
+export type DeploymentPort = {
+  __typename?: "DeploymentPort";
+  port: Scalars["Int"]["output"];
+  targetPort?: Maybe<Scalars["Int"]["output"]>;
+};
+
+export type DeploymentResources = {
+  __typename?: "DeploymentResources";
+  cpuLimit?: Maybe<Scalars["String"]["output"]>;
+  cpuRequest?: Maybe<Scalars["String"]["output"]>;
+  memoryLimit?: Maybe<Scalars["String"]["output"]>;
+  memoryRequest?: Maybe<Scalars["String"]["output"]>;
+};
+
+export enum DeploymentStatus {
+  FAILED = "FAILED",
+  PENDING = "PENDING",
+  PROGRESSING = "PROGRESSING",
+  READY = "READY",
+  UNKNOWN = "UNKNOWN",
+}
 
 export type Domain = {
   __typename?: "Domain";
@@ -452,6 +550,8 @@ export type Query = {
   currentUser: User;
   currentWorkspace?: Maybe<Workspace>;
   currentWorkspaceMember?: Maybe<WorkspaceMember>;
+  deployment?: Maybe<Deployment>;
+  deployments: DeploymentConnection;
   domain?: Maybe<Domain>;
   domains: DomainConnection;
   project?: Maybe<Project>;
@@ -479,6 +579,23 @@ export type QueryApiKeysArgs = {
   last?: InputMaybe<Scalars["Int"]["input"]>;
   orderBy?: InputMaybe<ApiKeyOrder>;
   query?: InputMaybe<Scalars["String"]["input"]>;
+};
+
+export type QueryDeploymentArgs = {
+  id: Scalars["ID"]["input"];
+  projectId: Scalars["ID"]["input"];
+};
+
+export type QueryDeploymentsArgs = {
+  after?: InputMaybe<Scalars["String"]["input"]>;
+  before?: InputMaybe<Scalars["String"]["input"]>;
+  filter?: InputMaybe<Scalars["DeploymentFilter"]["input"]>;
+  first?: InputMaybe<Scalars["Int"]["input"]>;
+  last?: InputMaybe<Scalars["Int"]["input"]>;
+  orderBy?: InputMaybe<DeploymentOrder>;
+  projectId: Scalars["ID"]["input"];
+  query?: InputMaybe<Scalars["String"]["input"]>;
+  serviceId: Scalars["ID"]["input"];
 };
 
 export type QueryDomainArgs = {
@@ -1574,47 +1691,62 @@ export type UpdateWorkspaceMemberStatusFromMembersRouteMutation = {
   } | null;
 };
 
-export type GetProjectFromProjectLayoutQueryVariables = Exact<{
-  id: Scalars["ID"]["input"];
+export type GetServicesFromServicesRouteQueryVariables = Exact<{
+  projectId: Scalars["ID"]["input"];
+  after?: InputMaybe<Scalars["String"]["input"]>;
+  before?: InputMaybe<Scalars["String"]["input"]>;
+  first?: InputMaybe<Scalars["Int"]["input"]>;
+  last?: InputMaybe<Scalars["Int"]["input"]>;
+  filter?: InputMaybe<Scalars["ServiceFilter"]["input"]>;
+  orderBy?: InputMaybe<ServiceOrder>;
+  query?: InputMaybe<Scalars["String"]["input"]>;
 }>;
 
-export type GetProjectFromProjectLayoutQuery = {
+export type GetServicesFromServicesRouteQuery = {
   __typename?: "Query";
-  project?: {
-    __typename?: "Project";
-    id: string;
-    name: string;
-    status: ProjectStatus;
-    createdAt: any;
-    updatedAt: any;
-  } | null;
-};
-
-export type UpdateServiceEnvironmentFromServiceEnvironmentRouteMutationVariables =
-  Exact<{
-    projectId: Scalars["ID"]["input"];
-    id: Scalars["ID"]["input"];
-    input: UpdateServiceInput;
-  }>;
-
-export type UpdateServiceEnvironmentFromServiceEnvironmentRouteMutation = {
-  __typename?: "Mutation";
-  updateService: {
-    __typename?: "Service";
-    id: string;
-    updatedAt: any;
-    env: Array<{ __typename?: "ServiceEnvVar"; key: string; value: string }>;
+  project?: { __typename?: "Project"; id: string; name: string } | null;
+  services: {
+    __typename?: "ServiceConnection";
+    edges: Array<{
+      __typename?: "ServiceEdge";
+      node: {
+        __typename?: "Service";
+        id: string;
+        projectId: string;
+        name: string;
+        image: string;
+        replicas?: number | null;
+        status: ServiceStatus;
+        createdAt: any;
+        ports: Array<{
+          __typename?: "ServicePort";
+          port: number;
+          targetPort?: number | null;
+        }>;
+        env: Array<{
+          __typename?: "ServiceEnvVar";
+          key: string;
+          value: string;
+        }>;
+      };
+    }>;
+    pageInfo: {
+      __typename?: "PageInfo";
+      endCursor?: string | null;
+      hasNextPage: boolean;
+      hasPreviousPage: boolean;
+      startCursor?: string | null;
+    };
   };
 };
 
-export type GetServiceFromServiceLayoutQueryVariables = Exact<{
-  projectId: Scalars["ID"]["input"];
-  id: Scalars["ID"]["input"];
+export type CreateServiceFromServicesRouteMutationVariables = Exact<{
+  input: CreateServiceInput;
 }>;
 
-export type GetServiceFromServiceLayoutQuery = {
-  __typename?: "Query";
-  service?: {
+export type CreateServiceFromServicesRouteMutation = {
+  __typename?: "Mutation";
+  createService: {
     __typename?: "Service";
     id: string;
     projectId: string;
@@ -1625,7 +1757,6 @@ export type GetServiceFromServiceLayoutQuery = {
     args: Array<string>;
     status: ServiceStatus;
     createdAt: any;
-    updatedAt: any;
     resources?: {
       __typename?: "ServiceResources";
       cpuRequest?: string | null;
@@ -1645,7 +1776,110 @@ export type GetServiceFromServiceLayoutQuery = {
       targetPort?: number | null;
     }>;
     env: Array<{ __typename?: "ServiceEnvVar"; key: string; value: string }>;
+  };
+};
+
+export type DeleteServiceFromServicesRouteMutationVariables = Exact<{
+  projectId: Scalars["ID"]["input"];
+  id: Scalars["ID"]["input"];
+}>;
+
+export type DeleteServiceFromServicesRouteMutation = {
+  __typename?: "Mutation";
+  deleteService: { __typename?: "Service"; id: string };
+};
+
+export type UpdateProjectFromProjectRouteMutationVariables = Exact<{
+  id: Scalars["ID"]["input"];
+  input: UpdateProjectInput;
+}>;
+
+export type UpdateProjectFromProjectRouteMutation = {
+  __typename?: "Mutation";
+  updateProject: {
+    __typename?: "Project";
+    id: string;
+    name: string;
+    status: ProjectStatus;
+    updatedAt: any;
+  };
+};
+
+export type DeleteProjectFromProjectRouteMutationVariables = Exact<{
+  id: Scalars["ID"]["input"];
+}>;
+
+export type DeleteProjectFromProjectRouteMutation = {
+  __typename?: "Mutation";
+  deleteProject: { __typename?: "Project"; id: string };
+};
+
+export type GetProjectFromProjectLayoutQueryVariables = Exact<{
+  id: Scalars["ID"]["input"];
+}>;
+
+export type GetProjectFromProjectLayoutQuery = {
+  __typename?: "Query";
+  project?: {
+    __typename?: "Project";
+    id: string;
+    name: string;
+    status: ProjectStatus;
+    createdAt: any;
+    updatedAt: any;
   } | null;
+};
+
+export type GetServiceDeploymentsFromServiceDeploymentsRouteQueryVariables =
+  Exact<{
+    projectId: Scalars["ID"]["input"];
+    serviceId: Scalars["ID"]["input"];
+    first?: InputMaybe<Scalars["Int"]["input"]>;
+    orderBy?: InputMaybe<DeploymentOrder>;
+  }>;
+
+export type GetServiceDeploymentsFromServiceDeploymentsRouteQuery = {
+  __typename?: "Query";
+  deployments: {
+    __typename?: "DeploymentConnection";
+    totalCount: number;
+    edges: Array<{
+      __typename?: "DeploymentEdge";
+      node: {
+        __typename?: "Deployment";
+        id: string;
+        projectId: string;
+        serviceId: string;
+        version: number;
+        image: string;
+        replicas?: number | null;
+        status: DeploymentStatus;
+        active: boolean;
+        latest: boolean;
+        kubernetesDeploymentName?: string | null;
+        createdAt: any;
+        updatedAt: any;
+      };
+    }>;
+    pageInfo: { __typename?: "PageInfo"; hasNextPage: boolean };
+  };
+};
+
+export type UpdateServiceEnvironmentFromServiceEnvironmentRouteMutationVariables =
+  Exact<{
+    projectId: Scalars["ID"]["input"];
+    id: Scalars["ID"]["input"];
+    input: UpdateServiceInput;
+  }>;
+
+export type UpdateServiceEnvironmentFromServiceEnvironmentRouteMutation = {
+  __typename?: "Mutation";
+  updateService: {
+    __typename?: "Service";
+    id: string;
+    updatedAt: any;
+    env: Array<{ __typename?: "ServiceEnvVar"; key: string; value: string }>;
+  };
 };
 
 export type GetServiceMetricsFromServiceMetricsRouteQueryVariables = Exact<{
@@ -1771,62 +2005,64 @@ export type UpdateServiceSourceFromServiceSourceRouteMutation = {
   };
 };
 
-export type GetServicesFromServicesRouteQueryVariables = Exact<{
+export type GetDeploymentFromDeploymentLayoutQueryVariables = Exact<{
   projectId: Scalars["ID"]["input"];
-  after?: InputMaybe<Scalars["String"]["input"]>;
-  before?: InputMaybe<Scalars["String"]["input"]>;
-  first?: InputMaybe<Scalars["Int"]["input"]>;
-  last?: InputMaybe<Scalars["Int"]["input"]>;
-  filter?: InputMaybe<Scalars["ServiceFilter"]["input"]>;
-  orderBy?: InputMaybe<ServiceOrder>;
-  query?: InputMaybe<Scalars["String"]["input"]>;
+  id: Scalars["ID"]["input"];
 }>;
 
-export type GetServicesFromServicesRouteQuery = {
+export type GetDeploymentFromDeploymentLayoutQuery = {
   __typename?: "Query";
-  project?: { __typename?: "Project"; id: string; name: string } | null;
-  services: {
-    __typename?: "ServiceConnection";
-    edges: Array<{
-      __typename?: "ServiceEdge";
-      node: {
-        __typename?: "Service";
-        id: string;
-        projectId: string;
-        name: string;
-        image: string;
-        replicas?: number | null;
-        status: ServiceStatus;
-        createdAt: any;
-        ports: Array<{
-          __typename?: "ServicePort";
-          port: number;
-          targetPort?: number | null;
-        }>;
-        env: Array<{
-          __typename?: "ServiceEnvVar";
-          key: string;
-          value: string;
-        }>;
-      };
+  deployment?: {
+    __typename?: "Deployment";
+    id: string;
+    projectId: string;
+    serviceId: string;
+    version: number;
+    image: string;
+    replicas?: number | null;
+    command: Array<string>;
+    args: Array<string>;
+    serviceAccountName?: string | null;
+    status: DeploymentStatus;
+    active: boolean;
+    latest: boolean;
+    kubernetesDeploymentName?: string | null;
+    createdAt: any;
+    updatedAt: any;
+    ports: Array<{
+      __typename?: "DeploymentPort";
+      port: number;
+      targetPort?: number | null;
     }>;
-    pageInfo: {
-      __typename?: "PageInfo";
-      endCursor?: string | null;
-      hasNextPage: boolean;
-      hasPreviousPage: boolean;
-      startCursor?: string | null;
-    };
-  };
+    env: Array<{
+      __typename?: "DeploymentEnvVar";
+      name: string;
+      value?: string | null;
+    }>;
+    envFrom: Array<{
+      __typename?: "DeploymentEnvFrom";
+      kind: string;
+      name: string;
+      prefix?: string | null;
+    }>;
+    resources?: {
+      __typename?: "DeploymentResources";
+      cpuRequest?: string | null;
+      cpuLimit?: string | null;
+      memoryRequest?: string | null;
+      memoryLimit?: string | null;
+    } | null;
+  } | null;
 };
 
-export type CreateServiceFromServicesRouteMutationVariables = Exact<{
-  input: CreateServiceInput;
+export type GetServiceFromServiceLayoutQueryVariables = Exact<{
+  projectId: Scalars["ID"]["input"];
+  id: Scalars["ID"]["input"];
 }>;
 
-export type CreateServiceFromServicesRouteMutation = {
-  __typename?: "Mutation";
-  createService: {
+export type GetServiceFromServiceLayoutQuery = {
+  __typename?: "Query";
+  service?: {
     __typename?: "Service";
     id: string;
     projectId: string;
@@ -1837,6 +2073,7 @@ export type CreateServiceFromServicesRouteMutation = {
     args: Array<string>;
     status: ServiceStatus;
     createdAt: any;
+    updatedAt: any;
     resources?: {
       __typename?: "ServiceResources";
       cpuRequest?: string | null;
@@ -1856,42 +2093,7 @@ export type CreateServiceFromServicesRouteMutation = {
       targetPort?: number | null;
     }>;
     env: Array<{ __typename?: "ServiceEnvVar"; key: string; value: string }>;
-  };
-};
-
-export type DeleteServiceFromServicesRouteMutationVariables = Exact<{
-  projectId: Scalars["ID"]["input"];
-  id: Scalars["ID"]["input"];
-}>;
-
-export type DeleteServiceFromServicesRouteMutation = {
-  __typename?: "Mutation";
-  deleteService: { __typename?: "Service"; id: string };
-};
-
-export type UpdateProjectFromProjectRouteMutationVariables = Exact<{
-  id: Scalars["ID"]["input"];
-  input: UpdateProjectInput;
-}>;
-
-export type UpdateProjectFromProjectRouteMutation = {
-  __typename?: "Mutation";
-  updateProject: {
-    __typename?: "Project";
-    id: string;
-    name: string;
-    status: ProjectStatus;
-    updatedAt: any;
-  };
-};
-
-export type DeleteProjectFromProjectRouteMutationVariables = Exact<{
-  id: Scalars["ID"]["input"];
-}>;
-
-export type DeleteProjectFromProjectRouteMutation = {
-  __typename?: "Mutation";
-  deleteProject: { __typename?: "Project"; id: string };
+  } | null;
 };
 
 export type GetProjectsFromProjectsRouteQueryVariables = Exact<{
@@ -4913,6 +5115,609 @@ export const UpdateWorkspaceMemberStatusFromMembersRouteDocument = {
   UpdateWorkspaceMemberStatusFromMembersRouteMutation,
   UpdateWorkspaceMemberStatusFromMembersRouteMutationVariables
 >;
+export const GetServicesFromServicesRouteDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "getServicesFromServicesRoute" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "projectId" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "after" },
+          },
+          type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "before" },
+          },
+          type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "first" },
+          },
+          type: { kind: "NamedType", name: { kind: "Name", value: "Int" } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "last" } },
+          type: { kind: "NamedType", name: { kind: "Name", value: "Int" } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "filter" },
+          },
+          type: {
+            kind: "NamedType",
+            name: { kind: "Name", value: "ServiceFilter" },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "orderBy" },
+          },
+          type: {
+            kind: "NamedType",
+            name: { kind: "Name", value: "ServiceOrder" },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "query" },
+          },
+          type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "project" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "id" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "projectId" },
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "name" } },
+              ],
+            },
+          },
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "services" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "projectId" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "projectId" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "after" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "after" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "before" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "before" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "first" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "first" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "last" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "last" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "filter" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "filter" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "orderBy" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "orderBy" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "query" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "query" },
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "edges" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "node" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "id" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "projectId" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "name" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "image" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "replicas" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "status" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "createdAt" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "ports" },
+                              selectionSet: {
+                                kind: "SelectionSet",
+                                selections: [
+                                  {
+                                    kind: "Field",
+                                    name: { kind: "Name", value: "port" },
+                                  },
+                                  {
+                                    kind: "Field",
+                                    name: { kind: "Name", value: "targetPort" },
+                                  },
+                                ],
+                              },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "env" },
+                              selectionSet: {
+                                kind: "SelectionSet",
+                                selections: [
+                                  {
+                                    kind: "Field",
+                                    name: { kind: "Name", value: "key" },
+                                  },
+                                  {
+                                    kind: "Field",
+                                    name: { kind: "Name", value: "value" },
+                                  },
+                                ],
+                              },
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "pageInfo" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "endCursor" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "hasNextPage" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "hasPreviousPage" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "startCursor" },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  GetServicesFromServicesRouteQuery,
+  GetServicesFromServicesRouteQueryVariables
+>;
+export const CreateServiceFromServicesRouteDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "mutation",
+      name: { kind: "Name", value: "createServiceFromServicesRoute" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "input" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "CreateServiceInput" },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "createService" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "input" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "input" },
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "projectId" } },
+                { kind: "Field", name: { kind: "Name", value: "name" } },
+                { kind: "Field", name: { kind: "Name", value: "image" } },
+                { kind: "Field", name: { kind: "Name", value: "replicas" } },
+                { kind: "Field", name: { kind: "Name", value: "command" } },
+                { kind: "Field", name: { kind: "Name", value: "args" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "resources" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "cpuRequest" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "cpuLimit" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "memoryRequest" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "memoryLimit" },
+                      },
+                    ],
+                  },
+                },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "healthCheck" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "type" } },
+                      { kind: "Field", name: { kind: "Name", value: "port" } },
+                      { kind: "Field", name: { kind: "Name", value: "path" } },
+                    ],
+                  },
+                },
+                { kind: "Field", name: { kind: "Name", value: "status" } },
+                { kind: "Field", name: { kind: "Name", value: "createdAt" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "ports" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "port" } },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "targetPort" },
+                      },
+                    ],
+                  },
+                },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "env" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "key" } },
+                      { kind: "Field", name: { kind: "Name", value: "value" } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  CreateServiceFromServicesRouteMutation,
+  CreateServiceFromServicesRouteMutationVariables
+>;
+export const DeleteServiceFromServicesRouteDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "mutation",
+      name: { kind: "Name", value: "deleteServiceFromServicesRoute" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "projectId" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "deleteService" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "projectId" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "projectId" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "id" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "id" },
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  DeleteServiceFromServicesRouteMutation,
+  DeleteServiceFromServicesRouteMutationVariables
+>;
+export const UpdateProjectFromProjectRouteDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "mutation",
+      name: { kind: "Name", value: "updateProjectFromProjectRoute" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "input" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "UpdateProjectInput" },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "updateProject" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "id" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "id" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "input" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "input" },
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "name" } },
+                { kind: "Field", name: { kind: "Name", value: "status" } },
+                { kind: "Field", name: { kind: "Name", value: "updatedAt" } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  UpdateProjectFromProjectRouteMutation,
+  UpdateProjectFromProjectRouteMutationVariables
+>;
+export const DeleteProjectFromProjectRouteDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "mutation",
+      name: { kind: "Name", value: "deleteProjectFromProjectRoute" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "deleteProject" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "id" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "id" },
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  DeleteProjectFromProjectRouteMutation,
+  DeleteProjectFromProjectRouteMutationVariables
+>;
 export const GetProjectFromProjectLayoutDocument = {
   kind: "Document",
   definitions: [
@@ -4964,6 +5769,196 @@ export const GetProjectFromProjectLayoutDocument = {
 } as unknown as DocumentNode<
   GetProjectFromProjectLayoutQuery,
   GetProjectFromProjectLayoutQueryVariables
+>;
+export const GetServiceDeploymentsFromServiceDeploymentsRouteDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: {
+        kind: "Name",
+        value: "getServiceDeploymentsFromServiceDeploymentsRoute",
+      },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "projectId" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "serviceId" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "first" },
+          },
+          type: { kind: "NamedType", name: { kind: "Name", value: "Int" } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "orderBy" },
+          },
+          type: {
+            kind: "NamedType",
+            name: { kind: "Name", value: "DeploymentOrder" },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "deployments" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "projectId" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "projectId" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "serviceId" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "serviceId" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "first" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "first" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "orderBy" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "orderBy" },
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "totalCount" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "edges" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "node" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "id" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "projectId" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "serviceId" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "version" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "image" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "replicas" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "status" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "active" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "latest" },
+                            },
+                            {
+                              kind: "Field",
+                              name: {
+                                kind: "Name",
+                                value: "kubernetesDeploymentName",
+                              },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "createdAt" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "updatedAt" },
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "pageInfo" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "hasNextPage" },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  GetServiceDeploymentsFromServiceDeploymentsRouteQuery,
+  GetServiceDeploymentsFromServiceDeploymentsRouteQueryVariables
 >;
 export const UpdateServiceEnvironmentFromServiceEnvironmentRouteDocument = {
   kind: "Document",
@@ -5068,144 +6063,6 @@ export const UpdateServiceEnvironmentFromServiceEnvironmentRouteDocument = {
 } as unknown as DocumentNode<
   UpdateServiceEnvironmentFromServiceEnvironmentRouteMutation,
   UpdateServiceEnvironmentFromServiceEnvironmentRouteMutationVariables
->;
-export const GetServiceFromServiceLayoutDocument = {
-  kind: "Document",
-  definitions: [
-    {
-      kind: "OperationDefinition",
-      operation: "query",
-      name: { kind: "Name", value: "getServiceFromServiceLayout" },
-      variableDefinitions: [
-        {
-          kind: "VariableDefinition",
-          variable: {
-            kind: "Variable",
-            name: { kind: "Name", value: "projectId" },
-          },
-          type: {
-            kind: "NonNullType",
-            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
-          },
-        },
-        {
-          kind: "VariableDefinition",
-          variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
-          type: {
-            kind: "NonNullType",
-            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
-          },
-        },
-      ],
-      selectionSet: {
-        kind: "SelectionSet",
-        selections: [
-          {
-            kind: "Field",
-            name: { kind: "Name", value: "service" },
-            arguments: [
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "projectId" },
-                value: {
-                  kind: "Variable",
-                  name: { kind: "Name", value: "projectId" },
-                },
-              },
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "id" },
-                value: {
-                  kind: "Variable",
-                  name: { kind: "Name", value: "id" },
-                },
-              },
-            ],
-            selectionSet: {
-              kind: "SelectionSet",
-              selections: [
-                { kind: "Field", name: { kind: "Name", value: "id" } },
-                { kind: "Field", name: { kind: "Name", value: "projectId" } },
-                { kind: "Field", name: { kind: "Name", value: "name" } },
-                { kind: "Field", name: { kind: "Name", value: "image" } },
-                { kind: "Field", name: { kind: "Name", value: "replicas" } },
-                { kind: "Field", name: { kind: "Name", value: "command" } },
-                { kind: "Field", name: { kind: "Name", value: "args" } },
-                {
-                  kind: "Field",
-                  name: { kind: "Name", value: "resources" },
-                  selectionSet: {
-                    kind: "SelectionSet",
-                    selections: [
-                      {
-                        kind: "Field",
-                        name: { kind: "Name", value: "cpuRequest" },
-                      },
-                      {
-                        kind: "Field",
-                        name: { kind: "Name", value: "cpuLimit" },
-                      },
-                      {
-                        kind: "Field",
-                        name: { kind: "Name", value: "memoryRequest" },
-                      },
-                      {
-                        kind: "Field",
-                        name: { kind: "Name", value: "memoryLimit" },
-                      },
-                    ],
-                  },
-                },
-                {
-                  kind: "Field",
-                  name: { kind: "Name", value: "healthCheck" },
-                  selectionSet: {
-                    kind: "SelectionSet",
-                    selections: [
-                      { kind: "Field", name: { kind: "Name", value: "type" } },
-                      { kind: "Field", name: { kind: "Name", value: "port" } },
-                      { kind: "Field", name: { kind: "Name", value: "path" } },
-                    ],
-                  },
-                },
-                { kind: "Field", name: { kind: "Name", value: "status" } },
-                { kind: "Field", name: { kind: "Name", value: "createdAt" } },
-                { kind: "Field", name: { kind: "Name", value: "updatedAt" } },
-                {
-                  kind: "Field",
-                  name: { kind: "Name", value: "ports" },
-                  selectionSet: {
-                    kind: "SelectionSet",
-                    selections: [
-                      { kind: "Field", name: { kind: "Name", value: "port" } },
-                      {
-                        kind: "Field",
-                        name: { kind: "Name", value: "targetPort" },
-                      },
-                    ],
-                  },
-                },
-                {
-                  kind: "Field",
-                  name: { kind: "Name", value: "env" },
-                  selectionSet: {
-                    kind: "SelectionSet",
-                    selections: [
-                      { kind: "Field", name: { kind: "Name", value: "key" } },
-                      { kind: "Field", name: { kind: "Name", value: "value" } },
-                    ],
-                  },
-                },
-              ],
-            },
-          },
-        ],
-      },
-    },
-  ],
-} as unknown as DocumentNode<
-  GetServiceFromServiceLayoutQuery,
-  GetServiceFromServiceLayoutQueryVariables
 >;
 export const GetServiceMetricsFromServiceMetricsRouteDocument = {
   kind: "Document",
@@ -5813,13 +6670,13 @@ export const UpdateServiceSourceFromServiceSourceRouteDocument = {
   UpdateServiceSourceFromServiceSourceRouteMutation,
   UpdateServiceSourceFromServiceSourceRouteMutationVariables
 >;
-export const GetServicesFromServicesRouteDocument = {
+export const GetDeploymentFromDeploymentLayoutDocument = {
   kind: "Document",
   definitions: [
     {
       kind: "OperationDefinition",
       operation: "query",
-      name: { kind: "Name", value: "getServicesFromServicesRoute" },
+      name: { kind: "Name", value: "getDeploymentFromDeploymentLayout" },
       variableDefinitions: [
         {
           kind: "VariableDefinition",
@@ -5834,62 +6691,11 @@ export const GetServicesFromServicesRouteDocument = {
         },
         {
           kind: "VariableDefinition",
-          variable: {
-            kind: "Variable",
-            name: { kind: "Name", value: "after" },
-          },
-          type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
-        },
-        {
-          kind: "VariableDefinition",
-          variable: {
-            kind: "Variable",
-            name: { kind: "Name", value: "before" },
-          },
-          type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
-        },
-        {
-          kind: "VariableDefinition",
-          variable: {
-            kind: "Variable",
-            name: { kind: "Name", value: "first" },
-          },
-          type: { kind: "NamedType", name: { kind: "Name", value: "Int" } },
-        },
-        {
-          kind: "VariableDefinition",
-          variable: { kind: "Variable", name: { kind: "Name", value: "last" } },
-          type: { kind: "NamedType", name: { kind: "Name", value: "Int" } },
-        },
-        {
-          kind: "VariableDefinition",
-          variable: {
-            kind: "Variable",
-            name: { kind: "Name", value: "filter" },
-          },
+          variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
           type: {
-            kind: "NamedType",
-            name: { kind: "Name", value: "ServiceFilter" },
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
           },
-        },
-        {
-          kind: "VariableDefinition",
-          variable: {
-            kind: "Variable",
-            name: { kind: "Name", value: "orderBy" },
-          },
-          type: {
-            kind: "NamedType",
-            name: { kind: "Name", value: "ServiceOrder" },
-          },
-        },
-        {
-          kind: "VariableDefinition",
-          variable: {
-            kind: "Variable",
-            name: { kind: "Name", value: "query" },
-          },
-          type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
         },
       ],
       selectionSet: {
@@ -5897,28 +6703,7 @@ export const GetServicesFromServicesRouteDocument = {
         selections: [
           {
             kind: "Field",
-            name: { kind: "Name", value: "project" },
-            arguments: [
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "id" },
-                value: {
-                  kind: "Variable",
-                  name: { kind: "Name", value: "projectId" },
-                },
-              },
-            ],
-            selectionSet: {
-              kind: "SelectionSet",
-              selections: [
-                { kind: "Field", name: { kind: "Name", value: "id" } },
-                { kind: "Field", name: { kind: "Name", value: "name" } },
-              ],
-            },
-          },
-          {
-            kind: "Field",
-            name: { kind: "Name", value: "services" },
+            name: { kind: "Name", value: "deployment" },
             arguments: [
               {
                 kind: "Argument",
@@ -5930,169 +6715,102 @@ export const GetServicesFromServicesRouteDocument = {
               },
               {
                 kind: "Argument",
-                name: { kind: "Name", value: "after" },
+                name: { kind: "Name", value: "id" },
                 value: {
                   kind: "Variable",
-                  name: { kind: "Name", value: "after" },
-                },
-              },
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "before" },
-                value: {
-                  kind: "Variable",
-                  name: { kind: "Name", value: "before" },
-                },
-              },
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "first" },
-                value: {
-                  kind: "Variable",
-                  name: { kind: "Name", value: "first" },
-                },
-              },
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "last" },
-                value: {
-                  kind: "Variable",
-                  name: { kind: "Name", value: "last" },
-                },
-              },
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "filter" },
-                value: {
-                  kind: "Variable",
-                  name: { kind: "Name", value: "filter" },
-                },
-              },
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "orderBy" },
-                value: {
-                  kind: "Variable",
-                  name: { kind: "Name", value: "orderBy" },
-                },
-              },
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "query" },
-                value: {
-                  kind: "Variable",
-                  name: { kind: "Name", value: "query" },
+                  name: { kind: "Name", value: "id" },
                 },
               },
             ],
             selectionSet: {
               kind: "SelectionSet",
               selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "projectId" } },
+                { kind: "Field", name: { kind: "Name", value: "serviceId" } },
+                { kind: "Field", name: { kind: "Name", value: "version" } },
+                { kind: "Field", name: { kind: "Name", value: "image" } },
+                { kind: "Field", name: { kind: "Name", value: "replicas" } },
                 {
                   kind: "Field",
-                  name: { kind: "Name", value: "edges" },
+                  name: { kind: "Name", value: "ports" },
                   selectionSet: {
                     kind: "SelectionSet",
                     selections: [
+                      { kind: "Field", name: { kind: "Name", value: "port" } },
                       {
                         kind: "Field",
-                        name: { kind: "Name", value: "node" },
-                        selectionSet: {
-                          kind: "SelectionSet",
-                          selections: [
-                            {
-                              kind: "Field",
-                              name: { kind: "Name", value: "id" },
-                            },
-                            {
-                              kind: "Field",
-                              name: { kind: "Name", value: "projectId" },
-                            },
-                            {
-                              kind: "Field",
-                              name: { kind: "Name", value: "name" },
-                            },
-                            {
-                              kind: "Field",
-                              name: { kind: "Name", value: "image" },
-                            },
-                            {
-                              kind: "Field",
-                              name: { kind: "Name", value: "replicas" },
-                            },
-                            {
-                              kind: "Field",
-                              name: { kind: "Name", value: "status" },
-                            },
-                            {
-                              kind: "Field",
-                              name: { kind: "Name", value: "createdAt" },
-                            },
-                            {
-                              kind: "Field",
-                              name: { kind: "Name", value: "ports" },
-                              selectionSet: {
-                                kind: "SelectionSet",
-                                selections: [
-                                  {
-                                    kind: "Field",
-                                    name: { kind: "Name", value: "port" },
-                                  },
-                                  {
-                                    kind: "Field",
-                                    name: { kind: "Name", value: "targetPort" },
-                                  },
-                                ],
-                              },
-                            },
-                            {
-                              kind: "Field",
-                              name: { kind: "Name", value: "env" },
-                              selectionSet: {
-                                kind: "SelectionSet",
-                                selections: [
-                                  {
-                                    kind: "Field",
-                                    name: { kind: "Name", value: "key" },
-                                  },
-                                  {
-                                    kind: "Field",
-                                    name: { kind: "Name", value: "value" },
-                                  },
-                                ],
-                              },
-                            },
-                          ],
-                        },
+                        name: { kind: "Name", value: "targetPort" },
                       },
                     ],
                   },
                 },
                 {
                   kind: "Field",
-                  name: { kind: "Name", value: "pageInfo" },
+                  name: { kind: "Name", value: "env" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "name" } },
+                      { kind: "Field", name: { kind: "Name", value: "value" } },
+                    ],
+                  },
+                },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "envFrom" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "kind" } },
+                      { kind: "Field", name: { kind: "Name", value: "name" } },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "prefix" },
+                      },
+                    ],
+                  },
+                },
+                { kind: "Field", name: { kind: "Name", value: "command" } },
+                { kind: "Field", name: { kind: "Name", value: "args" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "resources" },
                   selectionSet: {
                     kind: "SelectionSet",
                     selections: [
                       {
                         kind: "Field",
-                        name: { kind: "Name", value: "endCursor" },
+                        name: { kind: "Name", value: "cpuRequest" },
                       },
                       {
                         kind: "Field",
-                        name: { kind: "Name", value: "hasNextPage" },
+                        name: { kind: "Name", value: "cpuLimit" },
                       },
                       {
                         kind: "Field",
-                        name: { kind: "Name", value: "hasPreviousPage" },
+                        name: { kind: "Name", value: "memoryRequest" },
                       },
                       {
                         kind: "Field",
-                        name: { kind: "Name", value: "startCursor" },
+                        name: { kind: "Name", value: "memoryLimit" },
                       },
                     ],
                   },
                 },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "serviceAccountName" },
+                },
+                { kind: "Field", name: { kind: "Name", value: "status" } },
+                { kind: "Field", name: { kind: "Name", value: "active" } },
+                { kind: "Field", name: { kind: "Name", value: "latest" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "kubernetesDeploymentName" },
+                },
+                { kind: "Field", name: { kind: "Name", value: "createdAt" } },
+                { kind: "Field", name: { kind: "Name", value: "updatedAt" } },
               ],
             },
           },
@@ -6101,29 +6819,34 @@ export const GetServicesFromServicesRouteDocument = {
     },
   ],
 } as unknown as DocumentNode<
-  GetServicesFromServicesRouteQuery,
-  GetServicesFromServicesRouteQueryVariables
+  GetDeploymentFromDeploymentLayoutQuery,
+  GetDeploymentFromDeploymentLayoutQueryVariables
 >;
-export const CreateServiceFromServicesRouteDocument = {
+export const GetServiceFromServiceLayoutDocument = {
   kind: "Document",
   definitions: [
     {
       kind: "OperationDefinition",
-      operation: "mutation",
-      name: { kind: "Name", value: "createServiceFromServicesRoute" },
+      operation: "query",
+      name: { kind: "Name", value: "getServiceFromServiceLayout" },
       variableDefinitions: [
         {
           kind: "VariableDefinition",
           variable: {
             kind: "Variable",
-            name: { kind: "Name", value: "input" },
+            name: { kind: "Name", value: "projectId" },
           },
           type: {
             kind: "NonNullType",
-            type: {
-              kind: "NamedType",
-              name: { kind: "Name", value: "CreateServiceInput" },
-            },
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
           },
         },
       ],
@@ -6132,14 +6855,22 @@ export const CreateServiceFromServicesRouteDocument = {
         selections: [
           {
             kind: "Field",
-            name: { kind: "Name", value: "createService" },
+            name: { kind: "Name", value: "service" },
             arguments: [
               {
                 kind: "Argument",
-                name: { kind: "Name", value: "input" },
+                name: { kind: "Name", value: "projectId" },
                 value: {
                   kind: "Variable",
-                  name: { kind: "Name", value: "input" },
+                  name: { kind: "Name", value: "projectId" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "id" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "id" },
                 },
               },
             ],
@@ -6192,6 +6923,7 @@ export const CreateServiceFromServicesRouteDocument = {
                 },
                 { kind: "Field", name: { kind: "Name", value: "status" } },
                 { kind: "Field", name: { kind: "Name", value: "createdAt" } },
+                { kind: "Field", name: { kind: "Name", value: "updatedAt" } },
                 {
                   kind: "Field",
                   name: { kind: "Name", value: "ports" },
@@ -6225,196 +6957,8 @@ export const CreateServiceFromServicesRouteDocument = {
     },
   ],
 } as unknown as DocumentNode<
-  CreateServiceFromServicesRouteMutation,
-  CreateServiceFromServicesRouteMutationVariables
->;
-export const DeleteServiceFromServicesRouteDocument = {
-  kind: "Document",
-  definitions: [
-    {
-      kind: "OperationDefinition",
-      operation: "mutation",
-      name: { kind: "Name", value: "deleteServiceFromServicesRoute" },
-      variableDefinitions: [
-        {
-          kind: "VariableDefinition",
-          variable: {
-            kind: "Variable",
-            name: { kind: "Name", value: "projectId" },
-          },
-          type: {
-            kind: "NonNullType",
-            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
-          },
-        },
-        {
-          kind: "VariableDefinition",
-          variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
-          type: {
-            kind: "NonNullType",
-            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
-          },
-        },
-      ],
-      selectionSet: {
-        kind: "SelectionSet",
-        selections: [
-          {
-            kind: "Field",
-            name: { kind: "Name", value: "deleteService" },
-            arguments: [
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "projectId" },
-                value: {
-                  kind: "Variable",
-                  name: { kind: "Name", value: "projectId" },
-                },
-              },
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "id" },
-                value: {
-                  kind: "Variable",
-                  name: { kind: "Name", value: "id" },
-                },
-              },
-            ],
-            selectionSet: {
-              kind: "SelectionSet",
-              selections: [
-                { kind: "Field", name: { kind: "Name", value: "id" } },
-              ],
-            },
-          },
-        ],
-      },
-    },
-  ],
-} as unknown as DocumentNode<
-  DeleteServiceFromServicesRouteMutation,
-  DeleteServiceFromServicesRouteMutationVariables
->;
-export const UpdateProjectFromProjectRouteDocument = {
-  kind: "Document",
-  definitions: [
-    {
-      kind: "OperationDefinition",
-      operation: "mutation",
-      name: { kind: "Name", value: "updateProjectFromProjectRoute" },
-      variableDefinitions: [
-        {
-          kind: "VariableDefinition",
-          variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
-          type: {
-            kind: "NonNullType",
-            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
-          },
-        },
-        {
-          kind: "VariableDefinition",
-          variable: {
-            kind: "Variable",
-            name: { kind: "Name", value: "input" },
-          },
-          type: {
-            kind: "NonNullType",
-            type: {
-              kind: "NamedType",
-              name: { kind: "Name", value: "UpdateProjectInput" },
-            },
-          },
-        },
-      ],
-      selectionSet: {
-        kind: "SelectionSet",
-        selections: [
-          {
-            kind: "Field",
-            name: { kind: "Name", value: "updateProject" },
-            arguments: [
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "id" },
-                value: {
-                  kind: "Variable",
-                  name: { kind: "Name", value: "id" },
-                },
-              },
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "input" },
-                value: {
-                  kind: "Variable",
-                  name: { kind: "Name", value: "input" },
-                },
-              },
-            ],
-            selectionSet: {
-              kind: "SelectionSet",
-              selections: [
-                { kind: "Field", name: { kind: "Name", value: "id" } },
-                { kind: "Field", name: { kind: "Name", value: "name" } },
-                { kind: "Field", name: { kind: "Name", value: "status" } },
-                { kind: "Field", name: { kind: "Name", value: "updatedAt" } },
-              ],
-            },
-          },
-        ],
-      },
-    },
-  ],
-} as unknown as DocumentNode<
-  UpdateProjectFromProjectRouteMutation,
-  UpdateProjectFromProjectRouteMutationVariables
->;
-export const DeleteProjectFromProjectRouteDocument = {
-  kind: "Document",
-  definitions: [
-    {
-      kind: "OperationDefinition",
-      operation: "mutation",
-      name: { kind: "Name", value: "deleteProjectFromProjectRoute" },
-      variableDefinitions: [
-        {
-          kind: "VariableDefinition",
-          variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
-          type: {
-            kind: "NonNullType",
-            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
-          },
-        },
-      ],
-      selectionSet: {
-        kind: "SelectionSet",
-        selections: [
-          {
-            kind: "Field",
-            name: { kind: "Name", value: "deleteProject" },
-            arguments: [
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "id" },
-                value: {
-                  kind: "Variable",
-                  name: { kind: "Name", value: "id" },
-                },
-              },
-            ],
-            selectionSet: {
-              kind: "SelectionSet",
-              selections: [
-                { kind: "Field", name: { kind: "Name", value: "id" } },
-              ],
-            },
-          },
-        ],
-      },
-    },
-  ],
-} as unknown as DocumentNode<
-  DeleteProjectFromProjectRouteMutation,
-  DeleteProjectFromProjectRouteMutationVariables
+  GetServiceFromServiceLayoutQuery,
+  GetServiceFromServiceLayoutQueryVariables
 >;
 export const GetProjectsFromProjectsRouteDocument = {
   kind: "Document",

@@ -16,6 +16,7 @@
     "environment": "环境变量",
     "network": "网络",
     "volumes": "存储卷",
+    "deployments": "部署",
     "terminal": "终端",
     "logs": "日志",
     "metrics": "指标",
@@ -39,6 +40,60 @@
   "network": {
     "description": "配置暴露端口和健康检查。",
     "ports": "端口"
+  },
+  "deployments": {
+    "description": "查看服务发布版本、当前流量版本和底层 Kubernetes Deployment。",
+    "loading": "正在加载部署版本",
+    "error": "部署版本加载失败",
+    "summary": "共 {{count}} 个部署版本",
+    "active": "当前",
+    "latest": "最新",
+    "version": "v{{version}}",
+    "configuration": "配置详情",
+    "not_configured": "未配置",
+    "sections": {
+      "runtime": "运行",
+      "network": "网络",
+      "resources": "资源",
+      "environment": "环境"
+    },
+    "fields": {
+      "status": "状态",
+      "replicas": "副本数",
+      "created_at": "创建时间",
+      "kubernetes_deployment": "Kubernetes Deployment",
+      "image": "镜像",
+      "command": "启动命令",
+      "args": "参数",
+      "service_account": "服务账号",
+      "ports": "端口",
+      "cpu_request": "CPU 请求",
+      "cpu_limit": "CPU 限制",
+      "memory_request": "内存请求",
+      "memory_limit": "内存限制",
+      "env": "环境变量",
+      "env_from": "环境来源"
+    },
+    "empty": {
+      "title": "暂无部署版本",
+      "description": "服务发布后会在这里显示部署历史。"
+    }
+  },
+  "deployment": {
+    "tabs": {
+      "overview": "概览",
+      "configuration": "配置"
+    },
+    "overview": {
+      "description": "查看这个部署版本的状态、流量标记和底层资源。",
+      "metadata": "元数据"
+    },
+    "configuration": {
+      "description": "查看这个部署版本发布时的运行配置快照。"
+    },
+    "fields": {
+      "updated_at": "更新时间"
+    }
   },
   "terminal": {
     "description": "进入服务 Pod 的交互式终端。",

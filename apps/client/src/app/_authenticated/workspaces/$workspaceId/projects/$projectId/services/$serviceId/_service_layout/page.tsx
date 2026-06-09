@@ -1,12 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { t } from "i18next";
 
-import { StatusBadge } from "../../../components/status-badge";
+import { StatusBadge } from "../../../../components/status-badge";
 import { Page } from "@/components/fabric-ui/page";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const Route = createFileRoute(
-  "/_authenticated/workspaces/$workspaceId/projects/$projectId/services/$serviceId/",
+  "/_authenticated/workspaces/$workspaceId/projects/$projectId/services/$serviceId/_service_layout/",
 )({
   component: ServiceOverviewComponent,
 });

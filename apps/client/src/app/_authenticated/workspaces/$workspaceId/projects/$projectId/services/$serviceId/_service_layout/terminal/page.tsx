@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/card";
 
 export const Route = createFileRoute(
-  "/_authenticated/workspaces/$workspaceId/projects/$projectId/services/$serviceId/terminal/",
+  "/_authenticated/workspaces/$workspaceId/projects/$projectId/services/$serviceId/_service_layout/terminal/",
 )({
   component: ServiceTerminalComponent,
   beforeLoad: () => ({ title: null }),

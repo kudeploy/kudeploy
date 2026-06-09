@@ -17,9 +17,8 @@ import {
   ServiceForm,
   initialServiceFormValue,
   toServiceInput,
-} from "../../components/service-form";
-import { ProjectTabs } from "../../components/project-tabs";
-import { StatusBadge } from "../../components/status-badge";
+} from "../../../components/service-form";
+import { StatusBadge } from "../../../components/status-badge";
 import type { DataFilterItemProps as FilterItemProps } from "@/components/fabric-ui/data-filter";
 import type { GetServicesFromServicesRouteQuery } from "@/gql/graphql";
 import { alertDialog } from "@/components/fabric-ui/alert-dialog";
@@ -144,7 +143,7 @@ const DELETE_SERVICE_FROM_SERVICES_ROUTE = graphql(`
 `);
 
 export const Route = createFileRoute(
-  "/_authenticated/workspaces/$workspaceId/projects/$projectId/services/",
+  "/_authenticated/workspaces/$workspaceId/projects/$projectId/_project_layout/services/",
 )({
   component: ServicesComponent,
   beforeLoad: () => {
@@ -309,7 +308,6 @@ function ServicesComponent() {
 
   return (
     <>
-      <ProjectTabs workspaceId={workspaceId} projectId={projectId} />
       <Page
         title={t("service:title")}
         description={t("service:description")}

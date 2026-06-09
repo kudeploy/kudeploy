@@ -16,6 +16,7 @@
     "environment": "Environment",
     "network": "Network",
     "volumes": "Volumes",
+    "deployments": "Deployments",
     "terminal": "Terminal",
     "logs": "Logs",
     "metrics": "Metrics",
@@ -39,6 +40,60 @@
   "network": {
     "description": "Configure exposed ports and health checks.",
     "ports": "Ports"
+  },
+  "deployments": {
+    "description": "Review service releases, the active traffic version, and the backing Kubernetes Deployment.",
+    "loading": "Loading deployments",
+    "error": "Deployments failed to load",
+    "summary": "{{count}} deployments",
+    "active": "Current",
+    "latest": "Latest",
+    "version": "v{{version}}",
+    "configuration": "Configuration",
+    "not_configured": "Not configured",
+    "sections": {
+      "runtime": "Runtime",
+      "network": "Network",
+      "resources": "Resources",
+      "environment": "Environment"
+    },
+    "fields": {
+      "status": "Status",
+      "replicas": "Replicas",
+      "created_at": "Created",
+      "kubernetes_deployment": "Kubernetes Deployment",
+      "image": "Image",
+      "command": "Command",
+      "args": "Arguments",
+      "service_account": "Service account",
+      "ports": "Ports",
+      "cpu_request": "CPU request",
+      "cpu_limit": "CPU limit",
+      "memory_request": "Memory request",
+      "memory_limit": "Memory limit",
+      "env": "Environment variables",
+      "env_from": "Environment sources"
+    },
+    "empty": {
+      "title": "No deployments yet",
+      "description": "Deployment history will appear here after the service is released."
+    }
+  },
+  "deployment": {
+    "tabs": {
+      "overview": "Overview",
+      "configuration": "Configuration"
+    },
+    "overview": {
+      "description": "Review this deployment version's status, traffic markers, and backing resources.",
+      "metadata": "Metadata"
+    },
+    "configuration": {
+      "description": "Review the runtime configuration snapshot used by this deployment version."
+    },
+    "fields": {
+      "updated_at": "Updated"
+    }
   },
   "terminal": {
     "description": "Open an interactive shell inside the service pod.",

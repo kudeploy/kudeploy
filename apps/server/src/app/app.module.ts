@@ -5,6 +5,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { ApiKeyModule } from '@/app/api-key/api-key.module';
 import { AuthGuard } from '@/app/auth/auth.guard';
 import { AuthModule } from '@/app/auth/auth.module';
+import { DeploymentModule } from '@/app/deployment';
 import { DomainModule } from '@/app/domain/domain.module';
 import { ProjectModule } from '@/app/project/project.module';
 import { ServiceModule } from '@/app/service/service.module';
@@ -30,6 +31,7 @@ import { CommonModule } from '@/common/common.module';
     DomainModule,
     ProjectModule,
     ServiceModule,
+    DeploymentModule,
     ServiceTerminalModule,
   ],
   providers: [

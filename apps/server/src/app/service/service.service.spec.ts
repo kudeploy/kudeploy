@@ -278,6 +278,22 @@ describe('ServiceService', () => {
     ).toBe(ServiceStatus.FAILED);
     expect(service.toService(serviceCrd()).status).toBe(ServiceStatus.PENDING);
   });
+
+  it('keeps deployment status names for internal service consumers', () => {
+    const { service } = createService();
+
+    expect(
+      service.toService(
+        serviceCrd({
+          activeDeploymentName: 'service-123-00002',
+          latestDeploymentName: 'service-123-00003',
+        }),
+      ),
+    ).toMatchObject({
+      activeDeploymentName: 'service-123-00002',
+      latestDeploymentName: 'service-123-00003',
+    });
+  });
 });
 
 function createService() {
@@ -309,6 +325,8 @@ function serviceCrd(
     workspaceId?: string;
     displayName?: string;
     image?: string;
+    activeDeploymentName?: string;
+    latestDeploymentName?: string;
     readyStatus?: 'True' | 'False' | 'Unknown';
     readyReason?: string;
   } = {},
@@ -319,6 +337,8 @@ function serviceCrd(
     workspaceId = 'workspace_1',
     displayName = 'API',
     image = 'nginx:latest',
+    activeDeploymentName,
+    latestDeploymentName,
     readyStatus,
     readyReason = 'DeploymentReady',
   } = options;
@@ -363,17 +383,24 @@ function serviceCrd(
       ports: [{ port: 80, targetPort: 8080 }],
       env: [{ name: 'NODE_ENV', value: 'production' }],
     },
-    status: readyStatus
-      ? {
-          conditions: [
-            {
-              type: 'Ready',
-              status: readyStatus,
-              reason: readyReason,
-              message: readyReason,
-            },
-          ],
-        }
-      : {},
+    status:
+      readyStatus || activeDeploymentName || latestDeploymentName
+        ? {
+            ...(activeDeploymentName ? { activeDeploymentName } : {}),
+            ...(latestDeploymentName ? { latestDeploymentName } : {}),
+            conditions: [
+              ...(readyStatus
+                ? [
+                    {
+                      type: 'Ready',
+                      status: readyStatus,
+                      reason: readyReason,
+                      message: readyReason,
+                    },
+                  ]
+                : []),
+            ],
+          }
+        : {},
   };
 }

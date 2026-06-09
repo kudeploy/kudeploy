@@ -49,6 +49,43 @@ type MockService = {
   }>;
 };
 
+type MockDeployment = {
+  id: string;
+  projectId: string;
+  serviceId: string;
+  version: number;
+  image: string;
+  replicas: number | null;
+  ports: Array<{
+    port: number;
+    targetPort: number | null;
+  }>;
+  env: Array<{
+    name: string;
+    value: string | null;
+  }>;
+  envFrom: Array<{
+    kind: "ConfigMap" | "Secret";
+    name: string;
+    prefix: string | null;
+  }>;
+  command: string[];
+  args: string[];
+  resources: {
+    cpuRequest: string | null;
+    cpuLimit: string | null;
+    memoryRequest: string | null;
+    memoryLimit: string | null;
+  } | null;
+  serviceAccountName: string | null;
+  status: "PENDING" | "PROGRESSING" | "READY" | "FAILED" | "UNKNOWN";
+  active: boolean;
+  latest: boolean;
+  kubernetesDeploymentName: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
 const now = "2026-06-06T00:00:00.000Z";
 
 test.describe("workspace Projects and Services", () => {
@@ -91,8 +128,7 @@ test.describe("workspace Projects and Services", () => {
     );
 
     const breadcrumb = page.getByLabel("面包屑导航");
-    await expect(breadcrumb).toContainText("项目");
-    await expect(breadcrumb).toContainText("Payments");
+    await expect(breadcrumb).toContainText(/项目.*Payments/);
     await expect(breadcrumb).not.toContainText("服务");
 
     await page.getByTestId("project-settings-tab").click();
@@ -121,6 +157,12 @@ test.describe("workspace Projects and Services", () => {
     await page
       .getByTestId("service-image-input")
       .fill("ghcr.io/kudeploy/api:latest");
+    await page.getByTestId("service-command-input").fill("node");
+    await page.getByTestId("service-args-input").fill("server.js");
+    await page.getByPlaceholder("250m").fill("250m");
+    await page.getByPlaceholder("500m").fill("500m");
+    await page.getByPlaceholder("256Mi").fill("256Mi");
+    await page.getByPlaceholder("512Mi").fill("512Mi");
     await page.getByTestId("service-create-submit").click();
 
     await expect(page).toHaveURL(
@@ -138,8 +180,10 @@ test.describe("workspace Projects and Services", () => {
     await expect(page.getByTestId("service-source-tab")).toBeVisible();
     await expect(page.getByTestId("service-environment-tab")).toBeVisible();
     await expect(page.getByTestId("service-network-tab")).toBeVisible();
+    await expect(page.getByTestId("service-deployments-tab")).toBeVisible();
     await expect(page.getByTestId("service-settings-tab")).toBeVisible();
     await expect(page.getByTestId("service-status")).toContainText("就绪");
+    await expect(breadcrumb).toContainText(/项目.*Payments.*服务.*API/);
 
     await page.getByTestId("service-source-tab").click();
     await expect(page).toHaveURL(
@@ -163,6 +207,8 @@ test.describe("workspace Projects and Services", () => {
       ),
     );
     await expect(page.getByTestId("service-environment-page")).toBeVisible();
+    await expect(breadcrumb).toContainText(/项目.*Payments.*服务.*API/);
+    await expect(breadcrumb).not.toContainText("环境变量");
 
     await page.getByTestId("service-network-tab").click();
     await expect(page).toHaveURL(
@@ -171,6 +217,91 @@ test.describe("workspace Projects and Services", () => {
       ),
     );
     await expect(page.getByTestId("service-network-page")).toBeVisible();
+
+    await page.getByTestId("service-deployments-tab").click();
+    await expect(page).toHaveURL(
+      new RegExp(
+        `/workspaces/${workspaceId}/projects/project-e2e/services/service-e2e/deployments$`,
+      ),
+    );
+    await expect(page.getByTestId("service-deployments-page")).toBeVisible();
+    await expect(
+      page.getByTestId("service-deployment-row-deployment-v2"),
+    ).toContainText("v2");
+    await expect(
+      page.getByTestId("service-deployment-row-deployment-v2"),
+    ).toContainText("ghcr.io/kudeploy/api:v2");
+    await expect(
+      page.getByTestId("service-deployment-row-deployment-v2"),
+    ).toContainText("当前");
+    await expect(
+      page.getByTestId("service-deployment-row-deployment-v2"),
+    ).toContainText("最新");
+    await expect(
+      page.getByTestId("service-deployment-active-deployment-v2"),
+    ).toBeVisible();
+    await expect(
+      page.getByTestId("service-deployment-latest-deployment-v2"),
+    ).toBeVisible();
+    await expect(
+      page.getByTestId("service-deployments-page"),
+    ).not.toContainText("配置详情");
+    await expect(
+      page.getByTestId("service-deployment-row-deployment-v1"),
+    ).toContainText("ghcr.io/kudeploy/api:latest");
+
+    await page.getByTestId("service-deployment-row-deployment-v2").click();
+    await expect(page).toHaveURL(
+      new RegExp(
+        `/workspaces/${workspaceId}/projects/project-e2e/services/service-e2e/deployments/deployment-v2$`,
+      ),
+    );
+    await expect(page.getByTestId("deployment-detail-page")).toBeVisible();
+    await expect(page.getByTestId("service-overview-tab")).not.toBeVisible();
+    await expect(page.getByTestId("service-deployments-tab")).not.toBeVisible();
+    await expect(breadcrumb).toContainText(
+      /项目.*Payments.*服务.*API.*部署.*v2/,
+    );
+    await expect(page.getByTestId("deployment-overview-tab")).toHaveAttribute(
+      "data-active",
+      "true",
+    );
+    await expect(page.getByTestId("deployment-configuration-tab")).toHaveCount(
+      0,
+    );
+    await expect(page.getByTestId("deployment-active-badge")).toBeVisible();
+    await expect(page.getByTestId("deployment-latest-badge")).toBeVisible();
+    await expect(
+      page.getByTestId("deployment-configuration-section"),
+    ).toContainText("配置详情");
+    await expect(
+      page.getByTestId("deployment-configuration-section"),
+    ).toContainText("node");
+    await expect(
+      page.getByTestId("deployment-configuration-section"),
+    ).toContainText("server.js");
+    await expect(
+      page.getByTestId("deployment-configuration-section"),
+    ).toContainText("80");
+    await expect(
+      page.getByTestId("deployment-configuration-section"),
+    ).toContainText("service-service-e2e");
+    await expect(
+      page.getByTestId("deployment-configuration-section"),
+    ).toContainText("250m");
+    await expect(
+      page.getByTestId("deployment-configuration-section"),
+    ).toContainText("512Mi");
+
+    await page.goto(
+      `/workspaces/${workspaceId}/projects/project-e2e/services/service-e2e/deployments`,
+    );
+    await expect(page).toHaveURL(
+      new RegExp(
+        `/workspaces/${workspaceId}/projects/project-e2e/services/service-e2e/deployments$`,
+      ),
+    );
+    await expect(page.getByTestId("service-deployments-tab")).toBeVisible();
 
     await page.getByTestId("service-terminal-tab").click();
     await expect(page).toHaveURL(
@@ -248,6 +379,7 @@ test.describe("workspace Projects and Services", () => {
 async function mockProjectsAndServicesGraphql(page: Page) {
   const projects: MockProject[] = [];
   const services: MockService[] = [];
+  const deployments: MockDeployment[] = [];
 
   await page.route("**/api/graphql", async (route) => {
     const request = route.request();
@@ -348,6 +480,7 @@ async function mockProjectsAndServicesGraphql(page: Page) {
           env: input.env ?? [],
         };
         services.push(service);
+        deployments.push(createDeploymentSnapshot(service, 1, "deployment-v1"));
         await fulfill(route, {
           createService: service,
         });
@@ -361,6 +494,29 @@ async function mockProjectsAndServicesGraphql(page: Page) {
               (service) =>
                 service.projectId === variables.projectId &&
                 service.id === variables.id,
+            ) ?? null,
+        });
+        return;
+      }
+      case "getServiceDeploymentsFromServiceDeploymentsRoute": {
+        await fulfill(route, {
+          deployments: connection(
+            deployments.filter(
+              (deployment) =>
+                deployment.projectId === variables.projectId &&
+                deployment.serviceId === variables.serviceId,
+            ),
+          ),
+        });
+        return;
+      }
+      case "getDeploymentFromDeploymentLayout": {
+        await fulfill(route, {
+          deployment:
+            deployments.find(
+              (deployment) =>
+                deployment.projectId === variables.projectId &&
+                deployment.id === variables.id,
             ) ?? null,
         });
         return;
@@ -463,6 +619,18 @@ async function mockProjectsAndServicesGraphql(page: Page) {
           }
           if ("env" in input) service.env = input.env ?? [];
           service.updatedAt = now;
+
+          if ("image" in input) {
+            deployments.forEach((deployment) => {
+              if (deployment.serviceId === service.id) {
+                deployment.active = false;
+                deployment.latest = false;
+              }
+            });
+            deployments.unshift(
+              createDeploymentSnapshot(service, 2, "deployment-v2"),
+            );
+          }
         }
         await fulfill(route, {
           updateService: service,
@@ -473,6 +641,37 @@ async function mockProjectsAndServicesGraphql(page: Page) {
         await route.continue();
     }
   });
+}
+
+function createDeploymentSnapshot(
+  service: MockService,
+  version: number,
+  id: string,
+): MockDeployment {
+  return {
+    id,
+    projectId: service.projectId,
+    serviceId: service.id,
+    version,
+    image: service.image,
+    replicas: service.replicas,
+    ports: service.ports,
+    env: service.env.map((env) => ({
+      name: env.key,
+      value: env.value,
+    })),
+    envFrom: [],
+    command: service.command,
+    args: service.args,
+    resources: service.resources,
+    serviceAccountName: `service-${service.id}`,
+    status: "READY",
+    active: true,
+    latest: true,
+    kubernetesDeploymentName: id,
+    createdAt: now,
+    updatedAt: now,
+  };
 }
 
 function connection<T extends { id: string }>(nodes: T[]) {
@@ -487,6 +686,7 @@ function connection<T extends { id: string }>(nodes: T[]) {
       hasPreviousPage: false,
       startCursor: nodes[0]?.id ?? null,
     },
+    totalCount: nodes.length,
   };
 }
 

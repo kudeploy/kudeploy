@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { t } from "i18next";
 
-import { ServicePlaceholderPage } from "../components/service-placeholder-page";
+import { ServicePlaceholderPage } from "../../components/service-placeholder-page";
 
 export const Route = createFileRoute(
-  "/_authenticated/workspaces/$workspaceId/projects/$projectId/services/$serviceId/volumes/",
+  "/_authenticated/workspaces/$workspaceId/projects/$projectId/services/$serviceId/_service_layout/volumes/",
 )({
   component: ServiceVolumesComponent,
   beforeLoad: () => ({ title: null }),

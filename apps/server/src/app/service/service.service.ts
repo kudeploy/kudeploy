@@ -62,7 +62,9 @@ export interface ServiceResource {
     startupProbe?: ServiceResourceProbe;
   };
   status?: {
+    activeDeploymentName?: string;
     conditions?: KudeployCondition[];
+    latestDeploymentName?: string;
   };
 }
 
@@ -314,6 +316,8 @@ export class ServiceService {
       resources: this.toServiceResources(resource.spec.resources),
       healthCheck: this.toServiceHealthCheck(resource.spec.readinessProbe),
       status: this.toServiceStatus(resource),
+      activeDeploymentName: resource.status?.activeDeploymentName ?? null,
+      latestDeploymentName: resource.status?.latestDeploymentName ?? null,
       createdAt: creationTime,
       updatedAt: creationTime,
     };

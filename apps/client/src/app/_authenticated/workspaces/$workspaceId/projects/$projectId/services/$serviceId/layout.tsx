@@ -1,15 +1,12 @@
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import { useApolloClient } from "@apollo/client/react";
 import {
   Outlet,
   createFileRoute,
-  linkOptions,
   redirect,
   useRouter,
 } from "@tanstack/react-router";
-import { t } from "i18next";
 
-import { NavTabs } from "@/components/nav-tabs";
 import { graphql } from "@/gql";
 
 const GET_SERVICE_FROM_SERVICE_LAYOUT = graphql(`
@@ -82,7 +79,7 @@ export const Route = createFileRoute(
 function ServiceLayout() {
   const router = useRouter();
   const apolloClient = useApolloClient();
-  const { workspaceId, projectId, serviceId } = Route.useParams();
+  const { projectId } = Route.useParams();
   const service = Route.useRouteContext({
     select: (context) => context.service,
   });
@@ -108,89 +105,5 @@ function ServiceLayout() {
     return () => subscription.unsubscribe();
   }, [apolloClient, projectId, router, service]);
 
-  const tabs = useMemo(
-    () => [
-      {
-        title: t("service:tabs.overview"),
-        testId: "service-overview-tab",
-        link: linkOptions({
-          to: "/workspaces/$workspaceId/projects/$projectId/services/$serviceId",
-          params: { workspaceId, projectId, serviceId },
-          activeOptions: { exact: true },
-        }),
-      },
-      {
-        title: t("service:tabs.source"),
-        testId: "service-source-tab",
-        link: linkOptions({
-          to: "/workspaces/$workspaceId/projects/$projectId/services/$serviceId/source",
-          params: { workspaceId, projectId, serviceId },
-        }),
-      },
-      {
-        title: t("service:tabs.environment"),
-        testId: "service-environment-tab",
-        link: linkOptions({
-          to: "/workspaces/$workspaceId/projects/$projectId/services/$serviceId/environment",
-          params: { workspaceId, projectId, serviceId },
-        }),
-      },
-      {
-        title: t("service:tabs.network"),
-        testId: "service-network-tab",
-        link: linkOptions({
-          to: "/workspaces/$workspaceId/projects/$projectId/services/$serviceId/network",
-          params: { workspaceId, projectId, serviceId },
-        }),
-      },
-      {
-        title: t("service:tabs.volumes"),
-        testId: "service-volumes-tab",
-        link: linkOptions({
-          to: "/workspaces/$workspaceId/projects/$projectId/services/$serviceId/volumes",
-          params: { workspaceId, projectId, serviceId },
-        }),
-      },
-      {
-        title: t("service:tabs.terminal"),
-        testId: "service-terminal-tab",
-        link: linkOptions({
-          to: "/workspaces/$workspaceId/projects/$projectId/services/$serviceId/terminal",
-          params: { workspaceId, projectId, serviceId },
-        }),
-      },
-      {
-        title: t("service:tabs.logs"),
-        testId: "service-logs-tab",
-        link: linkOptions({
-          to: "/workspaces/$workspaceId/projects/$projectId/services/$serviceId/logs",
-          params: { workspaceId, projectId, serviceId },
-        }),
-      },
-      {
-        title: t("service:tabs.metrics"),
-        testId: "service-metrics-tab",
-        link: linkOptions({
-          to: "/workspaces/$workspaceId/projects/$projectId/services/$serviceId/metrics",
-          params: { workspaceId, projectId, serviceId },
-        }),
-      },
-      {
-        title: t("service:tabs.settings"),
-        testId: "service-settings-tab",
-        link: linkOptions({
-          to: "/workspaces/$workspaceId/projects/$projectId/services/$serviceId/settings",
-          params: { workspaceId, projectId, serviceId },
-        }),
-      },
-    ],
-    [projectId, serviceId, workspaceId],
-  );
-
-  return (
-    <>
-      <NavTabs tabs={tabs} />
-      <Outlet />
-    </>
-  );
+  return <Outlet />;
 }

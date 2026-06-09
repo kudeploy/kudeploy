@@ -59,7 +59,7 @@ const DELETE_SERVICE_FROM_SERVICE_SETTINGS_ROUTE = graphql(`
 `);
 
 export const Route = createFileRoute(
-  "/_authenticated/workspaces/$workspaceId/projects/$projectId/services/$serviceId/settings/",
+  "/_authenticated/workspaces/$workspaceId/projects/$projectId/services/$serviceId/_service_layout/settings/",
 )({
   component: ServiceSettingsComponent,
   beforeLoad: () => ({ title: null }),

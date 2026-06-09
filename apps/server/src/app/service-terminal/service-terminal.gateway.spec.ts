@@ -88,6 +88,56 @@ describe('ServiceTerminalGateway', () => {
     expect(execSocket.close).toHaveBeenCalledTimes(1);
   });
 
+  it('prefers the active deployment pod when older deployment pods are still running', async () => {
+    const workspace = { id: 'workspace_1' } as Workspace;
+    const { gateway, coreV1Api, exec, serviceService } = createGateway();
+    const socket = createSocket(await createWsContext(workspace));
+
+    serviceService.findService.mockResolvedValue({
+      activeDeploymentName: 'deployment-2',
+      id: 'service-1',
+      projectId: 'project-1',
+    } as never);
+    coreV1Api.listNamespacedPod.mockResolvedValue({
+      items: [
+        {
+          metadata: {
+            labels: { 'kudeploy.com/deployment': 'deployment-1' },
+            name: 'old-pod',
+          },
+          spec: { containers: [{ name: 'app' }] },
+          status: { phase: 'Running' },
+        },
+        {
+          metadata: {
+            labels: { 'kudeploy.com/deployment': 'deployment-2' },
+            name: 'active-pod',
+          },
+          spec: { containers: [{ name: 'app' }] },
+          status: { phase: 'Running' },
+        },
+      ],
+    });
+    exec.exec.mockResolvedValue({ close: jest.fn() } as never);
+
+    await gateway.handleStart(socket, {
+      projectId: 'project-1',
+      serviceId: 'service-1',
+    });
+
+    expect(exec.exec).toHaveBeenCalledWith(
+      'project-1',
+      'active-pod',
+      'app',
+      ['/bin/sh'],
+      expect.any(Object),
+      expect.any(Object),
+      expect.any(PassThrough),
+      true,
+      expect.any(Function),
+    );
+  });
+
   it('emits an error when the selected service has no pods', async () => {
     const workspace = { id: 'workspace_1' } as Workspace;
     const { gateway, coreV1Api, exec, serviceService } = createGateway();
