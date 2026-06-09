@@ -1,7 +1,9 @@
-import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { createHash } from 'node:crypto';
 
+import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+
+import { ServiceLog } from './kubernetes-logs.object';
 import {
   LOG_FIELD_CONTAINER,
   LOG_FIELD_DEPLOYMENT,
@@ -9,18 +11,19 @@ import {
   LOG_FIELD_MESSAGE,
   LOG_FIELD_NAMESPACE,
   LOG_FIELD_POD,
+  LOG_FIELD_STREAM,
   LOG_FIELD_STREAM_ID,
   LOG_FIELD_TIME,
 } from './logsql';
-import { ServiceLog } from './kubernetes-logs.object';
 import {
   compareServiceLogsAsc,
   compareServiceLogsDesc,
+  rawTimeToEpochNanoseconds,
 } from './service-log-order';
 
 interface QueryOptions {
-  start?: Date;
-  end?: Date;
+  start?: Date | string;
+  end?: Date | string;
   limit: number;
   order: 'asc' | 'desc';
 }
@@ -35,10 +38,7 @@ export class VictoriaLogsClient {
     return Boolean(this.victoriaLogsUrl());
   }
 
-  async query(
-    query: string,
-    options: QueryOptions,
-  ): Promise<ServiceLog[]> {
+  async query(query: string, options: QueryOptions): Promise<ServiceLog[]> {
     const response = await fetch(this.buildUrl('/select/logsql/query'), {
       method: 'POST',
       headers: {
@@ -61,10 +61,10 @@ export class VictoriaLogsClient {
 
     body.set('query', query);
     if (options.start) {
-      body.set('start', options.start.toISOString());
+      body.set('start', formatTimeBound(options.start));
     }
     if (options.end) {
-      body.set('end', options.end.toISOString());
+      body.set('end', formatTimeBound(options.end));
     }
     body.set('limit', String(options.limit));
 
@@ -138,6 +138,7 @@ function toServiceLogEntry(entry: RawLogEntry | null): ServiceLog | null {
   }
 
   const streamId = stringField(entry, LOG_FIELD_STREAM_ID);
+  const stream = stringField(entry, LOG_FIELD_STREAM);
   const level = normalizeLogLevel(stringField(entry, LOG_FIELD_LEVEL));
   const namespace = stringField(entry, LOG_FIELD_NAMESPACE);
   const podName = stringField(entry, LOG_FIELD_POD);
@@ -148,46 +149,43 @@ function toServiceLogEntry(entry: RawLogEntry | null): ServiceLog | null {
     containerName,
     deploymentName,
     id: createServiceLogId({
-      containerName,
-      deploymentName,
       message,
-      namespace,
-      podName,
       rawTime,
-      streamId,
+      stream,
+      timestamp,
     }),
     level,
     message,
     namespace,
     podName,
     rawTime,
+    stream,
     streamId,
     timestamp,
   };
 }
 
 function createServiceLogId(input: {
-  containerName: string | null;
-  deploymentName: string | null;
   message: string;
-  namespace: string | null;
-  podName: string | null;
   rawTime: string;
-  streamId: string | null;
+  stream: string | null;
+  timestamp: Date;
 }): string {
-  return createHash('sha256')
-    .update(
-      [
-        input.rawTime,
-        input.streamId ?? '',
-        input.namespace ?? '',
-        input.podName ?? '',
-        input.containerName ?? '',
-        input.deploymentName ?? '',
-        input.message,
-      ].join('\0'),
-    )
+  const epochNanoseconds =
+    rawTimeToEpochNanoseconds(input.rawTime) ??
+    BigInt(input.timestamp.getTime()) * 1_000_000n;
+
+  return createHash('md5')
+    .update(epochNanoseconds.toString())
+    .update('\0')
+    .update(input.message)
+    .update('\0')
+    .update(input.stream ?? '')
     .digest('hex');
+}
+
+function formatTimeBound(value: Date | string): string {
+  return typeof value === 'string' ? value : value.toISOString();
 }
 
 function stringField(entry: RawLogEntry, field: string): string | null {

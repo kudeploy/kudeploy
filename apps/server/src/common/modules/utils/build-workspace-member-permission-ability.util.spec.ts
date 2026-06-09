@@ -2,9 +2,9 @@ jest.mock('@nest-boot/auth', () => ({
   BaseUser: class BaseUser {},
 }));
 
+import { subject } from '@casl/ability';
 import { PermissionAction } from '@nest-boot/permission';
 import { RequestContext } from '@nest-boot/request-context';
-import { subject } from '@casl/ability';
 
 import { ApiKey } from '@/app/api-key/api-key.entity';
 import { Domain } from '@/app/domain/domain.entity';

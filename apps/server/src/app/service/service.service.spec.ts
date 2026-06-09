@@ -7,13 +7,13 @@ jest.mock('@kubernetes/client-node', () => ({
 
 import type { CustomObjectsApi } from '@kubernetes/client-node';
 
+import { ProjectService } from '@/app/project/project.service';
 import { Workspace } from '@/app/workspace/workspace.entity';
 import { KubernetesConnectionManager } from '@/lib/kubernetes-graphql-connection/kubernetes-connection.manager';
-import { ProjectService } from '@/app/project/project.service';
 
 import { ServiceConnection } from './service.connection-definition';
-import { ServiceStatus } from './service-status.enum';
 import { ServiceResource, ServiceService } from './service.service';
+import { ServiceStatus } from './service-status.enum';
 
 describe('ServiceService', () => {
   it('creates a namespaced Service CRD with workspace/project labels and supported spec fields', async () => {
@@ -23,7 +23,7 @@ describe('ServiceService', () => {
     projectService.findProject.mockResolvedValue({
       id: 'project-123',
       name: 'Payments',
-    } as never);
+    });
     customObjectsApi.patchNamespacedCustomObject.mockResolvedValue(
       serviceCrd({
         name: 'service-123',
@@ -167,7 +167,7 @@ describe('ServiceService', () => {
     projectService.findProject.mockResolvedValue({
       id: 'project-123',
       name: 'Payments',
-    } as never);
+    });
     customObjectsApi.patchNamespacedCustomObject.mockResolvedValue(
       serviceCrd({
         name: 'service-123',
@@ -182,7 +182,7 @@ describe('ServiceService', () => {
       projectId: 'project-123',
       name: 'API',
       image: 'nginx:latest',
-      replicas: null as never,
+      replicas: null,
       ports: [{ port: 80 }],
     });
 
@@ -205,7 +205,7 @@ describe('ServiceService', () => {
     projectService.findProject.mockResolvedValue({
       id: 'project-123',
       name: 'Payments',
-    } as never);
+    });
     customObjectsApi.getNamespacedCustomObject.mockResolvedValue(
       serviceCrd({ replicas: 3 }),
     );
@@ -214,7 +214,7 @@ describe('ServiceService', () => {
     );
 
     await service.updateService(workspace, 'project-123', 'service-123', {
-      replicas: null as never,
+      replicas: null,
     });
 
     expect(customObjectsApi.patchNamespacedCustomObject).toHaveBeenCalledWith(
@@ -249,7 +249,7 @@ describe('ServiceService', () => {
     projectService.findProject.mockResolvedValue({
       id: 'project-123',
       name: 'Payments',
-    } as never);
+    });
     customObjectsApi.listNamespacedCustomObject.mockResolvedValue({
       items: [visibleService, hiddenService],
     });

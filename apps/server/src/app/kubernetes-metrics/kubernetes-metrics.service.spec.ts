@@ -197,12 +197,12 @@ function createService() {
 function pod(
   options: {
     name?: string;
-    containers?: Array<{
+    containers?: {
       limits?: {
         cpu?: string;
         memory?: string;
       };
-    }>;
+    }[];
   } = {},
 ): V1Pod {
   return {
@@ -217,5 +217,5 @@ function pod(
         },
       })),
     },
-  } as V1Pod;
+  };
 }

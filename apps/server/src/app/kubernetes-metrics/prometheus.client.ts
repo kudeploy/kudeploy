@@ -16,9 +16,9 @@ interface PrometheusQueryRangeResponse {
   status: 'success' | 'error';
   data?: {
     resultType: 'matrix';
-    result: Array<{
-      values?: Array<[number, string]>;
-    }>;
+    result: {
+      values?: [number, string][];
+    }[];
   };
   error?: string;
 }

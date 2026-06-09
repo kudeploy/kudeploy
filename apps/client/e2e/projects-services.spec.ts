@@ -1,13 +1,13 @@
 import { expect, test } from "@playwright/test";
+
+import { registerUser } from "./utils/auth";
+import { uniqueSeed } from "./utils/unique";
+import { createFirstWorkspace } from "./utils/workspace";
 import type {
   Page,
   Route as PlaywrightRoute,
   WebSocketRoute,
 } from "@playwright/test";
-
-import { registerUser } from "./utils/auth";
-import { uniqueSeed } from "./utils/unique";
-import { createFirstWorkspace } from "./utils/workspace";
 
 type MockProject = {
   id: string;
@@ -23,8 +23,8 @@ type MockService = {
   name: string;
   image: string;
   replicas: number | null;
-  command: string[];
-  args: string[];
+  command: Array<string>;
+  args: Array<string>;
   resources: {
     cpuRequest: string | null;
     cpuLimit: string | null;
@@ -69,8 +69,8 @@ type MockDeployment = {
     name: string;
     prefix: string | null;
   }>;
-  command: string[];
-  args: string[];
+  command: Array<string>;
+  args: Array<string>;
   resources: {
     cpuRequest: string | null;
     cpuLimit: string | null;
@@ -388,9 +388,7 @@ test.describe("workspace Projects and Services", () => {
       )
       .toContain("API log 80");
     const timeHeader = logsTable.getByRole("columnheader", { name: "时间" });
-    await expect(
-      timeHeader,
-    ).toBeVisible();
+    await expect(timeHeader).toBeVisible();
     await expect(
       logsTable.getByRole("columnheader", { name: "部署" }),
     ).toBeVisible();
@@ -404,9 +402,7 @@ test.describe("workspace Projects and Services", () => {
     const deploymentCell = page.getByText("00003");
     await expect(deploymentCell).toBeVisible();
     await deploymentCell.hover();
-    await expect(
-      page.locator('[data-slot="tooltip-content"]'),
-    ).toHaveCount(0);
+    await expect(page.locator('[data-slot="tooltip-content"]')).toHaveCount(0);
     await expect(page.getByTestId("service-logs-page")).not.toContainText(
       "service-e2e-00003",
     );
@@ -448,12 +444,10 @@ test.describe("workspace Projects and Services", () => {
     await expect(page.getByTestId("service-logs-page")).toContainText("消息");
     await expect(page.getByLabel("日志条数")).toHaveCount(0);
     await expect(page.getByLabel("时间范围")).toHaveCount(0);
-    await expect(
-      page.getByTestId("service-logs-top-pull-zone"),
-    ).toHaveCount(0);
-    await expect(
-      page.getByTestId("service-logs-bottom-pull-zone"),
-    ).toHaveCount(0);
+    await expect(page.getByTestId("service-logs-top-pull-zone")).toHaveCount(0);
+    await expect(page.getByTestId("service-logs-bottom-pull-zone")).toHaveCount(
+      0,
+    );
     const elasticContent = page.getByTestId("service-logs-elastic-content");
     const latestLogRequestCount = () =>
       graphqlMock.serviceLogRequests.filter(
@@ -558,9 +552,9 @@ test.describe("workspace Projects and Services", () => {
 });
 
 async function mockProjectsAndServicesGraphql(page: Page) {
-  const projects: MockProject[] = [];
-  const services: MockService[] = [];
-  const deployments: MockDeployment[] = [];
+  const projects: Array<MockProject> = [];
+  const services: Array<MockService> = [];
+  const deployments: Array<MockDeployment> = [];
   const serviceLogRequests: Array<Record<string, any>> = [];
 
   await page.route("**/api/graphql", async (route) => {
@@ -708,13 +702,10 @@ async function mockProjectsAndServicesGraphql(page: Page) {
               message: index === 0 ? "API booted" : `API log ${index + 1}`,
               level: index === 79 ? "ERROR" : "INFO",
               namespace: variables.projectId,
-              podName:
-                "api-75d4db5d87-lkxgh-with-a-very-long-generated-name",
+              podName: "api-75d4db5d87-lkxgh-with-a-very-long-generated-name",
               containerName: "api",
               deploymentName:
-                index === 79
-                  ? `${variables.id}-00003`
-                  : "deployment-v1",
+                index === 79 ? `${variables.id}-00003` : "deployment-v1",
             })).reverse()
           : [];
         await fulfill(route, {
@@ -905,7 +896,7 @@ function createDeploymentSnapshot(
   };
 }
 
-function connection<T extends { id: string }>(nodes: T[]) {
+function connection<T extends { id: string }>(nodes: Array<T>) {
   return {
     edges: nodes.map((node) => ({
       cursor: node.id,

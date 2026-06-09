@@ -8,31 +8,31 @@ const DEFAULT_MIGRATION_CHECK_INTERVAL_MS = 2_000;
 const MIGRATION_WAIT_TIMEOUT_FLAG = '--migration-wait-timeout';
 
 type MigrationLogger = Pick<typeof console, 'error' | 'log' | 'warn'>;
-type MigrationOrm = {
+interface MigrationOrm {
   close(force?: boolean): Promise<void> | void;
   getMigrator(): {
     getPendingMigrations(): Promise<UmzugMigration[]>;
   };
-};
+}
 
 type CreateOrm = () => Promise<MigrationOrm>;
 
-export type WaitForMigrationsOptions = {
+export interface WaitForMigrationsOptions {
   createOrm?: CreateOrm;
   intervalMs?: number;
   logger?: MigrationLogger;
   now?: () => number;
   sleep?: (ms: number) => Promise<void>;
   timeoutSeconds?: number;
-};
+}
 
 export async function createOrm(): Promise<MigrationOrm> {
   const config = (await createMikroOrmConfig()) as any;
 
-  return MikroORM.init({
+  return await MikroORM.init({
     ...config,
     extensions: [...(config.extensions ?? []), Migrator],
-  } as never) as Promise<MigrationOrm>;
+  } as never);
 }
 
 export async function waitForMigrations({
@@ -154,7 +154,7 @@ function sleepFor(ms: number): Promise<void> {
 }
 
 if (require.main === module) {
-  void main().catch((error) => {
+  void main().catch((error: unknown) => {
     console.error(error);
     process.exitCode = 1;
   });

@@ -18,14 +18,14 @@ import {
 import { Workspace } from '@/app/workspace/workspace.entity';
 import { KubernetesConnectionManager } from '@/lib/kubernetes-graphql-connection/kubernetes-connection.manager';
 
-import {
-  ServiceConnection,
-  ServiceConnectionArgs,
-} from './service.connection-definition';
 import { CreateServiceInput } from './inputs/create-service.input';
 import { ServiceHealthCheckInput } from './inputs/service-health-check.input';
 import { ServiceResourcesInput } from './inputs/service-resources.input';
 import { UpdateServiceInput } from './inputs/update-service.input';
+import {
+  ServiceConnection,
+  ServiceConnectionArgs,
+} from './service.connection-definition';
 import { Service } from './service.object';
 import { ServiceHealthCheckType } from './service-health-check-type.enum';
 import { ServiceStatus } from './service-status.enum';
@@ -50,14 +50,14 @@ export interface ServiceResource {
     command?: string[];
     args?: string[];
     resources?: ServiceResourceRequirements;
-    ports: Array<{
+    ports: {
       port: number;
       targetPort?: number;
-    }>;
-    env?: Array<{
+    }[];
+    env?: {
       name: string;
       value: string;
-    }>;
+    }[];
     readinessProbe?: ServiceResourceProbe;
     livenessProbe?: ServiceResourceProbe;
     startupProbe?: ServiceResourceProbe;
@@ -104,14 +104,14 @@ interface ServiceResourceInput {
   args?: string[] | null;
   resources?: ServiceResourcesInput | Service['resources'] | null;
   healthCheck?: ServiceHealthCheckInput | Service['healthCheck'] | null;
-  ports: Array<{
+  ports: {
     port: number;
     targetPort?: number;
-  }>;
-  env?: Array<{
+  }[];
+  env?: {
     key: string;
     value: string;
-  }>;
+  }[];
 }
 
 @Injectable()

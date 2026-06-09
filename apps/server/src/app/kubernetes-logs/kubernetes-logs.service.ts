@@ -4,12 +4,11 @@ import { Workspace } from '@/app/workspace/workspace.entity';
 
 import { ServiceLog, ServiceLogConnection } from './kubernetes-logs.object';
 import { buildServiceLogsQuery } from './logsql';
+import type { ServiceLogCursorPayload } from './service-log-order';
 import {
-  compareServiceLogToCursor,
   compareServiceLogsDesc,
   serviceLogCursorPayload,
 } from './service-log-order';
-import type { ServiceLogCursorPayload } from './service-log-order';
 import { VictoriaLogsClient } from './victoria-logs.client';
 
 interface ServiceLogsOptions {
@@ -20,8 +19,9 @@ interface ServiceLogsOptions {
   now?: Date;
 }
 
-const DEFAULT_PAGE_SIZE = 500;
-const MAX_PAGE_SIZE = 500;
+const DEFAULT_PAGE_SIZE = 1000;
+const MIN_PAGE_SIZE = 1000;
+const MAX_PAGE_SIZE = 10_000;
 const MAX_LOOKBACK_MS = 30 * 24 * 60 * 60 * 1000;
 
 @Injectable()
@@ -47,7 +47,7 @@ export class KubernetesLogsService {
     const now = options.now ?? new Date();
     const lowerBound = new Date(now.getTime() - MAX_LOOKBACK_MS);
     const order = paging.mode === 'backward' ? 'asc' : 'desc';
-    const queryLimit = paging.limit + 1;
+    const queryLimit = Math.min(paging.limit + 1, MAX_PAGE_SIZE);
 
     try {
       const rows = await this.victoriaLogsClient.query(
@@ -58,12 +58,6 @@ export class KubernetesLogsService {
             serviceId,
           },
           {
-            cursorBoundary: cursor
-              ? {
-                  cursor,
-                  direction: paging.mode === 'forward' ? 'older' : 'newer',
-                }
-              : undefined,
             limit: queryLimit,
             order,
           },
@@ -112,32 +106,13 @@ function decodeServiceLogCursor(
     if (
       value &&
       typeof value === 'object' &&
-      typeof (value as ServiceLogCursorPayload).t === 'string' &&
       typeof (value as ServiceLogCursorPayload).id === 'string' &&
+      (value as ServiceLogCursorPayload).id.length > 0 &&
+      typeof (value as ServiceLogCursorPayload).t === 'string' &&
       !Number.isNaN(new Date((value as ServiceLogCursorPayload).t).getTime())
     ) {
       return {
-        containerName: stringOrNull(
-          (value as Partial<ServiceLogCursorPayload>).containerName,
-        ),
-        deploymentName: stringOrNull(
-          (value as Partial<ServiceLogCursorPayload>).deploymentName,
-        ),
         id: (value as ServiceLogCursorPayload).id,
-        message:
-          typeof (value as Partial<ServiceLogCursorPayload>).message ===
-          'string'
-            ? (value as ServiceLogCursorPayload).message
-            : '',
-        namespace: stringOrNull(
-          (value as Partial<ServiceLogCursorPayload>).namespace,
-        ),
-        podName: stringOrNull(
-          (value as Partial<ServiceLogCursorPayload>).podName,
-        ),
-        streamId: stringOrNull(
-          (value as Partial<ServiceLogCursorPayload>).streamId,
-        ),
         t: (value as ServiceLogCursorPayload).t,
       };
     }
@@ -190,14 +165,8 @@ function toConnection({
   mode: 'backward' | 'forward';
   rows: ServiceLog[];
 }): ServiceLogConnection {
-  const filteredRows = cursor
-    ? rows.filter((row) =>
-        mode === 'forward'
-          ? compareServiceLogToCursor(row, cursor) < 0
-          : compareServiceLogToCursor(row, cursor) > 0,
-      )
-    : rows;
-  const sortedRows = [...filteredRows].sort(compareServiceLogsDesc);
+  const sortedRows = [...rows].sort(compareServiceLogsDesc);
+  const hasMore = rows.length > limit || rows.length >= MAX_PAGE_SIZE;
   const pageRows =
     mode === 'forward'
       ? sortedRows.slice(0, limit)
@@ -212,9 +181,8 @@ function toConnection({
     edges,
     pageInfo: {
       endCursor: edges[edges.length - 1]?.cursor ?? null,
-      hasNextPage: mode === 'forward' ? filteredRows.length > limit : !!cursor,
-      hasPreviousPage:
-        mode === 'forward' ? !!cursor : filteredRows.length > limit,
+      hasNextPage: mode === 'forward' ? hasMore : !!cursor,
+      hasPreviousPage: mode === 'forward' ? !!cursor : hasMore,
       startCursor: edges[0]?.cursor ?? null,
     },
   };
@@ -236,20 +204,25 @@ function emptyConnection(available: boolean): ServiceLogConnection {
 function cursorStart(
   cursor: ServiceLogCursorPayload | null,
   lowerBound: Date,
-): Date {
+): Date | string {
   if (!cursor) {
     return lowerBound;
   }
 
-  return maxDate(lowerBound, new Date(cursor.t));
+  return new Date(cursor.t).getTime() < lowerBound.getTime()
+    ? lowerBound
+    : cursor.t;
 }
 
-function cursorEnd(cursor: ServiceLogCursorPayload | null, now: Date): Date {
+function cursorEnd(
+  cursor: ServiceLogCursorPayload | null,
+  now: Date,
+): Date | string {
   if (!cursor) {
     return now;
   }
 
-  return minDate(now, new Date(new Date(cursor.t).getTime() + 1));
+  return new Date(cursor.t).getTime() > now.getTime() ? now : cursor.t;
 }
 
 function clampPageSize(value: number | null | undefined): number {
@@ -257,17 +230,5 @@ function clampPageSize(value: number | null | undefined): number {
     return DEFAULT_PAGE_SIZE;
   }
 
-  return Math.min(MAX_PAGE_SIZE, Math.max(1, Math.floor(value)));
-}
-
-function maxDate(left: Date, right: Date): Date {
-  return left.getTime() > right.getTime() ? left : right;
-}
-
-function minDate(left: Date, right: Date): Date {
-  return left.getTime() < right.getTime() ? left : right;
-}
-
-function stringOrNull(value: unknown): string | null {
-  return typeof value === 'string' ? value : null;
+  return Math.min(MAX_PAGE_SIZE, Math.max(MIN_PAGE_SIZE, Math.floor(value)));
 }

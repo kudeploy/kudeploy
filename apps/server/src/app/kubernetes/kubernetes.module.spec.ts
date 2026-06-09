@@ -87,7 +87,7 @@ describe('KubernetesModule', () => {
 });
 
 type ReflectWithMetadata = typeof Reflect & {
-  getMetadata<T>(metadataKey: string, target: object): T | undefined;
+  getMetadata(metadataKey: string, target: object): unknown;
 };
 
 interface KubeConfigProvider {
@@ -97,10 +97,10 @@ interface KubeConfigProvider {
 
 function getKubeConfigProvider(): KubeConfigProvider {
   const providers =
-    (Reflect as ReflectWithMetadata).getMetadata<unknown[]>(
+    ((Reflect as ReflectWithMetadata).getMetadata(
       MODULE_METADATA.PROVIDERS,
       KubernetesModule,
-    ) ?? [];
+    ) as unknown[] | undefined) ?? [];
 
   const provider = providers.find(
     (candidate): candidate is KubeConfigProvider =>
@@ -126,10 +126,10 @@ interface FactoryProvider<T = unknown> {
 
 function getFactoryProvider<T>(token: unknown): FactoryProvider<T> {
   const providers =
-    (Reflect as ReflectWithMetadata).getMetadata<unknown[]>(
+    ((Reflect as ReflectWithMetadata).getMetadata(
       MODULE_METADATA.PROVIDERS,
       KubernetesModule,
-    ) ?? [];
+    ) as unknown[] | undefined) ?? [];
 
   const provider = providers.find(
     (candidate): candidate is FactoryProvider<T> =>

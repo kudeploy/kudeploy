@@ -1,5 +1,5 @@
-import { Field, ID, ObjectType } from '@nest-boot/graphql';
-import { PageInfo } from '@nest-boot/graphql-connection/dist/objects/page-info.object';
+import { Field, HideField, ID, ObjectType } from '@nest-boot/graphql';
+import { PageInfo } from '@nest-boot/graphql-connection';
 
 @ObjectType()
 export class ServiceLog {
@@ -27,8 +27,13 @@ export class ServiceLog {
   @Field(() => String, { nullable: true })
   deploymentName!: string | null;
 
+  @HideField()
   rawTime!: string;
 
+  @HideField()
+  stream!: string | null;
+
+  @HideField()
   streamId!: string | null;
 }
 

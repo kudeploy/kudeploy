@@ -3,12 +3,12 @@ jest.mock('@kubernetes/client-node', () => ({
   Exec: class Exec {},
 }));
 
-import { RequestContext } from '@nest-boot/request-context';
 import type { CoreV1Api, Exec, V1Status } from '@kubernetes/client-node';
+import { RequestContext } from '@nest-boot/request-context';
 import { GUARDS_METADATA } from '@nestjs/common/constants';
 import { GATEWAY_OPTIONS } from '@nestjs/websockets/constants';
-import { PassThrough } from 'stream';
 import type { Socket } from 'socket.io';
+import { PassThrough } from 'stream';
 
 import { ServiceService } from '@/app/service/service.service';
 import { Workspace } from '@/app/workspace/workspace.entity';
@@ -60,7 +60,7 @@ describe('ServiceTerminalGateway', () => {
     serviceService.findService.mockResolvedValue({
       id: 'service-1',
       projectId: 'project-1',
-    } as never);
+    });
     coreV1Api.listNamespacedPod.mockResolvedValue({
       items: [
         {
@@ -135,7 +135,7 @@ describe('ServiceTerminalGateway', () => {
     serviceService.findService.mockResolvedValue({
       id: 'service-1',
       projectId: 'project-1',
-    } as never);
+    });
     coreV1Api.listNamespacedPod.mockResolvedValue({
       items: [
         {
@@ -147,7 +147,7 @@ describe('ServiceTerminalGateway', () => {
     });
     exec.exec.mockImplementation(async (...args: unknown[]) => {
       statusCallback = args[8] as (status: V1Status) => void;
-      statusCallback({ status: 'Success' } as V1Status);
+      statusCallback({ status: 'Success' });
 
       return execSocket as never;
     });
@@ -159,7 +159,7 @@ describe('ServiceTerminalGateway', () => {
 
     expect(socket.emit).toHaveBeenCalledWith('started');
 
-    statusCallback?.({ status: 'Success' } as V1Status);
+    statusCallback?.({ status: 'Success' });
 
     expect(socket.emit).toHaveBeenCalledWith('ended');
     expect(execSocket.close).toHaveBeenCalledTimes(1);
@@ -186,7 +186,7 @@ describe('ServiceTerminalGateway', () => {
     serviceService.findService.mockResolvedValue({
       id: 'service-1',
       projectId: 'project-1',
-    } as never);
+    });
     coreV1Api.listNamespacedPod.mockResolvedValue({
       items: [
         {
@@ -211,7 +211,7 @@ describe('ServiceTerminalGateway', () => {
     await execStarted;
     socket.connected = false;
     gateway.handleDisconnect(socket);
-    statusCallback?.({ status: 'Success' } as V1Status);
+    statusCallback?.({ status: 'Success' });
     await start;
 
     expect(execSocket.close).toHaveBeenCalledTimes(1);
@@ -234,7 +234,7 @@ describe('ServiceTerminalGateway', () => {
       activeDeploymentName: 'deployment-2',
       id: 'service-1',
       projectId: 'project-1',
-    } as never);
+    });
     coreV1Api.listNamespacedPod.mockResolvedValue({
       items: [
         {
@@ -255,7 +255,7 @@ describe('ServiceTerminalGateway', () => {
         },
       ],
     });
-    exec.exec.mockResolvedValue({ close: jest.fn() } as never);
+    exec.exec.mockResolvedValue({ close: jest.fn() });
 
     await gateway.handleStart(socket, {
       projectId: 'project-1',
@@ -283,7 +283,7 @@ describe('ServiceTerminalGateway', () => {
     serviceService.findService.mockResolvedValue({
       id: 'service-1',
       projectId: 'project-1',
-    } as never);
+    });
     coreV1Api.listNamespacedPod.mockResolvedValue({ items: [] });
 
     await gateway.handleStart(socket, {
@@ -306,7 +306,7 @@ describe('ServiceTerminalGateway', () => {
     serviceService.findService.mockResolvedValue({
       id: 'service-1',
       projectId: 'project-1',
-    } as never);
+    });
     coreV1Api.listNamespacedPod.mockResolvedValue({
       items: [
         {
@@ -352,7 +352,7 @@ describe('ServiceTerminalGateway', () => {
     serviceService.findService.mockResolvedValue({
       id: 'service-1',
       projectId: 'project-1',
-    } as never);
+    });
     coreV1Api.listNamespacedPod.mockResolvedValue({
       items: [
         {

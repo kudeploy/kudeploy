@@ -140,7 +140,7 @@ function ServiceSourceComponent() {
   );
 }
 
-function linesToValue(value?: readonly string[] | null) {
+function linesToValue(value?: ReadonlyArray<string> | null) {
   return value?.join("\n") ?? "";
 }
 

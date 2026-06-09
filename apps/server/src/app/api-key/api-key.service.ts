@@ -15,10 +15,10 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { randomBytes } from 'crypto';
 
+import { Workspace } from '@/app/workspace/workspace.entity';
 import { WorkspaceMemberStatus } from '@/app/workspace-member/enums/workspace-member-status.enum';
 import { WorkspaceMember } from '@/app/workspace-member/workspace-member.entity';
 import { WorkspaceMemberService } from '@/app/workspace-member/workspace-member.service';
-import { Workspace } from '@/app/workspace/workspace.entity';
 
 import { ApiKey } from './api-key.entity';
 
@@ -161,7 +161,6 @@ export class ApiKeyService extends EntityService<ApiKey> {
       throw new UnauthorizedException('Invalid API key');
     }
 
-
     if (row.expiresAt && new Date(row.expiresAt) <= new Date()) {
       throw new UnauthorizedException('API key has expired');
     }
@@ -193,7 +192,6 @@ export class ApiKeyService extends EntityService<ApiKey> {
 
     return apiKey;
   }
-
 
   /**
    * 记录 API Key 的最近使用时间。
@@ -284,10 +282,7 @@ export class ApiKeyService extends EntityService<ApiKey> {
     });
   }
 
-  private async loadWorkspaceMember(
-    workspaceId: string,
-    memberId: string,
-  ) {
+  private async loadWorkspaceMember(workspaceId: string, memberId: string) {
     return await this.workspaceMemberService.findOne({
       id: memberId,
       workspace: {

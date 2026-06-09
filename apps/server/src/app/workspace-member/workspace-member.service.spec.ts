@@ -31,9 +31,7 @@ describe('WorkspaceMemberService', () => {
       name: 'Alice',
     } as User;
     const invite = { id: 'invite_1' } as WorkspaceMember;
-    const createSpy = jest
-      .spyOn(service, 'create')
-      .mockResolvedValue(invite as never);
+    const createSpy = jest.spyOn(service, 'create').mockResolvedValue(invite);
 
     await expect(
       service.createWorkspaceInvite(
@@ -86,7 +84,7 @@ describe('WorkspaceMemberService', () => {
     const serviceAccount = { id: 'member_1' } as WorkspaceMember;
     const createSpy = jest
       .spyOn(service, 'create')
-      .mockResolvedValue(serviceAccount as never);
+      .mockResolvedValue(serviceAccount);
 
     await expect(
       service.createServiceAccount(workspace, {
@@ -108,7 +106,7 @@ describe('WorkspaceMemberService', () => {
 
   it('returns null when an invite token cannot be found', async () => {
     const { service, em } = createService();
-    jest.spyOn(service, 'findOne').mockResolvedValue(null as never);
+    jest.spyOn(service, 'findOne').mockResolvedValue(null);
 
     await RequestContext.run(new RequestContext({ type: 'test' }), async () => {
       await expect(
@@ -126,7 +124,7 @@ describe('WorkspaceMemberService', () => {
       .mockImplementation(async () => {
         expect(RowLevelSecurity.getMode()).toBe(RowLevelSecurityMode.DISABLED);
 
-        return member as never;
+        return member;
       });
 
     await RequestContext.run(new RequestContext({ type: 'test' }), async () => {
@@ -150,7 +148,7 @@ describe('WorkspaceMemberService', () => {
 
   it('returns null when accepting an invite token that has no invite row', async () => {
     const { service, em } = createService();
-    jest.spyOn(service, 'findOne').mockResolvedValue(null as never);
+    jest.spyOn(service, 'findOne').mockResolvedValue(null);
 
     await RequestContext.run(new RequestContext({ type: 'test' }), async () => {
       await expect(
@@ -165,7 +163,7 @@ describe('WorkspaceMemberService', () => {
 
   it('returns null when an invite row cannot be loaded by token', async () => {
     const { service, em } = createService();
-    jest.spyOn(service, 'findOne').mockResolvedValue(null as never);
+    jest.spyOn(service, 'findOne').mockResolvedValue(null);
 
     await RequestContext.run(new RequestContext({ type: 'test' }), async () => {
       await expect(
@@ -186,7 +184,7 @@ describe('WorkspaceMemberService', () => {
       workspaceMember: member,
       workspaceId: 'workspace_1',
     };
-    jest.spyOn(service, 'findOne').mockResolvedValue(member as never);
+    jest.spyOn(service, 'findOne').mockResolvedValue(member);
     const acceptSpy = jest
       .spyOn(service, 'acceptWorkspaceInvite')
       .mockResolvedValue(result);
@@ -249,7 +247,7 @@ describe('WorkspaceMemberService', () => {
 
   it('rejects invitations restricted to a different email', async () => {
     const { service } = createService();
-    jest.spyOn(service, 'findOne').mockResolvedValue(null as never);
+    jest.spyOn(service, 'findOne').mockResolvedValue(null);
 
     await expect(
       service.acceptWorkspaceInvite(
@@ -280,7 +278,7 @@ describe('WorkspaceMemberService', () => {
       name: 'Accepted Name',
       workspace: { id: 'workspace_1' },
     } as WorkspaceMember;
-    jest.spyOn(service, 'findOne').mockResolvedValue(null as never);
+    jest.spyOn(service, 'findOne').mockResolvedValue(null);
     const updateSpy = jest
       .spyOn(service, 'update')
       .mockImplementation(async () => {
@@ -289,7 +287,7 @@ describe('WorkspaceMemberService', () => {
         expect(RowLevelSecurity.getContext('user_id')).toBe('user_1');
         expect(RowLevelSecurity.getContext('workspace_id')).toBe('workspace_1');
 
-        return updatedMember as never;
+        return updatedMember;
       });
 
     await RequestContext.run(new RequestContext({ type: 'test' }), async () => {

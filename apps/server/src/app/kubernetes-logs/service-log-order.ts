@@ -1,13 +1,7 @@
 import { ServiceLog } from './kubernetes-logs.object';
 
 export interface ServiceLogCursorPayload {
-  containerName: string | null;
-  deploymentName: string | null;
   id: string;
-  message: string;
-  namespace: string | null;
-  podName: string | null;
-  streamId: string | null;
   t: string;
 }
 
@@ -15,13 +9,7 @@ export function serviceLogCursorPayload(
   log: ServiceLog,
 ): ServiceLogCursorPayload {
   return {
-    containerName: log.containerName,
-    deploymentName: log.deploymentName,
     id: log.id,
-    message: log.message,
-    namespace: log.namespace,
-    podName: log.podName,
-    streamId: log.streamId,
     t: log.rawTime,
   };
 }
@@ -43,25 +31,17 @@ export function compareServiceLogsDesc(
   return compareServiceLogsAsc(right, left);
 }
 
-export function compareServiceLogToCursor(
-  log: ServiceLog,
-  cursor: ServiceLogCursorPayload,
-): number {
-  return compareSortTuples(serviceLogCursorPayload(log), cursor);
-}
-
 function compareSortTuples(
   left: ServiceLogCursorPayload,
   right: ServiceLogCursorPayload,
 ): number {
-  return (
-    compareRawTimes(left.t, right.t) ||
-    compareNullableStrings(left.namespace, right.namespace) ||
-    compareNullableStrings(left.podName, right.podName) ||
-    compareNullableStrings(left.containerName, right.containerName) ||
-    compareNullableStrings(left.deploymentName, right.deploymentName) ||
-    compareStrings(left.message, right.message)
-  );
+  const timeComparison = compareRawTimes(left.t, right.t);
+
+  if (timeComparison !== 0) {
+    return timeComparison;
+  }
+
+  return left.id.localeCompare(right.id);
 }
 
 function compareRawTimes(left: string, right: string): number {
@@ -75,11 +55,10 @@ function compareRawTimes(left: string, right: string): number {
   return left.localeCompare(right);
 }
 
-function rawTimeToEpochNanoseconds(value: string): bigint | null {
-  const match =
-    /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.(\d{1,9}))?Z$/.exec(
-      value,
-    );
+export function rawTimeToEpochNanoseconds(value: string): bigint | null {
+  const match = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.(\d{1,9}))?Z$/.exec(
+    value,
+  );
 
   if (match) {
     const secondsMs = Date.parse(`${match[1]}.000Z`);
@@ -88,8 +67,7 @@ function rawTimeToEpochNanoseconds(value: string): bigint | null {
     }
 
     return (
-      BigInt(secondsMs) * 1_000_000n +
-      BigInt((match[2] ?? '').padEnd(9, '0'))
+      BigInt(secondsMs) * 1_000_000n + BigInt((match[2] ?? '').padEnd(9, '0'))
     );
   }
 
@@ -99,23 +77,4 @@ function rawTimeToEpochNanoseconds(value: string): bigint | null {
   }
 
   return BigInt(milliseconds) * 1_000_000n;
-}
-
-function compareNullableStrings(
-  left: string | null,
-  right: string | null,
-): number {
-  return compareStrings(left ?? '', right ?? '');
-}
-
-function compareStrings(left: string, right: string): number {
-  if (left < right) {
-    return -1;
-  }
-
-  if (left > right) {
-    return 1;
-  }
-
-  return 0;
 }

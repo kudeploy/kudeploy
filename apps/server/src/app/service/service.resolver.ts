@@ -11,13 +11,13 @@ import {
 import { Can, PermissionAction } from '@nest-boot/permission';
 
 import {
-  KubernetesMetricsService,
-  ServiceMetrics,
-} from '@/app/kubernetes-metrics';
-import {
   KubernetesLogsService,
   ServiceLogConnection,
 } from '@/app/kubernetes-logs';
+import {
+  KubernetesMetricsService,
+  ServiceMetrics,
+} from '@/app/kubernetes-metrics';
 import { Workspace } from '@/app/workspace/workspace.entity';
 import { CurrentWorkspace } from '@/common/decorators/current-workspace.decorator';
 

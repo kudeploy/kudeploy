@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
 import { resolveTxt } from 'dns/promises';
 
+import { DomainResolver } from './domain.resolver';
 import {
   DOMAIN_NOW,
   DOMAIN_TXT_RESOLVER,
   DomainService,
 } from './domain.service';
-import { DomainResolver } from './domain.resolver';
 
 /** 自定义域名功能模块。 */
 @Module({

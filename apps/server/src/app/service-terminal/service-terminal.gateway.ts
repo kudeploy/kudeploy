@@ -1,7 +1,7 @@
+import type { V1Pod, V1Status } from '@kubernetes/client-node';
+import { CoreV1Api, Exec } from '@kubernetes/client-node';
 import { Logger } from '@nest-boot/logger';
 import { RequestContext } from '@nest-boot/request-context';
-import { CoreV1Api, Exec } from '@kubernetes/client-node';
-import type { V1Pod, V1Status } from '@kubernetes/client-node';
 import { UseGuards } from '@nestjs/common';
 import {
   ConnectedSocket,
@@ -16,8 +16,8 @@ import type { Server, Socket } from 'socket.io';
 import { PassThrough, Writable } from 'stream';
 
 import {
-  DEPLOYMENT_LABEL,
   buildServicePodLabelSelector,
+  DEPLOYMENT_LABEL,
 } from '@/app/kubernetes-metrics/promql';
 import { ServiceService } from '@/app/service/service.service';
 import { Workspace } from '@/app/workspace/workspace.entity';
@@ -211,7 +211,8 @@ export class ServiceTerminalGateway
       const session: ServiceTerminalSession = { stdin, stdout };
       let activeSession = false;
       let startupStatusResolved = false;
-      let resolveStartupStatus: (status: V1Status | null) => void = () => {};
+      let resolveStartupStatus: (status: V1Status | null) => void = () =>
+        undefined;
       const startupStatus = new Promise<V1Status | null>((resolve) => {
         resolveStartupStatus = resolve;
         const timeout = setTimeout(() => {

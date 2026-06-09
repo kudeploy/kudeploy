@@ -1,9 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useQuery } from "@apollo/client/react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useVirtualizer } from "@tanstack/react-virtual";
@@ -12,13 +7,13 @@ import { Activity, RefreshCw } from "lucide-react";
 import { t } from "i18next";
 import type { RefObject } from "react";
 
+import type { GetServiceLogsFromServiceLogsRouteQuery } from "@/gql/graphql";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { graphql } from "@/gql";
-import type { GetServiceLogsFromServiceLogsRouteQuery } from "@/gql/graphql";
 import { cn } from "@/lib/utils";
 
-const LOG_PAGE_SIZE = 100;
+const LOG_PAGE_SIZE = 1000;
 const LOAD_OLDER_THRESHOLD_PX = 48;
 const LOG_ROW_LAYOUT = "flex min-w-full";
 const LOG_TIME_COLUMN = "w-44 shrink-0";
@@ -81,7 +76,7 @@ function ServiceLogsComponent() {
   const initializedRef = useRef(false);
   const isLoadingOlderRef = useRef(false);
   const [available, setAvailable] = useState(true);
-  const [edges, setEdges] = useState<LogEdge[]>([]);
+  const [edges, setEdges] = useState<Array<LogEdge>>([]);
   const [failed, setFailed] = useState(false);
   const [pageInfo, setPageInfo] = useState<LogsPageInfo | null>(null);
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
@@ -187,9 +182,7 @@ function ServiceLogsComponent() {
 
       setAvailable(connection.available);
       setFailed(false);
-      setEdges((currentEdges) =>
-        mergeEdges(currentEdges, connection.edges),
-      );
+      setEdges((currentEdges) => mergeEdges(currentEdges, connection.edges));
       setPageInfo((current) =>
         mergePageInfoForOlder(current, connection.pageInfo),
       );
@@ -356,15 +349,9 @@ function LogEntries({
             </div>
           </div>
         </div>
-        <div
-          data-elastic-offset={0}
-          data-testid="service-logs-elastic-content"
-        >
+        <div data-elastic-offset={0} data-testid="service-logs-elastic-content">
           {loading ? (
-            <LogLoadingRow
-              label={t("service:logs.loading")}
-              className="h-96"
-            />
+            <LogLoadingRow label={t("service:logs.loading")} className="h-96" />
           ) : entries.length ? (
             <>
               <div
@@ -494,14 +481,7 @@ function LogLevelCell({ level }: { level?: string | null }) {
   const label = level?.trim() || "-";
 
   return (
-    <span
-      className={cn(
-        "font-mono",
-        getLogLevelClass(label),
-      )}
-    >
-      {label}
-    </span>
+    <span className={cn("font-mono", getLogLevelClass(label))}>{label}</span>
   );
 }
 
@@ -550,14 +530,14 @@ function getLogLevelClass(level: string): string {
 function mergeEdges(
   firstEdges: ReadonlyArray<LogEdge>,
   secondEdges: ReadonlyArray<LogEdge>,
-): LogEdge[] {
-  const edgesByCursor = new Map<string, LogEdge>();
+): Array<LogEdge> {
+  const edgesById = new Map<string, LogEdge>();
 
   for (const edge of [...firstEdges, ...secondEdges]) {
-    edgesByCursor.set(edge.cursor, edge);
+    edgesById.set(edge.node.id, edge);
   }
 
-  return [...edgesByCursor.values()];
+  return [...edgesById.values()];
 }
 
 function mergePageInfoForOlder(

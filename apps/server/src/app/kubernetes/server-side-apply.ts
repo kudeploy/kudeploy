@@ -1,7 +1,7 @@
 import {
-  PatchStrategy,
   type ConfigurationOptions,
   type ObservableMiddleware,
+  PatchStrategy,
 } from '@kubernetes/client-node';
 import type {
   RequestContext,

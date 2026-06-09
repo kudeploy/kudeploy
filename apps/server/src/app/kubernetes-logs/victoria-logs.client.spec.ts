@@ -20,9 +20,9 @@ describe('VictoriaLogsClient', () => {
       ok: true,
       text: async () =>
         [
-          '{"_time":"2026-06-08T16:46:23.000000000Z","_stream_id":"stream-1","_msg":"ready","kubernetes.pod_name":"pod-1"}',
-          '{"_time":"2026-06-08T16:46:22.838035630Z","_stream_id":"stream-1","_msg":"started","kubernetes.pod_namespace":"project-1","kubernetes.pod_name":"pod-1","kubernetes.container_name":"api","kubernetes.pod_labels.kudeploy.com/deployment":"service-1-00002"}',
-          '{"_time":"2026-06-08T16:46:22.838035630Z","_stream_id":"stream-1","_msg":"started again","kubernetes.pod_namespace":"project-1","kubernetes.pod_name":"pod-1","kubernetes.container_name":"api","kubernetes.pod_labels.kudeploy.com/deployment":"service-1-00002"}',
+          '{"_time":"2026-06-08T16:46:23.000000000Z","_stream":"{pod=\\"pod-1\\"}","_stream_id":"stream-1","_msg":"ready","kubernetes.pod_name":"pod-1"}',
+          '{"_time":"2026-06-08T16:46:22.838035630Z","_stream":"{pod=\\"pod-1\\",container=\\"api\\"}","_stream_id":"stream-1","_msg":"started","kubernetes.pod_namespace":"project-1","kubernetes.pod_name":"pod-1","kubernetes.container_name":"api","kubernetes.pod_labels.kudeploy.com/deployment":"service-1-00002"}',
+          '{"_time":"2026-06-08T16:46:22.838035630Z","_stream":"{pod=\\"pod-1\\",container=\\"api\\"}","_stream_id":"stream-1","_msg":"started again","kubernetes.pod_namespace":"project-1","kubernetes.pod_name":"pod-1","kubernetes.container_name":"api","kubernetes.pod_labels.kudeploy.com/deployment":"service-1-00002"}',
           '',
         ].join('\n'),
     });
@@ -47,11 +47,13 @@ describe('VictoriaLogsClient', () => {
       message: 'started',
       namespace: 'project-1',
       podName: 'pod-1',
+      stream: '{pod="pod-1",container="api"}',
       streamId: 'stream-1',
       timestamp: new Date('2026-06-08T16:46:22.838Z'),
     });
-    expect(result[0].id).toMatch(/^[a-f0-9]{64}$/);
-    expect(result[1].id).toMatch(/^[a-f0-9]{64}$/);
+    expect(result[0].id).toMatch(/^[a-f0-9]{32}$/);
+    expect(result[1].id).toMatch(/^[a-f0-9]{32}$/);
+    expect(result[0].id).toBe('54cb01904044cfe64f368adbd6d860ef');
     expect(result[0].id).not.toBe(result[1].id);
 
     expect(fetchMock).toHaveBeenCalledWith(
@@ -134,11 +136,11 @@ describe('VictoriaLogsClient', () => {
     expect(body.get('limit')).toBe('501');
   });
 
-  it('reports when the VictoriaLogs URL is not configured', () => {
+  it('reports when the VictoriaLogs URL is not configured', async () => {
     const client = createClient('');
 
     expect(client.isConfigured()).toBe(false);
-    expect(() =>
+    await expect(
       client.query('error', {
         limit: 100,
         order: 'asc',

@@ -11,8 +11,8 @@ import { Workspace } from '@/app/workspace/workspace.entity';
 import { KubernetesConnectionManager } from '@/lib/kubernetes-graphql-connection/kubernetes-connection.manager';
 
 import { ProjectConnection } from './project.connection-definition';
-import { ProjectStatus } from './project-status.enum';
 import { ProjectResource, ProjectService } from './project.service';
+import { ProjectStatus } from './project-status.enum';
 
 describe('ProjectService', () => {
   it('creates a cluster-scoped Project CRD with workspace labels and display annotations', async () => {

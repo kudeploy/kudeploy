@@ -4,13 +4,13 @@ jest.mock('@kubernetes/client-node', () => ({
 
 import type { CustomObjectsApi } from '@kubernetes/client-node';
 
-import { KubernetesConnectionManager } from '@/lib/kubernetes-graphql-connection/kubernetes-connection.manager';
 import { ServiceService } from '@/app/service/service.service';
 import { Workspace } from '@/app/workspace/workspace.entity';
+import { KubernetesConnectionManager } from '@/lib/kubernetes-graphql-connection/kubernetes-connection.manager';
 
 import { DeploymentConnection } from './deployment.connection-definition';
-import { DeploymentStatus } from './deployment-status.enum';
 import { DeploymentResource, DeploymentService } from './deployment.service';
+import { DeploymentStatus } from './deployment-status.enum';
 
 describe('DeploymentService', () => {
   it('lists Deployment CRDs for a service and marks active/latest versions', async () => {
@@ -23,7 +23,7 @@ describe('DeploymentService', () => {
       id: 'service-1',
       latestDeploymentName: 'deployment-2',
       projectId: 'project-1',
-    } as never);
+    });
     customObjectsApi.listNamespacedCustomObject.mockResolvedValue({
       items: [
         deploymentCrd({
@@ -234,5 +234,5 @@ function deploymentCrd(
       ],
       kubernetesDeploymentName: name,
     },
-  } as DeploymentResource;
+  };
 }

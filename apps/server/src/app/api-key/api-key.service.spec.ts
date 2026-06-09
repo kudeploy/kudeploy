@@ -9,10 +9,10 @@ import {
 import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
+import { Workspace } from '@/app/workspace/workspace.entity';
 import { WorkspaceMemberStatus } from '@/app/workspace-member/enums/workspace-member-status.enum';
 import { WorkspaceMember } from '@/app/workspace-member/workspace-member.entity';
 import { WorkspaceMemberService } from '@/app/workspace-member/workspace-member.service';
-import { Workspace } from '@/app/workspace/workspace.entity';
 
 import { ApiKey } from './api-key.entity';
 import { ApiKeyService } from './api-key.service';
@@ -104,7 +104,6 @@ describe('ApiKeyService', () => {
     expect(findValidationRow).not.toHaveBeenCalled();
   });
 
-
   it('rejects expired API keys during validation', async () => {
     const { service } = createService();
     jest.spyOn(service as any, 'findValidationRow').mockResolvedValue({
@@ -133,10 +132,12 @@ describe('ApiKeyService', () => {
     const apiKey = createApiKeyEntity();
     const workspaceMember = createWorkspaceMember();
     const workspace = { id: 'workspace_1' } as Workspace;
-    const { service, em, cryptService, workspaceMemberService } = createService({
-      workspaceMember,
-      workspace,
-    });
+    const { service, em, cryptService, workspaceMemberService } = createService(
+      {
+        workspaceMember,
+        workspace,
+      },
+    );
     const findOne = jest
       .spyOn(service, 'findOne')
       .mockImplementation(async () => {
@@ -266,7 +267,6 @@ describe('ApiKeyService', () => {
     expect(apiKey.name).toBe('New');
     expect(em.flush).toHaveBeenCalledTimes(2);
   });
-
 
   it('records API key usage time after authentication succeeds', async () => {
     const { service, em } = createService();

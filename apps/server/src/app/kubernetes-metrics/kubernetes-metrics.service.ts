@@ -5,6 +5,7 @@ import { Injectable } from '@nestjs/common';
 import { Workspace } from '@/app/workspace/workspace.entity';
 
 import { ServiceMetrics } from './kubernetes-metrics.object';
+import { PrometheusClient } from './prometheus.client';
 import {
   buildPodNameRegexMatcher,
   buildServicePodLabelSelector,
@@ -13,7 +14,6 @@ import {
   serviceNetworkReceiveQuery,
   serviceNetworkTransmitQuery,
 } from './promql';
-import { PrometheusClient } from './prometheus.client';
 
 interface ServiceMetricsOptions {
   activeDeploymentName?: string | null;
@@ -210,10 +210,9 @@ function sumContainerLimits(
 }
 
 function parseQuantity(quantity: string): number | null {
-  const match = quantity
-    .trim()
-    .match(
-      /^([+-]?(?:\d+\.?\d*|\.\d+))(Ki|Mi|Gi|Ti|Pi|Ei|n|u|m|k|M|G|T|P|E)?$/,
+  const match =
+    /^([+-]?(?:\d+\.?\d*|\.\d+))(Ki|Mi|Gi|Ti|Pi|Ei|n|u|m|k|M|G|T|P|E)?$/.exec(
+      quantity.trim(),
     );
   if (!match) {
     return null;

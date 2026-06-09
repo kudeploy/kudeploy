@@ -73,9 +73,7 @@ interface MigrationInstance {
   up(): Promise<void> | void;
 }
 
-interface MigrationConstructor {
-  new (): MigrationInstance;
-}
+type MigrationConstructor = new () => MigrationInstance;
 
 describe('Server application PostgreSQL integration (e2e)', () => {
   let migrationOrm: AdminOrm;

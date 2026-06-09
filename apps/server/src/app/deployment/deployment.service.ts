@@ -18,8 +18,8 @@ import {
   DeploymentConnection,
   DeploymentConnectionArgs,
 } from './deployment.connection-definition';
-import { DeploymentStatus } from './deployment-status.enum';
 import { Deployment } from './deployment.object';
+import { DeploymentStatus } from './deployment-status.enum';
 
 export const DEPLOYMENT_LABEL = 'kudeploy.com/deployment';
 export const DEPLOYMENTS_PLURAL = 'deployments';
@@ -70,10 +70,10 @@ export interface DeploymentResource {
     env?: DeploymentResourceEnvVar[];
     envFrom?: DeploymentResourceEnvFromSource[];
     image: string;
-    ports?: Array<{
+    ports?: {
       port: number;
       targetPort?: number;
-    }>;
+    }[];
     replicas?: number;
     resources?: DeploymentResourceRequirements;
     serviceAccountName?: string;
@@ -306,11 +306,11 @@ export class DeploymentService {
 
   private toDeploymentEnvFrom(resource: DeploymentResource) {
     return (resource.spec.envFrom ?? []).flatMap((envFrom) => {
-      const sources: Array<{
+      const sources: {
         kind: string;
         name: string;
         prefix: string | null;
-      }> = [];
+      }[] = [];
 
       if (envFrom.configMapRef?.name) {
         sources.push({
