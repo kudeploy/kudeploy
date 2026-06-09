@@ -1,3 +1,5 @@
+import type { ServiceLogCursorPayload } from './service-log-order';
+
 const MANAGED_BY_LABEL_VALUE = 'kudeploy';
 
 const LOG_FIELD_MANAGED_BY =
@@ -24,8 +26,14 @@ export interface ServiceLogsQueryInput {
 }
 
 export interface ServiceLogsQueryOptions {
+  cursorBoundary?: ServiceLogsCursorBoundary;
   limit?: number;
   order?: 'asc' | 'desc';
+}
+
+export interface ServiceLogsCursorBoundary {
+  cursor: ServiceLogCursorPayload;
+  direction: 'newer' | 'older';
 }
 
 const LOG_FIELDS = [
@@ -41,7 +49,6 @@ const LOG_FIELDS = [
 
 const LOG_SORT_FIELDS = [
   LOG_FIELD_TIME,
-  LOG_FIELD_STREAM_ID,
   LOG_FIELD_NAMESPACE,
   LOG_FIELD_POD,
   LOG_FIELD_CONTAINER,
@@ -59,7 +66,10 @@ export function buildServiceLogsQuery(
       exactFilter(LOG_FIELD_WORKSPACE_ID, workspaceId),
       exactFilter(LOG_FIELD_PROJECT, projectId),
       exactFilter(LOG_FIELD_SERVICE, serviceId),
-    ].join(' AND '),
+      options.cursorBoundary
+        ? cursorBoundaryFilter(options.cursorBoundary)
+        : null,
+    ].filter((filter): filter is string => Boolean(filter)).join(' AND '),
   ];
 
   if (options.limit != null) {
@@ -73,8 +83,118 @@ export function buildServiceLogsQuery(
   return pipes.join(' | ');
 }
 
+function cursorBoundaryFilter({
+  cursor,
+  direction,
+}: ServiceLogsCursorBoundary): string {
+  const branches: string[] = [];
+  const equalityFilters: string[] = [];
+
+  for (const { field, nullable, value } of cursorSortFields(cursor)) {
+    const rangeFilter =
+      direction === 'older'
+        ? lessThanCursorFilter(field, value, nullable)
+        : greaterThanCursorFilter(field, value);
+
+    if (rangeFilter) {
+      branches.push([...equalityFilters, rangeFilter].join(' AND '));
+    }
+
+    equalityFilters.push(equalToCursorFilter(field, value));
+  }
+
+  return `(${branches.map((branch) => `(${branch})`).join(' OR ')})`;
+}
+
+function cursorSortFields(cursor: ServiceLogCursorPayload): Array<{
+  field: string;
+  nullable: boolean;
+  value: string | null;
+}> {
+  return [
+    {
+      field: LOG_FIELD_TIME,
+      nullable: false,
+      value: cursor.t,
+    },
+    {
+      field: LOG_FIELD_NAMESPACE,
+      nullable: true,
+      value: cursor.namespace,
+    },
+    {
+      field: LOG_FIELD_POD,
+      nullable: true,
+      value: cursor.podName,
+    },
+    {
+      field: LOG_FIELD_CONTAINER,
+      nullable: true,
+      value: cursor.containerName,
+    },
+    {
+      field: LOG_FIELD_DEPLOYMENT,
+      nullable: true,
+      value: cursor.deploymentName,
+    },
+    {
+      field: LOG_FIELD_MESSAGE,
+      nullable: false,
+      value: cursor.message,
+    },
+  ];
+}
+
+function equalToCursorFilter(
+  field: string,
+  value: string | null,
+): string {
+  if (!value) {
+    return emptyValueFilter(field);
+  }
+
+  return exactFilter(field, value);
+}
+
+function lessThanCursorFilter(
+  field: string,
+  value: string | null,
+  nullable: boolean,
+): string | null {
+  if (!value) {
+    return null;
+  }
+
+  const range = rangeFilter(field, '<', value);
+
+  return nullable ? `(${emptyValueFilter(field)} OR ${range})` : range;
+}
+
+function greaterThanCursorFilter(
+  field: string,
+  value: string | null,
+): string | null {
+  if (!value) {
+    return anyValueFilter(field);
+  }
+
+  return rangeFilter(field, '>', value);
+}
+
 function exactFilter(field: string, value: string): string {
   return `${logsQlField(field)}:=${logsQlString(value)}`;
+}
+
+function emptyValueFilter(field: string): string {
+  return `${logsQlField(field)}:""`;
+}
+
+function anyValueFilter(field: string): string {
+  return `${logsQlField(field)}:*`;
+}
+
+function rangeFilter(field: string, operator: '<' | '>', value: string): string {
+  return `${logsQlField(field)}:${operator}${logsQlString(value)}`;
 }
 
 function logsQlField(field: string): string {

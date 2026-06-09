@@ -96,6 +96,26 @@ describe('VictoriaLogsClient', () => {
     ]);
   });
 
+  it('preserves blank log messages', async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      text: async () =>
+        '{"_time":"2026-06-08T16:46:21.000000000Z","_stream_id":"stream-1","_msg":""}',
+    });
+    const client = createClient('http://victoria-logs:9428');
+
+    await expect(
+      client.query('logs', {
+        limit: 100,
+        order: 'asc',
+      }),
+    ).resolves.toMatchObject([
+      {
+        message: '',
+      },
+    ]);
+  });
+
   it('omits optional time bounds when they are not provided', async () => {
     fetchMock.mockResolvedValue({
       ok: true,

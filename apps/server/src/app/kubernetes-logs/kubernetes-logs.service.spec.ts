@@ -105,7 +105,9 @@ describe('KubernetesLogsService', () => {
       },
     });
     expect(victoriaLogsClient.query).toHaveBeenCalledWith(
-      expect.any(String),
+      expect.stringContaining(
+        '(_time:<"2026-06-08T16:46:23.000000000Z")',
+      ),
       expect.objectContaining({
         limit: 3,
         order: 'desc',
@@ -170,10 +172,12 @@ describe('KubernetesLogsService', () => {
       },
     });
     expect(victoriaLogsClient.query).toHaveBeenCalledWith(
-      expect.any(String),
+      expect.stringContaining(
+        '(_time:>"2026-06-08T16:46:23.000000000Z")',
+      ),
       expect.objectContaining({
         limit: 3,
-        order: 'desc',
+        order: 'asc',
       }),
     );
   });

@@ -46,7 +46,7 @@ export class KubernetesLogsService {
 
     const now = options.now ?? new Date();
     const lowerBound = new Date(now.getTime() - MAX_LOOKBACK_MS);
-    const order = 'desc';
+    const order = paging.mode === 'backward' ? 'asc' : 'desc';
     const queryLimit = paging.limit + 1;
 
     try {
@@ -58,6 +58,12 @@ export class KubernetesLogsService {
             serviceId,
           },
           {
+            cursorBoundary: cursor
+              ? {
+                  cursor,
+                  direction: paging.mode === 'forward' ? 'older' : 'newer',
+                }
+              : undefined,
             limit: queryLimit,
             order,
           },

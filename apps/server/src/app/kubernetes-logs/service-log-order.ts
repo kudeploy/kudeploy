@@ -56,13 +56,11 @@ function compareSortTuples(
 ): number {
   return (
     compareRawTimes(left.t, right.t) ||
-    compareNullableStrings(left.streamId, right.streamId) ||
     compareNullableStrings(left.namespace, right.namespace) ||
     compareNullableStrings(left.podName, right.podName) ||
     compareNullableStrings(left.containerName, right.containerName) ||
     compareNullableStrings(left.deploymentName, right.deploymentName) ||
-    left.message.localeCompare(right.message) ||
-    left.id.localeCompare(right.id)
+    compareStrings(left.message, right.message)
   );
 }
 
@@ -107,5 +105,17 @@ function compareNullableStrings(
   left: string | null,
   right: string | null,
 ): number {
-  return (left ?? '').localeCompare(right ?? '');
+  return compareStrings(left ?? '', right ?? '');
+}
+
+function compareStrings(left: string, right: string): number {
+  if (left < right) {
+    return -1;
+  }
+
+  if (left > right) {
+    return 1;
+  }
+
+  return 0;
 }

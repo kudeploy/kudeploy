@@ -132,7 +132,7 @@ function toServiceLogEntry(entry: RawLogEntry | null): ServiceLog | null {
 
   const rawTime = stringField(entry, LOG_FIELD_TIME);
   const timestamp = toDate(rawTime);
-  const message = stringField(entry, LOG_FIELD_MESSAGE);
+  const message = messageField(entry, LOG_FIELD_MESSAGE);
   if (!rawTime || !timestamp || message == null) {
     return null;
   }
@@ -194,6 +194,12 @@ function stringField(entry: RawLogEntry, field: string): string | null {
   const value = entry[field];
 
   return typeof value === 'string' && value.length ? value : null;
+}
+
+function messageField(entry: RawLogEntry, field: string): string | null {
+  const value = entry[field];
+
+  return typeof value === 'string' ? value : null;
 }
 
 function normalizeLogLevel(value: string | null): string | null {
