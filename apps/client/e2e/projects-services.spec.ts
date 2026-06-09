@@ -366,6 +366,17 @@ test.describe("workspace Projects and Services", () => {
       "Pod / 容器",
     );
     await expect(page.getByTestId("service-logs-page")).toContainText("消息");
+    await page.getByLabel("日志条数").click();
+    await page.getByRole("option", { name: "100" }).click();
+    await expect(page.getByTestId("service-logs-page")).toContainText(
+      "暂无日志",
+    );
+    await expect(page.getByTestId("service-logs-page")).toContainText("时间");
+    await expect(page.getByTestId("service-logs-page")).toContainText("部署");
+    await expect(page.getByTestId("service-logs-page")).toContainText(
+      "Pod / 容器",
+    );
+    await expect(page.getByTestId("service-logs-page")).toContainText("消息");
 
     await page.getByTestId("service-metrics-tab").click();
     await expect(page).toHaveURL(
@@ -554,16 +565,19 @@ async function mockProjectsAndServicesGraphql(page: Page) {
               available: true,
               rangeSeconds: variables.rangeSeconds ?? 3600,
               limit: variables.limit ?? 200,
-              entries: [
-                {
-                  timestamp: "2026-06-06T00:00:00.000Z",
-                  message: "API booted",
-                  namespace: variables.projectId,
-                  podName: "api-75d4db5d87-lkxgh",
-                  containerName: "api",
-                  deploymentName: "deployment-v1",
-                },
-              ],
+              entries:
+                variables.limit === 100
+                  ? []
+                  : [
+                      {
+                        timestamp: "2026-06-06T00:00:00.000Z",
+                        message: "API booted",
+                        namespace: variables.projectId,
+                        podName: "api-75d4db5d87-lkxgh",
+                        containerName: "api",
+                        deploymentName: "deployment-v1",
+                      },
+                    ],
             },
           },
         });

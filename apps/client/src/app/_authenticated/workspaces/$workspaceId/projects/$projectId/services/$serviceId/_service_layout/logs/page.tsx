@@ -242,22 +242,6 @@ function LogEntries({
   entries: readonly LogEntry[];
   loading: boolean;
 }) {
-  if (loading) {
-    return (
-      <div className="bg-muted/50 flex h-96 items-center justify-center text-sm">
-        {t("service:logs.loading")}
-      </div>
-    );
-  }
-
-  if (!entries.length) {
-    return (
-      <div className="border-border text-muted-foreground flex h-96 items-center justify-center border-dashed text-sm">
-        {t("service:logs.empty")}
-      </div>
-    );
-  }
-
   return (
     <div className="max-h-[640px] overflow-auto">
       <div className="min-w-[960px]">
@@ -267,30 +251,40 @@ function LogEntries({
           <div>{t("service:logs.columns.runtime")}</div>
           <div>{t("service:logs.columns.message")}</div>
         </div>
-        <div className="divide-y">
-          {entries.map((entry, index) => (
-            <div
-              key={`${toTimestamp(entry.timestamp)}-${entry.podName ?? "pod"}-${index}`}
-              className="grid grid-cols-[11rem_14rem_14rem_minmax(0,1fr)] gap-3 px-4 py-2 text-xs"
-            >
-              <time
-                className="text-muted-foreground font-mono tabular-nums"
-                dateTime={toTimestamp(entry.timestamp)}
+        {loading ? (
+          <div className="bg-muted/50 flex h-96 items-center justify-center text-sm">
+            {t("service:logs.loading")}
+          </div>
+        ) : entries.length ? (
+          <div className="divide-y">
+            {entries.map((entry, index) => (
+              <div
+                key={`${toTimestamp(entry.timestamp)}-${entry.podName ?? "pod"}-${index}`}
+                className="grid grid-cols-[11rem_14rem_14rem_minmax(0,1fr)] gap-3 px-4 py-2 text-xs"
               >
-                {dayjs(entry.timestamp).format("YYYY-MM-DD HH:mm:ss")}
-              </time>
-              <div className="text-muted-foreground min-w-0 truncate font-mono">
-                {entry.deploymentName ?? "-"}
+                <time
+                  className="text-muted-foreground font-mono tabular-nums"
+                  dateTime={toTimestamp(entry.timestamp)}
+                >
+                  {dayjs(entry.timestamp).format("YYYY-MM-DD HH:mm:ss")}
+                </time>
+                <div className="text-muted-foreground min-w-0 truncate font-mono">
+                  {entry.deploymentName ?? "-"}
+                </div>
+                <div className="text-muted-foreground min-w-0 truncate font-mono">
+                  {formatRuntime(entry)}
+                </div>
+                <pre className="min-w-0 font-mono break-words whitespace-pre-wrap">
+                  {entry.message}
+                </pre>
               </div>
-              <div className="text-muted-foreground min-w-0 truncate font-mono">
-                {formatRuntime(entry)}
-              </div>
-              <pre className="min-w-0 font-mono break-words whitespace-pre-wrap">
-                {entry.message}
-              </pre>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="border-border text-muted-foreground flex h-96 items-center justify-center border-dashed text-sm">
+            {t("service:logs.empty")}
+          </div>
+        )}
       </div>
     </div>
   );
