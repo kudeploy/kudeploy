@@ -16,6 +16,7 @@ import {
 import { PrometheusClient } from './prometheus.client';
 
 interface ServiceMetricsOptions {
+  activeDeploymentName?: string | null;
   now?: Date;
   rangeSeconds?: number | null;
   stepSeconds?: number | null;
@@ -55,7 +56,12 @@ export class KubernetesMetricsService {
 
     let pods: V1Pod[];
     try {
-      pods = await this.listServicePods(workspace, projectId, serviceId);
+      pods = await this.listServicePods(
+        workspace,
+        projectId,
+        serviceId,
+        options.activeDeploymentName,
+      );
     } catch {
       return empty();
     }
@@ -129,10 +135,12 @@ export class KubernetesMetricsService {
     workspace: Workspace,
     projectId: string,
     serviceId: string,
+    activeDeploymentName?: string | null,
   ): Promise<V1Pod[]> {
     const list = await this.coreV1Api.listNamespacedPod({
       namespace: projectId,
       labelSelector: buildServicePodLabelSelector({
+        deploymentName: activeDeploymentName,
         workspaceId: workspace.id,
         projectId,
         serviceId,

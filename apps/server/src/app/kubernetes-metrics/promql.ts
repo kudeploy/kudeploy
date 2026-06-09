@@ -1,16 +1,19 @@
 export const MANAGED_BY_LABEL = 'app.kubernetes.io/managed-by';
 export const MANAGED_BY_LABEL_VALUE = 'kudeploy';
+export const DEPLOYMENT_LABEL = 'kudeploy.com/deployment';
 export const PROJECT_LABEL = 'kudeploy.com/project';
 export const SERVICE_LABEL = 'kudeploy.com/service';
 export const WORKSPACE_ID_LABEL = 'kudeploy.com/workspace-id';
 
 export interface ServicePodSelectorInput {
+  deploymentName?: string | null;
   workspaceId: string;
   projectId: string;
   serviceId: string;
 }
 
 export function buildServicePodLabelSelector({
+  deploymentName,
   workspaceId,
   projectId,
   serviceId,
@@ -20,6 +23,7 @@ export function buildServicePodLabelSelector({
     `${WORKSPACE_ID_LABEL}=${workspaceId}`,
     `${PROJECT_LABEL}=${projectId}`,
     `${SERVICE_LABEL}=${serviceId}`,
+    ...(deploymentName ? [`${DEPLOYMENT_LABEL}=${deploymentName}`] : []),
   ].join(',');
 }
 

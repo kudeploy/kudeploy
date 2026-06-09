@@ -103,6 +103,7 @@ export class ServiceResolver {
       service.projectId,
       service.id,
       {
+        activeDeploymentName: service.activeDeploymentName,
         rangeSeconds,
         stepSeconds,
       },

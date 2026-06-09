@@ -15,7 +15,10 @@ import {
 import type { Server, Socket } from 'socket.io';
 import { PassThrough, Writable } from 'stream';
 
-import { buildServicePodLabelSelector } from '@/app/kubernetes-metrics/promql';
+import {
+  DEPLOYMENT_LABEL,
+  buildServicePodLabelSelector,
+} from '@/app/kubernetes-metrics/promql';
 import { ServiceService } from '@/app/service/service.service';
 import { Workspace } from '@/app/workspace/workspace.entity';
 
@@ -33,16 +36,35 @@ interface ServiceTerminalStartPayload {
 }
 
 const SERVICE_TERMINAL_SHELLS = [['/bin/sh']];
-const SERVICE_DEPLOYMENT_LABEL = 'kudeploy.com/deployment';
 const SHELL_STARTUP_GRACE_MS = 1500;
 const NO_INTERACTIVE_SHELL_MESSAGE =
   'Unable to start an interactive shell in this container. Ensure the image includes /bin/sh.';
+const LOCALHOST_ORIGIN_PATTERN =
+  /^https?:\/\/(?:localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/;
+
+export function isServiceTerminalOriginAllowed(origin?: string): boolean {
+  if (!origin) {
+    return true;
+  }
+
+  const allowedOrigins = getServiceTerminalAllowedOrigins();
+  if (allowedOrigins.length === 0) {
+    return LOCALHOST_ORIGIN_PATTERN.test(origin);
+  }
+
+  return allowedOrigins.includes(origin);
+}
 
 @UseGuards(ServiceTerminalGuard)
 @WebSocketGateway({
   namespace: 'service-terminal',
   cors: {
-    origin: true,
+    origin: (
+      origin: string | undefined,
+      callback: (error: Error | null, success?: boolean) => void,
+    ) => {
+      callback(null, isServiceTerminalOriginAllowed(origin));
+    },
     credentials: true,
   },
 })
@@ -289,6 +311,7 @@ export class ServiceTerminalGateway
     const list = await this.coreV1Api.listNamespacedPod({
       namespace: projectId,
       labelSelector: buildServicePodLabelSelector({
+        deploymentName,
         workspaceId: workspace.id,
         projectId,
         serviceId,
@@ -304,8 +327,7 @@ export class ServiceTerminalGateway
     const pod = deploymentName
       ? runningPods.find(
           (item) =>
-            item.metadata?.labels?.[SERVICE_DEPLOYMENT_LABEL] ===
-            deploymentName,
+            item.metadata?.labels?.[DEPLOYMENT_LABEL] === deploymentName,
         )
       : runningPods[0];
 
@@ -372,6 +394,20 @@ function isMissingShellError(error: unknown) {
     message.includes('no such file or directory') ||
     message.includes('executable file not found')
   );
+}
+
+function getServiceTerminalAllowedOrigins() {
+  return [
+    process.env.SERVICE_TERMINAL_ALLOWED_ORIGINS,
+    process.env.APP_ORIGIN,
+    process.env.APP_URL,
+    process.env.CLIENT_URL,
+    process.env.PUBLIC_APP_URL,
+  ]
+    .filter((value): value is string => Boolean(value?.trim()))
+    .flatMap((value) => value.split(','))
+    .map((value) => value.trim().replace(/\/+$/, ''))
+    .filter(Boolean);
 }
 
 function getErrorMessage(error: unknown, fallback: string) {

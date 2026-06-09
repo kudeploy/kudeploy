@@ -1,15 +1,18 @@
 import { AuthService } from '@nest-boot/auth';
+import { PermissionAction } from '@nest-boot/permission';
 import { RequestContext } from '@nest-boot/request-context';
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { IncomingHttpHeaders } from 'http';
 import type { Socket } from 'socket.io';
 
+import { Service } from '@/app/service/service.object';
 import { User } from '@/app/user/user.entity';
 import { UserService } from '@/app/user/user.service';
 import { Workspace } from '@/app/workspace/workspace.entity';
 import { WorkspaceService } from '@/app/workspace/workspace.service';
 import { WorkspaceMember } from '@/app/workspace-member/workspace-member.entity';
 import { WorkspaceMemberService } from '@/app/workspace-member/workspace-member.service';
+import { buildWorkspaceMemberPermissionAbility } from '@/common/modules/utils/build-workspace-member-permission-ability.util';
 
 @Injectable()
 export class ServiceTerminalGuard implements CanActivate {
@@ -56,6 +59,14 @@ export class ServiceTerminalGuard implements CanActivate {
         RequestContext.set(User, user);
         RequestContext.set(Workspace, workspace);
         RequestContext.set(WorkspaceMember, workspaceMember);
+
+        const permissions =
+          await this.workspaceMemberService.getPermissions(workspaceMember);
+        const ability = buildWorkspaceMemberPermissionAbility(permissions);
+
+        if (!ability.can(PermissionAction.UPDATE, Service)) {
+          return false;
+        }
 
         socket.data.ctx = ctx;
 

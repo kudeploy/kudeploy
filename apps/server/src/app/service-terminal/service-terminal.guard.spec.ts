@@ -6,6 +6,8 @@ import { User } from '@/app/user/user.entity';
 import { UserService } from '@/app/user/user.service';
 import { Workspace } from '@/app/workspace/workspace.entity';
 import { WorkspaceService } from '@/app/workspace/workspace.service';
+import { WorkspaceMemberRole } from '@/app/workspace-member/enums/workspace-member-role.enum';
+import { WorkspaceMemberStatus } from '@/app/workspace-member/enums/workspace-member-status.enum';
 import { WorkspaceMember } from '@/app/workspace-member/workspace-member.entity';
 import { WorkspaceMemberService } from '@/app/workspace-member/workspace-member.service';
 
@@ -15,7 +17,13 @@ describe('ServiceTerminalGuard', () => {
   it('authenticates websocket sessions and stores workspace context', async () => {
     const user = { id: 'user_1' } as User;
     const workspace = { id: 'workspace_1' } as Workspace;
-    const workspaceMember = { id: 'member_1' } as WorkspaceMember;
+    const workspaceMember = {
+      id: 'member_1',
+      permissions: [],
+      role: WorkspaceMemberRole.OWNER,
+      status: WorkspaceMemberStatus.ACTIVE,
+      workspace,
+    } as WorkspaceMember;
     const socket = createSocket({
       auth: { workspaceId: 'workspace_1' },
       headers: { cookie: 'better-auth.session_token=token' },
@@ -40,6 +48,9 @@ describe('ServiceTerminalGuard', () => {
       user,
       workspace,
     });
+    expect(workspaceMemberService.getPermissions).toHaveBeenCalledWith(
+      workspaceMember,
+    );
     await RequestContext.run(socket.data.ctx, async () => {
       expect(RequestContext.get(User)).toBe(user);
       expect(RequestContext.get(Workspace)).toBe(workspace);
@@ -48,6 +59,7 @@ describe('ServiceTerminalGuard', () => {
   });
 
   it('falls back to the workspace_id cookie when auth payload is empty', async () => {
+    const workspace = { id: 'workspace_cookie' } as Workspace;
     const socket = createSocket({
       headers: {
         cookie:
@@ -57,8 +69,14 @@ describe('ServiceTerminalGuard', () => {
     const { guard, workspaceService } = createGuard({
       session: { user: { id: 'user_1' } },
       user: { id: 'user_1' } as User,
-      workspace: { id: 'workspace_cookie' } as Workspace,
-      workspaceMember: { id: 'member_1' } as WorkspaceMember,
+      workspace,
+      workspaceMember: {
+        id: 'member_1',
+        permissions: [],
+        role: WorkspaceMemberRole.OWNER,
+        status: WorkspaceMemberStatus.ACTIVE,
+        workspace,
+      } as WorkspaceMember,
     });
 
     await expect(guard.canActivate(createWsContext(socket))).resolves.toBe(
@@ -87,6 +105,35 @@ describe('ServiceTerminalGuard', () => {
       false,
     );
   });
+
+  it('rejects regular members without service update permission', async () => {
+    const workspace = { id: 'workspace_1' } as Workspace;
+    const workspaceMember = {
+      id: 'member_1',
+      permissions: [],
+      role: WorkspaceMemberRole.MEMBER,
+      status: WorkspaceMemberStatus.ACTIVE,
+      workspace,
+    } as WorkspaceMember;
+    const socket = createSocket({
+      auth: { workspaceId: 'workspace_1' },
+      headers: { cookie: 'better-auth.session_token=token' },
+    });
+    const { guard, workspaceMemberService } = createGuard({
+      session: { user: { id: 'user_1' } },
+      user: { id: 'user_1' } as User,
+      workspace,
+      workspaceMember,
+    });
+
+    await expect(guard.canActivate(createWsContext(socket))).resolves.toBe(
+      false,
+    );
+    expect(workspaceMemberService.getPermissions).toHaveBeenCalledWith(
+      workspaceMember,
+    );
+    expect(socket.data.ctx).toBeUndefined();
+  });
 });
 
 function createGuard({
@@ -113,6 +160,7 @@ function createGuard({
   };
   const workspaceMemberService = {
     findOne: jest.fn(async () => workspaceMember),
+    getPermissions: jest.fn(async () => workspaceMember?.permissions ?? []),
   };
 
   return {

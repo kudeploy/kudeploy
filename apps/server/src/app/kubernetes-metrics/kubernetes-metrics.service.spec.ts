@@ -58,6 +58,7 @@ describe('KubernetesMetricsService', () => {
       'project-1',
       'service-1',
       {
+        activeDeploymentName: 'service-1-00002',
         now,
         rangeSeconds: 3600,
         stepSeconds: 300,
@@ -67,7 +68,7 @@ describe('KubernetesMetricsService', () => {
     expect(coreV1Api.listNamespacedPod).toHaveBeenCalledWith({
       namespace: 'project-1',
       labelSelector:
-        'app.kubernetes.io/managed-by=kudeploy,kudeploy.com/workspace-id=workspace_1,kudeploy.com/project=project-1,kudeploy.com/service=service-1',
+        'app.kubernetes.io/managed-by=kudeploy,kudeploy.com/workspace-id=workspace_1,kudeploy.com/project=project-1,kudeploy.com/service=service-1,kudeploy.com/deployment=service-1-00002',
     });
     expect(prometheusClient.queryRange).toHaveBeenCalledWith(
       expect.stringContaining('container_cpu_usage_seconds_total'),

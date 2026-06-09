@@ -11,9 +11,56 @@ import type { Socket } from 'socket.io';
 import { ServiceService } from '@/app/service/service.service';
 import { Workspace } from '@/app/workspace/workspace.entity';
 
-import { ServiceTerminalGateway } from './service-terminal.gateway';
+import {
+  ServiceTerminalGateway,
+  isServiceTerminalOriginAllowed,
+} from './service-terminal.gateway';
 
 describe('ServiceTerminalGateway', () => {
+  const originEnvKeys = [
+    'SERVICE_TERMINAL_ALLOWED_ORIGINS',
+    'APP_ORIGIN',
+    'APP_URL',
+    'CLIENT_URL',
+    'PUBLIC_APP_URL',
+  ] as const;
+  const originalOriginEnv = Object.fromEntries(
+    originEnvKeys.map((key) => [key, process.env[key]]),
+  );
+
+  afterEach(() => {
+    for (const key of originEnvKeys) {
+      const value = originalOriginEnv[key];
+      if (value === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = value;
+      }
+    }
+  });
+
+  it('rejects unexpected browser origins for terminal sockets', () => {
+    clearOriginEnv(originEnvKeys);
+    process.env.SERVICE_TERMINAL_ALLOWED_ORIGINS = 'https://app.example.com';
+
+    expect(isServiceTerminalOriginAllowed('https://app.example.com')).toBe(
+      true,
+    );
+    expect(isServiceTerminalOriginAllowed('https://evil.example.com')).toBe(
+      false,
+    );
+  });
+
+  it('allows localhost origins when no terminal origin allowlist is configured', () => {
+    clearOriginEnv(originEnvKeys);
+
+    expect(isServiceTerminalOriginAllowed('http://localhost:3000')).toBe(true);
+    expect(isServiceTerminalOriginAllowed('http://127.0.0.1:3100')).toBe(true);
+    expect(isServiceTerminalOriginAllowed('https://evil.example.com')).toBe(
+      false,
+    );
+  });
+
   it('starts an interactive exec session for the selected service pod', async () => {
     const workspace = { id: 'workspace_1' } as Workspace;
     const { gateway, coreV1Api, exec, serviceService } = createGateway();
@@ -307,4 +354,10 @@ function createSocket(ctx: RequestContext): Socket {
     emit: jest.fn(),
     id: 'socket-1',
   } as unknown as Socket;
+}
+
+function clearOriginEnv(keys: readonly string[]) {
+  for (const key of keys) {
+    delete process.env[key];
+  }
 }

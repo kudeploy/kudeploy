@@ -89,13 +89,15 @@ function ServiceLayout() {
       .watchQuery({
         query: GET_SERVICE_FROM_SERVICE_LAYOUT,
         variables: { projectId, id: service.id },
-        fetchPolicy: "cache-only",
+        fetchPolicy: "cache-and-network",
+        pollInterval: 5000,
       })
       .subscribe({
         next(result) {
           if (
-            result.data?.service?.updatedAt &&
-            result.data.service.updatedAt !== service.updatedAt
+            result.data?.service &&
+            (result.data.service.updatedAt !== service.updatedAt ||
+              result.data.service.status !== service.status)
           ) {
             router.invalidate();
           }

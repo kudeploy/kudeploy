@@ -331,6 +331,14 @@ test.describe("workspace Projects and Services", () => {
       .poll(() => terminalSocket.events.filter((event) => event[0] === "data"))
       .not.toHaveLength(0);
 
+    await page.getByTestId("service-logs-tab").click();
+    await expect(page).toHaveURL(
+      new RegExp(
+        `/workspaces/${workspaceId}/projects/project-e2e/services/service-e2e/logs$`,
+      ),
+    );
+    await expect(page.getByTestId("service-logs-page")).toBeVisible();
+
     await page.getByTestId("service-metrics-tab").click();
     await expect(page).toHaveURL(
       new RegExp(
