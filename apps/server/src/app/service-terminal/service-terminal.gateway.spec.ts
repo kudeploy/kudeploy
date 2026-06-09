@@ -172,6 +172,59 @@ describe('ServiceTerminalGateway', () => {
     expect(inputChunks).toHaveLength(0);
   });
 
+  it('closes a startup exec session when the client disconnects before startup completes', async () => {
+    const workspace = { id: 'workspace_1' } as Workspace;
+    const { gateway, coreV1Api, exec, serviceService } = createGateway();
+    const socket = createSocket(await createWsContext(workspace));
+    const execSocket = { close: jest.fn() };
+    let statusCallback: ((status: V1Status) => void) | undefined;
+    let resolveExecStarted: () => void = () => {};
+    const execStarted = new Promise<void>((resolve) => {
+      resolveExecStarted = resolve;
+    });
+
+    serviceService.findService.mockResolvedValue({
+      id: 'service-1',
+      projectId: 'project-1',
+    } as never);
+    coreV1Api.listNamespacedPod.mockResolvedValue({
+      items: [
+        {
+          metadata: { name: 'pod-1' },
+          spec: { containers: [{ name: 'app' }] },
+          status: { phase: 'Running' },
+        },
+      ],
+    });
+    exec.exec.mockImplementation(async (...args: unknown[]) => {
+      statusCallback = args[8] as (status: V1Status) => void;
+      resolveExecStarted();
+
+      return execSocket as never;
+    });
+
+    const start = gateway.handleStart(socket, {
+      projectId: 'project-1',
+      serviceId: 'service-1',
+    });
+
+    await execStarted;
+    socket.connected = false;
+    gateway.handleDisconnect(socket);
+    statusCallback?.({ status: 'Success' } as V1Status);
+    await start;
+
+    expect(execSocket.close).toHaveBeenCalledTimes(1);
+    expect(socket.emit).not.toHaveBeenCalledWith('started');
+
+    const stdin = exec.exec.mock.calls[0][6] as PassThrough;
+    const inputChunks: Buffer[] = [];
+    stdin.on('data', (chunk: Buffer) => inputChunks.push(chunk));
+
+    gateway.handleData(socket, { data: 'echo after-disconnect\r' });
+    expect(inputChunks).toHaveLength(0);
+  });
+
   it('prefers the active deployment pod when older deployment pods are still running', async () => {
     const workspace = { id: 'workspace_1' } as Workspace;
     const { gateway, coreV1Api, exec, serviceService } = createGateway();
@@ -387,6 +440,7 @@ async function createWsContext(workspace: Workspace) {
 
 function createSocket(ctx: RequestContext): Socket {
   return {
+    connected: true,
     data: { ctx },
     emit: jest.fn(),
     id: 'socket-1',

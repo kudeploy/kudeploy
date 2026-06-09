@@ -142,6 +142,11 @@ export class ServiceTerminalGateway
           serviceId,
         });
 
+        if (!client.connected) {
+          this.closeSession(client.id, session);
+          return;
+        }
+
         this.sessions.set(client.id, session);
         client.emit('started');
       } catch (error) {
