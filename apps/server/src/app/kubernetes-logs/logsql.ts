@@ -64,17 +64,25 @@ export function buildServiceLogsQuery(
 
   if (options.limit != null) {
     pipes.push(
-      `sort by (${LOG_SORT_FIELDS.join(', ')})${options.order === 'desc' ? ' desc' : ''} limit ${options.limit}`,
+      `sort by (${LOG_SORT_FIELDS.map(logsQlField).join(', ')})${options.order === 'desc' ? ' desc' : ''} limit ${options.limit}`,
     );
   }
 
-  pipes.push(`fields ${LOG_FIELDS.join(', ')}`);
+  pipes.push(`fields ${LOG_FIELDS.map(logsQlField).join(', ')}`);
 
   return pipes.join(' | ');
 }
 
 function exactFilter(field: string, value: string): string {
-  return `${field}:=${logsQlString(value)}`;
+  return `${logsQlField(field)}:=${logsQlString(value)}`;
+}
+
+function logsQlField(field: string): string {
+  if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(field)) {
+    return field;
+  }
+
+  return `\`${field.replace(/\\/g, '\\\\').replace(/`/g, '\\`')}\``;
 }
 
 function logsQlString(value: string): string {

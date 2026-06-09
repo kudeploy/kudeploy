@@ -178,6 +178,82 @@ describe('KubernetesLogsService', () => {
     );
   });
 
+  it('uses the query sort tuple for same-timestamp cursors', async () => {
+    const { service, victoriaLogsClient } = createService();
+    const sameTimestamp = '2026-06-08T16:46:23.000000000Z';
+    const olderSameTimestamp = log({
+      id: 'f'.repeat(64),
+      message: 'alpha',
+      rawTime: sameTimestamp,
+    });
+    const newerSameTimestamp = log({
+      id: '1'.repeat(64),
+      message: 'zulu',
+      rawTime: sameTimestamp,
+    });
+    const after = encodeServiceLogCursor(
+      log({
+        id: '0'.repeat(64),
+        message: 'middle',
+        rawTime: sameTimestamp,
+      }),
+    );
+
+    victoriaLogsClient.query.mockResolvedValue([
+      olderSameTimestamp,
+      newerSameTimestamp,
+    ]);
+
+    await expect(
+      service.getServiceLogs(workspace(), 'project-1', 'service-1', {
+        after,
+        first: 1,
+        now: new Date('2026-06-08T17:00:00.000Z'),
+      }),
+    ).resolves.toMatchObject({
+      edges: [
+        {
+          node: olderSameTimestamp,
+        },
+      ],
+      pageInfo: {
+        hasNextPage: false,
+        hasPreviousPage: true,
+      },
+    });
+  });
+
+  it('orders exact-second and fractional-second timestamps chronologically', async () => {
+    const { service, victoriaLogsClient } = createService();
+    const exactSecond = log({
+      id: '8'.repeat(64),
+      message: 'exact second',
+      rawTime: '2026-06-08T16:46:23Z',
+    });
+    const fractionalSecond = log({
+      id: '9'.repeat(64),
+      message: 'fractional second',
+      rawTime: '2026-06-08T16:46:23.100000000Z',
+    });
+
+    victoriaLogsClient.query.mockResolvedValue([exactSecond, fractionalSecond]);
+
+    await expect(
+      service.getServiceLogs(workspace(), 'project-1', 'service-1', {
+        now: new Date('2026-06-08T17:00:00.000Z'),
+      }),
+    ).resolves.toMatchObject({
+      edges: [
+        {
+          node: fractionalSecond,
+        },
+        {
+          node: exactSecond,
+        },
+      ],
+    });
+  });
+
   it('rejects mixed forward and backward pagination', async () => {
     const { service } = createService();
 
@@ -252,6 +328,7 @@ function log(input: {
   id: string;
   message: string;
   rawTime: string;
+  streamId?: string;
 }): ServiceLog {
   return {
     containerName: 'api',
@@ -261,7 +338,7 @@ function log(input: {
     namespace: 'project-1',
     podName: 'pod-1',
     rawTime: input.rawTime,
-    streamId: 'stream-1',
+    streamId: input.streamId ?? 'stream-1',
     timestamp: new Date(input.rawTime),
   };
 }

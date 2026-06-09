@@ -4,6 +4,12 @@ import { Workspace } from '@/app/workspace/workspace.entity';
 
 import { ServiceLog, ServiceLogConnection } from './kubernetes-logs.object';
 import { buildServiceLogsQuery } from './logsql';
+import {
+  compareServiceLogToCursor,
+  compareServiceLogsDesc,
+  serviceLogCursorPayload,
+} from './service-log-order';
+import type { ServiceLogCursorPayload } from './service-log-order';
 import { VictoriaLogsClient } from './victoria-logs.client';
 
 interface ServiceLogsOptions {
@@ -12,11 +18,6 @@ interface ServiceLogsOptions {
   first?: number | null;
   last?: number | null;
   now?: Date;
-}
-
-interface ServiceLogCursor {
-  id: string;
-  t: string;
 }
 
 const DEFAULT_PAGE_SIZE = 500;
@@ -84,15 +85,15 @@ export class KubernetesLogsService {
   }
 }
 
-export function encodeServiceLogCursor(log: Pick<ServiceLog, 'id' | 'rawTime'>) {
-  return Buffer.from(JSON.stringify({ t: log.rawTime, id: log.id })).toString(
+export function encodeServiceLogCursor(log: ServiceLog) {
+  return Buffer.from(JSON.stringify(serviceLogCursorPayload(log))).toString(
     'base64url',
   );
 }
 
 function decodeServiceLogCursor(
   cursor: string | null | undefined,
-): ServiceLogCursor | null {
+): ServiceLogCursorPayload | null {
   if (!cursor) {
     return null;
   }
@@ -105,11 +106,34 @@ function decodeServiceLogCursor(
     if (
       value &&
       typeof value === 'object' &&
-      typeof (value as ServiceLogCursor).t === 'string' &&
-      typeof (value as ServiceLogCursor).id === 'string' &&
-      !Number.isNaN(new Date((value as ServiceLogCursor).t).getTime())
+      typeof (value as ServiceLogCursorPayload).t === 'string' &&
+      typeof (value as ServiceLogCursorPayload).id === 'string' &&
+      !Number.isNaN(new Date((value as ServiceLogCursorPayload).t).getTime())
     ) {
-      return value as ServiceLogCursor;
+      return {
+        containerName: stringOrNull(
+          (value as Partial<ServiceLogCursorPayload>).containerName,
+        ),
+        deploymentName: stringOrNull(
+          (value as Partial<ServiceLogCursorPayload>).deploymentName,
+        ),
+        id: (value as ServiceLogCursorPayload).id,
+        message:
+          typeof (value as Partial<ServiceLogCursorPayload>).message ===
+          'string'
+            ? (value as ServiceLogCursorPayload).message
+            : '',
+        namespace: stringOrNull(
+          (value as Partial<ServiceLogCursorPayload>).namespace,
+        ),
+        podName: stringOrNull(
+          (value as Partial<ServiceLogCursorPayload>).podName,
+        ),
+        streamId: stringOrNull(
+          (value as Partial<ServiceLogCursorPayload>).streamId,
+        ),
+        t: (value as ServiceLogCursorPayload).t,
+      };
     }
   } catch {
     // Fall through to the shared error below.
@@ -155,7 +179,7 @@ function toConnection({
   mode,
   rows,
 }: {
-  cursor: ServiceLogCursor | null;
+  cursor: ServiceLogCursorPayload | null;
   limit: number;
   mode: 'backward' | 'forward';
   rows: ServiceLog[];
@@ -163,8 +187,8 @@ function toConnection({
   const filteredRows = cursor
     ? rows.filter((row) =>
         mode === 'forward'
-          ? compareLogToCursor(row, cursor) < 0
-          : compareLogToCursor(row, cursor) > 0,
+          ? compareServiceLogToCursor(row, cursor) < 0
+          : compareServiceLogToCursor(row, cursor) > 0,
       )
     : rows;
   const sortedRows = [...filteredRows].sort(compareServiceLogsDesc);
@@ -204,7 +228,7 @@ function emptyConnection(available: boolean): ServiceLogConnection {
 }
 
 function cursorStart(
-  cursor: ServiceLogCursor | null,
+  cursor: ServiceLogCursorPayload | null,
   lowerBound: Date,
 ): Date {
   if (!cursor) {
@@ -214,37 +238,12 @@ function cursorStart(
   return maxDate(lowerBound, new Date(cursor.t));
 }
 
-function cursorEnd(cursor: ServiceLogCursor | null, now: Date): Date {
+function cursorEnd(cursor: ServiceLogCursorPayload | null, now: Date): Date {
   if (!cursor) {
     return now;
   }
 
   return minDate(now, new Date(new Date(cursor.t).getTime() + 1));
-}
-
-function compareLogToCursor(
-  log: ServiceLog,
-  cursor: ServiceLogCursor,
-): number {
-  const timeComparison = log.rawTime.localeCompare(cursor.t);
-  if (timeComparison !== 0) {
-    return timeComparison;
-  }
-
-  return log.id.localeCompare(cursor.id);
-}
-
-function compareServiceLogs(left: ServiceLog, right: ServiceLog): number {
-  const timeComparison = left.rawTime.localeCompare(right.rawTime);
-  if (timeComparison !== 0) {
-    return timeComparison;
-  }
-
-  return left.id.localeCompare(right.id);
-}
-
-function compareServiceLogsDesc(left: ServiceLog, right: ServiceLog): number {
-  return compareServiceLogs(right, left);
 }
 
 function clampPageSize(value: number | null | undefined): number {
@@ -261,4 +260,8 @@ function maxDate(left: Date, right: Date): Date {
 
 function minDate(left: Date, right: Date): Date {
   return left.getTime() < right.getTime() ? left : right;
+}
+
+function stringOrNull(value: unknown): string | null {
+  return typeof value === 'string' ? value : null;
 }

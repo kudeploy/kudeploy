@@ -22,7 +22,7 @@ describe('VictoriaLogsClient', () => {
         [
           '{"_time":"2026-06-08T16:46:23.000000000Z","_stream_id":"stream-1","_msg":"ready","kubernetes.pod_name":"pod-1"}',
           '{"_time":"2026-06-08T16:46:22.838035630Z","_stream_id":"stream-1","_msg":"started","kubernetes.pod_namespace":"project-1","kubernetes.pod_name":"pod-1","kubernetes.container_name":"api","kubernetes.pod_labels.kudeploy.com/deployment":"service-1-00002"}',
-          '{"_time":"2026-06-08T16:46:22.838035630Z","_stream_id":"stream-1","_msg":"started again","kubernetes.pod_name":"pod-1"}',
+          '{"_time":"2026-06-08T16:46:22.838035630Z","_stream_id":"stream-1","_msg":"started again","kubernetes.pod_namespace":"project-1","kubernetes.pod_name":"pod-1","kubernetes.container_name":"api","kubernetes.pod_labels.kudeploy.com/deployment":"service-1-00002"}',
           '',
         ].join('\n'),
     });

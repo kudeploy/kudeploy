@@ -9,7 +9,7 @@ describe('logsql', () => {
         workspaceId: 'workspace-1',
       }),
     ).toBe(
-      'kubernetes.pod_labels.app.kubernetes.io/managed-by:="kudeploy" AND kubernetes.pod_labels.kudeploy.com/workspace-id:="workspace-1" AND kubernetes.pod_labels.kudeploy.com/project:="project-1" AND kubernetes.pod_labels.kudeploy.com/service:="service-1" | fields _time, _stream_id, _msg, level, kubernetes.pod_namespace, kubernetes.pod_name, kubernetes.container_name, kubernetes.pod_labels.kudeploy.com/deployment',
+      '`kubernetes.pod_labels.app.kubernetes.io/managed-by`:="kudeploy" AND `kubernetes.pod_labels.kudeploy.com/workspace-id`:="workspace-1" AND `kubernetes.pod_labels.kudeploy.com/project`:="project-1" AND `kubernetes.pod_labels.kudeploy.com/service`:="service-1" | fields _time, _stream_id, _msg, level, `kubernetes.pod_namespace`, `kubernetes.pod_name`, `kubernetes.container_name`, `kubernetes.pod_labels.kudeploy.com/deployment`',
     );
   });
 
@@ -27,7 +27,7 @@ describe('logsql', () => {
         },
       ),
     ).toContain(
-      'sort by (_time, _stream_id, kubernetes.pod_namespace, kubernetes.pod_name, kubernetes.container_name, kubernetes.pod_labels.kudeploy.com/deployment, _msg) desc limit 501',
+      'sort by (_time, _stream_id, `kubernetes.pod_namespace`, `kubernetes.pod_name`, `kubernetes.container_name`, `kubernetes.pod_labels.kudeploy.com/deployment`, _msg) desc limit 501',
     );
   });
 
@@ -39,7 +39,7 @@ describe('logsql', () => {
         workspaceId: 'workspace-1',
       }),
     ).toContain(
-      'kubernetes.pod_labels.kudeploy.com/service:="service-\\"quoted\\""',
+      '`kubernetes.pod_labels.kudeploy.com/service`:="service-\\"quoted\\""',
     );
   });
 });

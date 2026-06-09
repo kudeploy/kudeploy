@@ -13,6 +13,10 @@ import {
   LOG_FIELD_TIME,
 } from './logsql';
 import { ServiceLog } from './kubernetes-logs.object';
+import {
+  compareServiceLogsAsc,
+  compareServiceLogsDesc,
+} from './service-log-order';
 
 interface QueryOptions {
   start?: Date;
@@ -106,8 +110,8 @@ function parseJsonLines(
 
   return entries.sort((left, right) =>
     order === 'desc'
-      ? compareServiceLogs(right, left)
-      : compareServiceLogs(left, right),
+      ? compareServiceLogsDesc(left, right)
+      : compareServiceLogsAsc(left, right),
   );
 }
 
@@ -184,15 +188,6 @@ function createServiceLogId(input: {
       ].join('\0'),
     )
     .digest('hex');
-}
-
-function compareServiceLogs(left: ServiceLog, right: ServiceLog): number {
-  const timeComparison = left.rawTime.localeCompare(right.rawTime);
-  if (timeComparison !== 0) {
-    return timeComparison;
-  }
-
-  return left.id.localeCompare(right.id);
 }
 
 function stringField(entry: RawLogEntry, field: string): string | null {
