@@ -21,6 +21,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { graphql } from "@/gql";
 
 const GET_SERVICE_LOGS_FROM_SERVICE_LOGS_ROUTE = graphql(`
@@ -268,12 +273,20 @@ function LogEntries({
                   >
                     {dayjs(entry.timestamp).format("YYYY-MM-DD HH:mm:ss")}
                   </time>
-                  <div
-                    className="text-muted-foreground min-w-0 truncate font-mono"
-                    title={deployment}
-                  >
-                    {deployment}
-                  </div>
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <div className="text-muted-foreground min-w-0 truncate font-mono">
+                          {deployment}
+                        </div>
+                      }
+                    />
+                    <TooltipContent align="start">
+                      <span className="font-mono break-words">
+                        {deployment}
+                      </span>
+                    </TooltipContent>
+                  </Tooltip>
                   <pre className="min-w-0 font-mono break-words whitespace-pre-wrap">
                     {entry.message}
                   </pre>

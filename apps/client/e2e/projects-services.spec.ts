@@ -360,9 +360,13 @@ test.describe("workspace Projects and Services", () => {
     await expect(page.getByTestId("service-logs-page")).toContainText(
       "deployment-v1",
     );
-    await expect(
-      page.getByText("deployment-v1-with-a-very-long-generated-name"),
-    ).toHaveAttribute("title", "deployment-v1-with-a-very-long-generated-name");
+    const deploymentCell = page.getByText(
+      "deployment-v1-with-a-very-long-generated-name",
+    );
+    await deploymentCell.hover();
+    await expect(page.getByRole("tooltip")).toContainText(
+      "deployment-v1-with-a-very-long-generated-name",
+    );
     const logRow = page.getByText("API booted").locator("..");
     await logRow.hover();
     await expect
