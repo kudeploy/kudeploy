@@ -360,6 +360,12 @@ test.describe("workspace Projects and Services", () => {
     await expect(page.getByTestId("service-logs-page")).toContainText(
       "deployment-v1",
     );
+    await expect(page.getByTestId("service-logs-page")).toContainText("时间");
+    await expect(page.getByTestId("service-logs-page")).toContainText("部署");
+    await expect(page.getByTestId("service-logs-page")).toContainText(
+      "Pod / 容器",
+    );
+    await expect(page.getByTestId("service-logs-page")).toContainText("消息");
 
     await page.getByTestId("service-metrics-tab").click();
     await expect(page).toHaveURL(

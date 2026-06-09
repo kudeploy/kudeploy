@@ -125,7 +125,13 @@
     "empty": "No logs yet",
     "refresh": "Refresh logs",
     "recent": "Recent logs",
-    "recent_description": "Latest logs for this service across all deployment versions."
+    "recent_description": "Latest logs for this service across all deployment versions.",
+    "columns": {
+      "time": "Time",
+      "deployment": "Deployment",
+      "runtime": "Pod / Container",
+      "message": "Message"
+    }
   },
   "metrics": {
     "description": "Observe recent resource usage, limits, and network throughput.",

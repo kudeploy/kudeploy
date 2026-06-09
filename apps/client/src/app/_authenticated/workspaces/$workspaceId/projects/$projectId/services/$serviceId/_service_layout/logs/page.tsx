@@ -130,6 +130,7 @@ function ServiceLogsComponent() {
 
   return (
     <Page
+      fullWidth
       title={t("service:tabs.logs")}
       description={t("service:logs.description")}
     >
@@ -259,29 +260,37 @@ function LogEntries({
 
   return (
     <div className="max-h-[640px] overflow-auto">
-      <div className="min-w-[960px] divide-y">
-        {entries.map((entry, index) => (
-          <div
-            key={`${toTimestamp(entry.timestamp)}-${entry.podName ?? "pod"}-${index}`}
-            className="grid grid-cols-[11rem_14rem_14rem_minmax(0,1fr)] gap-3 px-4 py-2 text-xs"
-          >
-            <time
-              className="text-muted-foreground font-mono tabular-nums"
-              dateTime={toTimestamp(entry.timestamp)}
+      <div className="min-w-[960px]">
+        <div className="bg-background text-muted-foreground sticky top-0 z-10 grid grid-cols-[11rem_14rem_14rem_minmax(0,1fr)] gap-3 border-b px-4 py-2 text-xs font-medium">
+          <div>{t("service:logs.columns.time")}</div>
+          <div>{t("service:logs.columns.deployment")}</div>
+          <div>{t("service:logs.columns.runtime")}</div>
+          <div>{t("service:logs.columns.message")}</div>
+        </div>
+        <div className="divide-y">
+          {entries.map((entry, index) => (
+            <div
+              key={`${toTimestamp(entry.timestamp)}-${entry.podName ?? "pod"}-${index}`}
+              className="grid grid-cols-[11rem_14rem_14rem_minmax(0,1fr)] gap-3 px-4 py-2 text-xs"
             >
-              {dayjs(entry.timestamp).format("YYYY-MM-DD HH:mm:ss")}
-            </time>
-            <div className="text-muted-foreground min-w-0 truncate font-mono">
-              {entry.deploymentName ?? "-"}
+              <time
+                className="text-muted-foreground font-mono tabular-nums"
+                dateTime={toTimestamp(entry.timestamp)}
+              >
+                {dayjs(entry.timestamp).format("YYYY-MM-DD HH:mm:ss")}
+              </time>
+              <div className="text-muted-foreground min-w-0 truncate font-mono">
+                {entry.deploymentName ?? "-"}
+              </div>
+              <div className="text-muted-foreground min-w-0 truncate font-mono">
+                {formatRuntime(entry)}
+              </div>
+              <pre className="min-w-0 font-mono break-words whitespace-pre-wrap">
+                {entry.message}
+              </pre>
             </div>
-            <div className="text-muted-foreground min-w-0 truncate font-mono">
-              {formatRuntime(entry)}
-            </div>
-            <pre className="min-w-0 font-mono break-words whitespace-pre-wrap">
-              {entry.message}
-            </pre>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );
