@@ -39,9 +39,9 @@ describe('ServiceTerminalGateway', () => {
     }
   });
 
-  it('rejects unexpected browser origins for terminal sockets', () => {
+  it('uses APP_URL as the terminal socket origin allowlist', () => {
     clearOriginEnv(originEnvKeys);
-    process.env.SERVICE_TERMINAL_ALLOWED_ORIGINS = 'https://app.example.com';
+    process.env.APP_URL = 'https://app.example.com/';
 
     expect(isServiceTerminalOriginAllowed('https://app.example.com')).toBe(
       true,
@@ -49,6 +49,20 @@ describe('ServiceTerminalGateway', () => {
     expect(isServiceTerminalOriginAllowed('https://evil.example.com')).toBe(
       false,
     );
+  });
+
+  it('ignores terminal-specific origin environment variables', () => {
+    clearOriginEnv(originEnvKeys);
+    process.env.APP_URL = 'https://app.example.com';
+    process.env.SERVICE_TERMINAL_ALLOWED_ORIGINS =
+      'https://terminal.example.com';
+
+    expect(isServiceTerminalOriginAllowed('https://app.example.com')).toBe(
+      true,
+    );
+    expect(
+      isServiceTerminalOriginAllowed('https://terminal.example.com'),
+    ).toBe(false);
   });
 
   it('allows localhost origins when no terminal origin allowlist is configured', () => {

@@ -397,13 +397,7 @@ function isMissingShellError(error: unknown) {
 }
 
 function getServiceTerminalAllowedOrigins() {
-  return [
-    process.env.SERVICE_TERMINAL_ALLOWED_ORIGINS,
-    process.env.APP_ORIGIN,
-    process.env.APP_URL,
-    process.env.CLIENT_URL,
-    process.env.PUBLIC_APP_URL,
-  ]
+  return [process.env.APP_URL]
     .filter((value): value is string => Boolean(value?.trim()))
     .flatMap((value) => value.split(','))
     .map((value) => value.trim().replace(/\/+$/, ''))
