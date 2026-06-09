@@ -118,6 +118,28 @@ describe('VictoriaLogsClient', () => {
     ]);
   });
 
+  it('keeps duplicate log rows with distinct response ids', async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      text: async () =>
+        [
+          '{"_time":"2026-06-08T16:46:23.000000000Z","_stream":"{pod=\\"pod-1\\"}","_stream_id":"stream-1","_msg":"duplicate"}',
+          '{"_time":"2026-06-08T16:46:23.000000000Z","_stream":"{pod=\\"pod-1\\"}","_stream_id":"stream-1","_msg":"duplicate"}',
+        ].join('\n'),
+    });
+    const client = createClient('http://victoria-logs:9428');
+
+    const result = await client.query('logs', {
+      limit: 100,
+      order: 'asc',
+    });
+
+    expect(result).toHaveLength(2);
+    expect(result[0].message).toBe('duplicate');
+    expect(result[1].message).toBe('duplicate');
+    expect(result[0].id).not.toBe(result[1].id);
+  });
+
   it('omits optional time bounds when they are not provided', async () => {
     fetchMock.mockResolvedValue({
       ok: true,

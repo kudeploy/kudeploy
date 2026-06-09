@@ -43,7 +43,14 @@ export class KubernetesLogsService {
     );
     const empty = () => emptyConnection(false);
 
-    if (!this.victoriaLogsClient.isConfigured()) {
+    let configured: boolean;
+    try {
+      configured = this.victoriaLogsClient.isConfigured();
+    } catch {
+      return empty();
+    }
+
+    if (!configured) {
       return empty();
     }
 

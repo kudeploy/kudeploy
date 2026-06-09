@@ -316,6 +316,28 @@ describe('KubernetesLogsService', () => {
     expect(victoriaLogsClient.query).not.toHaveBeenCalled();
   });
 
+  it('returns an unavailable empty connection when VictoriaLogs config is missing', async () => {
+    const { service, victoriaLogsClient } = createService();
+
+    victoriaLogsClient.isConfigured.mockImplementation(() => {
+      throw new Error('VICTORIA_LOGS_URL is not configured');
+    });
+
+    await expect(
+      service.getServiceLogs(workspace(), 'project-1', 'service-1'),
+    ).resolves.toEqual({
+      available: false,
+      edges: [],
+      pageInfo: {
+        endCursor: null,
+        hasNextPage: false,
+        hasPreviousPage: false,
+        startCursor: null,
+      },
+    });
+    expect(victoriaLogsClient.query).not.toHaveBeenCalled();
+  });
+
   it('keeps a stable empty connection when VictoriaLogs queries fail', async () => {
     const { service, victoriaLogsClient } = createService();
 

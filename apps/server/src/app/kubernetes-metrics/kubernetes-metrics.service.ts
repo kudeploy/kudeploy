@@ -75,7 +75,14 @@ export class KubernetesMetricsService {
       .map((pod) => pod.metadata?.name)
       .filter((name): name is string => Boolean(name));
 
-    if (!this.prometheusClient.isConfigured() || podNames.length === 0) {
+    let prometheusConfigured: boolean;
+    try {
+      prometheusConfigured = this.prometheusClient.isConfigured();
+    } catch {
+      prometheusConfigured = false;
+    }
+
+    if (!prometheusConfigured || podNames.length === 0) {
       return {
         ...baseResult,
         available: false,

@@ -452,14 +452,14 @@ test.describe("workspace Projects and Services", () => {
     const latestLogRequestCount = () =>
       graphqlMock.serviceLogRequests.filter(
         (variables) =>
-          variables.first === 100 &&
+          variables.first === 1000 &&
           variables.after == null &&
           variables.before == null &&
           variables.last == null,
       ).length;
     const olderLogRequestCount = () =>
       graphqlMock.serviceLogRequests.filter(
-        (variables) => variables.first === 100 && variables.after != null,
+        (variables) => variables.first === 1000 && variables.after != null,
       ).length;
     const latestRequestsBeforeWheel = latestLogRequestCount();
     await logsScrollContainer.evaluate((element) => {

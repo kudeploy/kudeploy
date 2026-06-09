@@ -112,11 +112,13 @@ function parseJsonLines(
     }
   }
 
-  return entries.sort((left, right) =>
+  const sortedEntries = entries.sort((left, right) =>
     order === 'desc'
       ? compareServiceLogsDesc(left, right)
       : compareServiceLogsAsc(left, right),
   );
+
+  return withUniqueIds(sortedEntries);
 }
 
 function parseJsonLine(line: string): RawLogEntry | null {
@@ -186,6 +188,24 @@ function createServiceLogId(input: {
     .update('\0')
     .update(input.stream ?? '')
     .digest('hex');
+}
+
+function withUniqueIds(entries: ServiceLog[]): ServiceLog[] {
+  const seenIds = new Map<string, number>();
+
+  return entries.map((entry) => {
+    const count = seenIds.get(entry.id) ?? 0;
+    seenIds.set(entry.id, count + 1);
+
+    if (count === 0) {
+      return entry;
+    }
+
+    return {
+      ...entry,
+      id: `${entry.id}:${count}`,
+    };
+  });
 }
 
 function formatTimeBound(value: Date | string): string {
