@@ -32,6 +32,7 @@ import { ServiceStatus } from './service-status.enum';
 
 export const PROJECT_LABEL = 'kudeploy.com/project';
 export const SERVICES_PLURAL = 'services';
+const DEFAULT_SERVICE_REPLICAS = 1;
 
 export interface ServiceResource {
   apiVersion: typeof KUDEPLOY_API_VERSION;
@@ -98,7 +99,7 @@ interface ServiceResourceInput {
   projectId: string;
   name: string;
   image: string;
-  replicas?: number;
+  replicas?: number | null;
   command?: string[] | null;
   args?: string[] | null;
   resources?: ServiceResourcesInput | Service['resources'] | null;
@@ -230,7 +231,7 @@ export class ServiceService {
           replicas:
             input.replicas === undefined
               ? (existing.replicas ?? undefined)
-              : input.replicas,
+              : this.defaultReplicas(input.replicas),
           command:
             input.command === undefined
               ? existing.command
@@ -362,7 +363,7 @@ export class ServiceService {
       },
       spec: {
         image: input.image,
-        ...(input.replicas === undefined ? {} : { replicas: input.replicas }),
+        replicas: this.defaultReplicas(input.replicas),
         ...(input.command?.length ? { command: input.command } : {}),
         ...(input.args?.length ? { args: input.args } : {}),
         ...(resources ? { resources } : {}),
@@ -436,6 +437,10 @@ export class ServiceService {
         port: healthCheck.port,
       },
     };
+  }
+
+  private defaultReplicas(replicas: number | null | undefined) {
+    return replicas ?? DEFAULT_SERVICE_REPLICAS;
   }
 
   private buildReadinessProbe(

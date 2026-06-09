@@ -32,7 +32,7 @@ export class CreateServiceInput {
   @IsOptional()
   @Min(0)
   @Field(() => Int, { nullable: true })
-  replicas?: number;
+  replicas?: number | null;
 
   @IsArray()
   @ValidateNested({ each: true })

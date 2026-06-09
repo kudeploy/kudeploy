@@ -30,7 +30,7 @@ export class UpdateServiceInput {
   @IsOptional()
   @Min(0)
   @Field(() => Int, { nullable: true })
-  replicas?: number;
+  replicas?: number | null;
 
   @IsArray()
   @IsOptional()

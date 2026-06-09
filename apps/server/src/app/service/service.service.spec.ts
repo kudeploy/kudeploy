@@ -160,6 +160,75 @@ describe('ServiceService', () => {
     });
   });
 
+  it('defaults null replicas to one when creating a Service CRD', async () => {
+    const { service, customObjectsApi, projectService } = createService();
+    const workspace = { id: 'workspace_1' } as Workspace;
+
+    projectService.findProject.mockResolvedValue({
+      id: 'project-123',
+      name: 'Payments',
+    } as never);
+    customObjectsApi.patchNamespacedCustomObject.mockResolvedValue(
+      serviceCrd({
+        name: 'service-123',
+        namespace: 'project-123',
+        workspaceId: 'workspace_1',
+        displayName: 'API',
+        replicas: 1,
+      }),
+    );
+
+    await service.createService(workspace, {
+      projectId: 'project-123',
+      name: 'API',
+      image: 'nginx:latest',
+      replicas: null as never,
+      ports: [{ port: 80 }],
+    });
+
+    expect(customObjectsApi.patchNamespacedCustomObject).toHaveBeenCalledWith(
+      expect.objectContaining({
+        body: expect.objectContaining({
+          spec: expect.objectContaining({
+            replicas: 1,
+          }),
+        }),
+      }),
+      expect.any(Object),
+    );
+  });
+
+  it('resets replicas to one when updating a Service CRD with null replicas', async () => {
+    const { service, customObjectsApi, projectService } = createService();
+    const workspace = { id: 'workspace_1' } as Workspace;
+
+    projectService.findProject.mockResolvedValue({
+      id: 'project-123',
+      name: 'Payments',
+    } as never);
+    customObjectsApi.getNamespacedCustomObject.mockResolvedValue(
+      serviceCrd({ replicas: 3 }),
+    );
+    customObjectsApi.patchNamespacedCustomObject.mockResolvedValue(
+      serviceCrd({ replicas: 1 }),
+    );
+
+    await service.updateService(workspace, 'project-123', 'service-123', {
+      replicas: null as never,
+    });
+
+    expect(customObjectsApi.patchNamespacedCustomObject).toHaveBeenCalledWith(
+      expect.objectContaining({
+        body: expect.objectContaining({
+          spec: expect.objectContaining({
+            replicas: 1,
+          }),
+        }),
+      }),
+      expect.any(Object),
+    );
+  });
+
   it('filters listed Service CRDs by current workspace and project before returning a connection', async () => {
     const { service, customObjectsApi, connectionManager, projectService } =
       createService();
@@ -327,6 +396,7 @@ function serviceCrd(
     image?: string;
     activeDeploymentName?: string;
     latestDeploymentName?: string;
+    replicas?: number;
     readyStatus?: 'True' | 'False' | 'Unknown';
     readyReason?: string;
   } = {},
@@ -339,6 +409,7 @@ function serviceCrd(
     image = 'nginx:latest',
     activeDeploymentName,
     latestDeploymentName,
+    replicas = 2,
     readyStatus,
     readyReason = 'DeploymentReady',
   } = options;
@@ -361,7 +432,7 @@ function serviceCrd(
     },
     spec: {
       image,
-      replicas: 2,
+      replicas,
       command: ['pnpm'],
       args: ['start'],
       resources: {
