@@ -289,7 +289,7 @@ var _ = Describe("Deployment Controller", func() {
 
 	It("preserves selector and external metadata on existing Kubernetes Deployments while applying desired replicas", func() {
 		deployment := newDeployment()
-		existing := buildKubernetesDeployment(deployment)
+		existing := buildKubernetesDeployment(deployment, replicasFor(deployment))
 		existing.Labels["team"] = "platform"
 		existing.Annotations = map[string]string{
 			"kubectl.kubernetes.io/restartedAt": "2026-05-16T00:00:00Z",
@@ -340,6 +340,60 @@ var _ = Describe("Deployment Controller", func() {
 		Expect(kubernetesDeployment.Spec.Replicas).To(Equal(ptrInt32(1)))
 	})
 
+	It("scales reserve Kubernetes Deployments to zero", func() {
+		deployment := newDeployment()
+		deployment.Labels = map[string]string{
+			routingStateLabel: routingStateReserve,
+		}
+		deployment.Spec.Replicas = ptrInt32(2)
+		reconciler := newReconciler(deployment)
+
+		_, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: deploymentKey})
+		Expect(err).NotTo(HaveOccurred())
+
+		kubernetesDeployment := &appsv1.Deployment{}
+		Expect(reconciler.Get(ctx, deploymentKey, kubernetesDeployment)).To(Succeed())
+		Expect(kubernetesDeployment.Spec.Replicas).To(Equal(ptrInt32(0)))
+
+		Expect(reconciler.Get(ctx, deploymentKey, deployment)).To(Succeed())
+		Expect(deployment.Spec.Replicas).To(Equal(ptrInt32(2)))
+	})
+
+	It("keeps pending Kubernetes Deployments scaled while rollout is progressing", func() {
+		deployment := newDeployment()
+		deployment.Name = "whoami-00002"
+		deployment.Labels = map[string]string{
+			routingStateLabel: routingStatePending,
+		}
+		deployment.Spec.Version = 2
+		deployment.Spec.Replicas = ptrInt32(2)
+		reconciler := newReconciler(deployment)
+		deploymentKey := types.NamespacedName{Name: deployment.Name, Namespace: namespaceName}
+
+		_, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: deploymentKey})
+		Expect(err).NotTo(HaveOccurred())
+
+		kubernetesDeployment := &appsv1.Deployment{}
+		Expect(reconciler.Get(ctx, deploymentKey, kubernetesDeployment)).To(Succeed())
+		Expect(kubernetesDeployment.Spec.Replicas).To(Equal(ptrInt32(2)))
+	})
+
+	It("keeps active Kubernetes Deployments scaled", func() {
+		deployment := newDeployment()
+		deployment.Labels = map[string]string{
+			routingStateLabel: routingStateActive,
+		}
+		deployment.Spec.Replicas = ptrInt32(2)
+		reconciler := newReconciler(deployment)
+
+		_, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: deploymentKey})
+		Expect(err).NotTo(HaveOccurred())
+
+		kubernetesDeployment := &appsv1.Deployment{}
+		Expect(reconciler.Get(ctx, deploymentKey, kubernetesDeployment)).To(Succeed())
+		Expect(kubernetesDeployment.Spec.Replicas).To(Equal(ptrInt32(2)))
+	})
+
 	It("does not overwrite an existing env Secret clone", func() {
 		deployment := newDeployment()
 		clone := &corev1.Secret{
@@ -361,7 +415,7 @@ var _ = Describe("Deployment Controller", func() {
 
 	It("marks the Kudeploy Deployment ready when the Kubernetes Deployment is available", func() {
 		deployment := newDeployment()
-		kubernetesDeployment := buildKubernetesDeployment(deployment)
+		kubernetesDeployment := buildKubernetesDeployment(deployment, replicasFor(deployment))
 		kubernetesDeployment.Status.Conditions = []appsv1.DeploymentCondition{
 			{
 				Type:   appsv1.DeploymentAvailable,
