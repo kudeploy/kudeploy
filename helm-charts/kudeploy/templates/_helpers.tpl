@@ -256,6 +256,14 @@ app.kubernetes.io/component: server-migration
 - name: APP_URL
   value: {{ $appUrl | quote }}
 {{- end }}
+{{- with .Values.config.prometheusUrl }}
+- name: PROMETHEUS_URL
+  value: {{ tpl . $ | quote }}
+{{- end }}
+{{- with .Values.config.victoriaLogsUrl }}
+- name: VICTORIA_LOGS_URL
+  value: {{ tpl . $ | quote }}
+{{- end }}
 - name: AUTH_DISABLE_SIGN_UP
   value: {{ .Values.auth.disableSignUp | quote }}
 - name: AUTH_EMAIL_ENABLED

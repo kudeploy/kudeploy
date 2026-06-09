@@ -41,6 +41,10 @@ auth:
     existingSecretKey: google-client-secret
     disableSignUp: false
 
+config:
+  prometheusUrl: http://vmsingle-vmks-victoria-metrics-k8s-stack.monitoring.svc.cluster.local:8428
+  victoriaLogsUrl: http://vlsingle-victoria-logs-single.logging.svc.cluster.local:9428
+
 nameOverride: ""
 fullnameOverride: ""
 namespaceOverride: ""
