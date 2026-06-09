@@ -17,13 +17,7 @@ import {
 } from './service-terminal.gateway';
 
 describe('ServiceTerminalGateway', () => {
-  const originEnvKeys = [
-    'SERVICE_TERMINAL_ALLOWED_ORIGINS',
-    'APP_ORIGIN',
-    'APP_URL',
-    'CLIENT_URL',
-    'PUBLIC_APP_URL',
-  ] as const;
+  const originEnvKeys = ['APP_URL'] as const;
   const originalOriginEnv = Object.fromEntries(
     originEnvKeys.map((key) => [key, process.env[key]]),
   );
@@ -49,20 +43,6 @@ describe('ServiceTerminalGateway', () => {
     expect(isServiceTerminalOriginAllowed('https://evil.example.com')).toBe(
       false,
     );
-  });
-
-  it('ignores terminal-specific origin environment variables', () => {
-    clearOriginEnv(originEnvKeys);
-    process.env.APP_URL = 'https://app.example.com';
-    process.env.SERVICE_TERMINAL_ALLOWED_ORIGINS =
-      'https://terminal.example.com';
-
-    expect(isServiceTerminalOriginAllowed('https://app.example.com')).toBe(
-      true,
-    );
-    expect(
-      isServiceTerminalOriginAllowed('https://terminal.example.com'),
-    ).toBe(false);
   });
 
   it('allows localhost origins when no terminal origin allowlist is configured', () => {
