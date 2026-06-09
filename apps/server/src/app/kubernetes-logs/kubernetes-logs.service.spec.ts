@@ -139,7 +139,9 @@ describe('KubernetesLogsService', () => {
       },
     });
     expect(victoriaLogsClient.query).toHaveBeenCalledWith(
-      expect.not.stringContaining('_time:<'),
+      expect.stringContaining(
+        'filter (_time:<2026-06-08T16:46:23.123456789Z',
+      ),
       expect.objectContaining({
         end: '2026-06-08T16:46:23.123456790Z',
         limit: 1001,
@@ -282,7 +284,9 @@ describe('KubernetesLogsService', () => {
       },
     });
     expect(victoriaLogsClient.query).toHaveBeenCalledWith(
-      expect.not.stringContaining('_time:>'),
+      expect.stringContaining(
+        'filter (_time:>2026-06-08T16:46:23.123456789Z',
+      ),
       expect.objectContaining({
         limit: 1001,
         order: 'asc',

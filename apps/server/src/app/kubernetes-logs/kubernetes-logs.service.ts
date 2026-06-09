@@ -68,7 +68,9 @@ export class KubernetesLogsService {
             serviceId,
           },
           {
+            cursor,
             limit: queryLimit,
+            mode: paging.mode,
             order,
           },
         ),

@@ -27,8 +27,17 @@ export interface ServiceLogsQueryInput {
 }
 
 export interface ServiceLogsQueryOptions {
+  cursor?: ServiceLogsQueryCursor | null;
   limit?: number;
+  mode?: 'backward' | 'forward';
   order?: 'asc' | 'desc';
+}
+
+interface ServiceLogsQueryCursor {
+  mh: string;
+  sh: string;
+  sid: string;
+  t: string;
 }
 
 const LOG_BASE_FIELDS = [
@@ -72,6 +81,10 @@ export function buildServiceLogsQuery(
       `hash(${logsQlField(LOG_FIELD_STREAM)}) as ${logsQlField(LOG_FIELD_STREAM_HASH)}`,
       `hash(${logsQlField(LOG_FIELD_MESSAGE)}) as ${logsQlField(LOG_FIELD_MESSAGE_HASH)}`,
     );
+    const cursorFilter = cursorTupleFilter(options.cursor, options.mode);
+    if (cursorFilter) {
+      pipes.push(`filter ${cursorFilter}`);
+    }
     pipes.push(
       `sort by (${LOG_SORT_FIELDS.map(logsQlField).join(', ')})${options.order === 'desc' ? ' desc' : ''} limit ${options.limit}`,
     );
@@ -89,6 +102,57 @@ export function buildServiceLogsQuery(
 
 function exactFilter(field: string, value: string): string {
   return `${logsQlField(field)}:=${logsQlString(value)}`;
+}
+
+function cursorTupleFilter(
+  cursor: ServiceLogsQueryCursor | null | undefined,
+  mode: ServiceLogsQueryOptions['mode'],
+): string | null {
+  if (!cursor || !mode) {
+    return null;
+  }
+
+  const messageHash = logsQlInteger(cursor.mh);
+  const streamHash = logsQlInteger(cursor.sh);
+  if (!messageHash || !streamHash || !isSafeLogTime(cursor.t)) {
+    return null;
+  }
+
+  const direction = mode === 'forward' ? '<' : '>';
+  const timeFilter =
+    mode === 'forward'
+      ? `${logsQlField(LOG_FIELD_TIME)}:<${cursor.t}`
+      : `${logsQlField(LOG_FIELD_TIME)}:>${cursor.t}`;
+
+  return `(${timeFilter} OR (${logsQlField(LOG_FIELD_TIME)}:>=${cursor.t} AND (${cursorSortTupleFilter({ direction, messageHash, streamHash, streamId: cursor.sid })})))`;
+}
+
+function cursorSortTupleFilter({
+  direction,
+  messageHash,
+  streamHash,
+  streamId,
+}: {
+  direction: '<' | '>';
+  messageHash: string;
+  streamHash: string;
+  streamId: string;
+}): string {
+  const streamHashField = logsQlField(LOG_FIELD_STREAM_HASH);
+  const messageHashField = logsQlField(LOG_FIELD_MESSAGE_HASH);
+  const streamIdField = logsQlField(LOG_FIELD_STREAM_ID);
+
+  return `${streamHashField}:${direction}${streamHash} OR (${streamHashField}:=${streamHash} AND (${messageHashField}:${direction}${messageHash} OR (${messageHashField}:=${messageHash} AND ${streamIdField}:${direction}${logsQlString(streamId)})))`;
+}
+
+function logsQlInteger(value: string): string | null {
+  return /^-?\d+$/.test(value) ? value : null;
+}
+
+function isSafeLogTime(value: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?Z$/.test(
+    value,
+  );
 }
 
 function logsQlField(field: string): string {

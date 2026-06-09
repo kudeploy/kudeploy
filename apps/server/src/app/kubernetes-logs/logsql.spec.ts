@@ -31,7 +31,7 @@ describe('logsql', () => {
     );
   });
 
-  it('does not add cursor tuple filters to older page queries', () => {
+  it('adds cursor tuple filters to older page queries', () => {
     const query = buildServiceLogsQuery(
       {
         projectId: 'project-1',
@@ -39,19 +39,27 @@ describe('logsql', () => {
         workspaceId: 'workspace-1',
       },
       {
+        cursor: {
+          mh: '20',
+          sh: '10',
+          sid: 'stream-1',
+          t: '2026-06-08T16:46:23.123456789Z',
+        },
         limit: 101,
+        mode: 'forward',
         order: 'desc',
       },
     );
 
-    expect(query).not.toContain('_time:<');
-    expect(query).not.toContain('_time:=');
+    expect(query).toContain(
+      'filter (_time:<2026-06-08T16:46:23.123456789Z OR (_time:>=2026-06-08T16:46:23.123456789Z AND (kudeploy_stream_hash:<10 OR (kudeploy_stream_hash:=10 AND (kudeploy_message_hash:<20 OR (kudeploy_message_hash:=20 AND _stream_id:<"stream-1"))))))',
+    );
     expect(query).toContain(
       'sort by (_time, kudeploy_stream_hash, kudeploy_message_hash, _stream_id) desc limit 101',
     );
   });
 
-  it('does not add cursor tuple filters to newer page queries', () => {
+  it('adds cursor tuple filters to newer page queries', () => {
     const query = buildServiceLogsQuery(
       {
         projectId: 'project-1',
@@ -59,13 +67,21 @@ describe('logsql', () => {
         workspaceId: 'workspace-1',
       },
       {
+        cursor: {
+          mh: '20',
+          sh: '10',
+          sid: 'stream-1',
+          t: '2026-06-08T16:46:23.123456789Z',
+        },
         limit: 101,
+        mode: 'backward',
         order: 'asc',
       },
     );
 
-    expect(query).not.toContain('_time:>');
-    expect(query).not.toContain('_time:=');
+    expect(query).toContain(
+      'filter (_time:>2026-06-08T16:46:23.123456789Z OR (_time:>=2026-06-08T16:46:23.123456789Z AND (kudeploy_stream_hash:>10 OR (kudeploy_stream_hash:=10 AND (kudeploy_message_hash:>20 OR (kudeploy_message_hash:=20 AND _stream_id:>"stream-1"))))))',
+    );
     expect(query).toContain(
       'sort by (_time, kudeploy_stream_hash, kudeploy_message_hash, _stream_id) limit 101',
     );
