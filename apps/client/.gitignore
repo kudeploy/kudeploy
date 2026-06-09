@@ -10,3 +10,6 @@ dist-ssr
 .output
 .vinxi
 todos.json
+
+!src/app/**/logs/
+!src/app/**/logs/page.tsx
