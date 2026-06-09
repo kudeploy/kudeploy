@@ -15,42 +15,44 @@ describe('VictoriaLogsClient', () => {
     global.fetch = originalFetch;
   });
 
-  it('queries VictoriaLogs and parses JSON lines', async () => {
+  it('queries VictoriaLogs and parses stable log identities', async () => {
     fetchMock.mockResolvedValue({
       ok: true,
       text: async () =>
         [
-          '{"_time":"2026-06-08T16:46:22.83803563Z","_msg":"started","kubernetes.pod_namespace":"project-1","kubernetes.pod_name":"pod-1","kubernetes.container_name":"api","kubernetes.pod_labels.kudeploy.com/deployment":"service-1-00002"}',
-          '{"_time":"2026-06-08T16:46:23.000Z","_msg":"ready","kubernetes.pod_name":"pod-1"}',
+          '{"_time":"2026-06-08T16:46:23.000000000Z","_stream_id":"stream-1","_msg":"ready","kubernetes.pod_name":"pod-1"}',
+          '{"_time":"2026-06-08T16:46:22.838035630Z","_stream_id":"stream-1","_msg":"started","kubernetes.pod_namespace":"project-1","kubernetes.pod_name":"pod-1","kubernetes.container_name":"api","kubernetes.pod_labels.kudeploy.com/deployment":"service-1-00002"}',
+          '{"_time":"2026-06-08T16:46:22.838035630Z","_stream_id":"stream-1","_msg":"started again","kubernetes.pod_name":"pod-1"}',
           '',
         ].join('\n'),
     });
     const client = createClient('http://victoria-logs:9428/root/');
 
-    await expect(
-      client.query('error', {
-        start: new Date('2026-06-08T16:00:00.000Z'),
-        end: new Date('2026-06-08T17:00:00.000Z'),
-        limit: 100,
-      }),
-    ).resolves.toEqual([
-      {
-        containerName: 'api',
-        deploymentName: 'service-1-00002',
-        message: 'started',
-        namespace: 'project-1',
-        podName: 'pod-1',
-        timestamp: new Date('2026-06-08T16:46:22.838Z'),
-      },
-      {
-        containerName: null,
-        deploymentName: null,
-        message: 'ready',
-        namespace: null,
-        podName: 'pod-1',
-        timestamp: new Date('2026-06-08T16:46:23.000Z'),
-      },
+    const result = await client.query('error', {
+      end: new Date('2026-06-08T17:00:00.000Z'),
+      limit: 100,
+      order: 'asc',
+      start: new Date('2026-06-08T16:00:00.000Z'),
+    });
+
+    expect(result).toHaveLength(3);
+    expect(result.map((entry) => entry.rawTime)).toEqual([
+      '2026-06-08T16:46:22.838035630Z',
+      '2026-06-08T16:46:22.838035630Z',
+      '2026-06-08T16:46:23.000000000Z',
     ]);
+    expect(result[0]).toMatchObject({
+      containerName: 'api',
+      deploymentName: 'service-1-00002',
+      message: 'started',
+      namespace: 'project-1',
+      podName: 'pod-1',
+      streamId: 'stream-1',
+      timestamp: new Date('2026-06-08T16:46:22.838Z'),
+    });
+    expect(result[0].id).toMatch(/^[a-f0-9]{64}$/);
+    expect(result[1].id).toMatch(/^[a-f0-9]{64}$/);
+    expect(result[0].id).not.toBe(result[1].id);
 
     expect(fetchMock).toHaveBeenCalledWith(
       new URL('http://victoria-logs:9428/root/select/logsql/query'),
@@ -68,15 +70,58 @@ describe('VictoriaLogsClient', () => {
     expect(body.get('limit')).toBe('100');
   });
 
+  it('parses log levels from the level field', async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      text: async () =>
+        [
+          '{"_time":"2026-06-08T16:46:21.000000000Z","_stream_id":"stream-1","_msg":"plain message"}',
+          '{"_time":"2026-06-08T16:46:22.000000000Z","_stream_id":"stream-1","level":"warning","_msg":"structured warning"}',
+          '{"_time":"2026-06-08T16:46:23.000000000Z","_stream_id":"stream-1","level":"error","_msg":"structured error"}',
+          '{"_time":"2026-06-08T16:46:24.000000000Z","_stream_id":"stream-1","_msg":"2026/06/08 16:46:24 [notice] worker started"}',
+        ].join('\n'),
+    });
+    const client = createClient('http://victoria-logs:9428');
+
+    const result = await client.query('logs', {
+      limit: 100,
+      order: 'asc',
+    });
+
+    expect(result.map((entry) => entry.level)).toEqual([
+      null,
+      'WARN',
+      'ERROR',
+      null,
+    ]);
+  });
+
+  it('omits optional time bounds when they are not provided', async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      text: async () => '',
+    });
+    const client = createClient('http://victoria-logs:9428');
+
+    await client.query('error', {
+      limit: 501,
+      order: 'desc',
+    });
+
+    const body = fetchMock.mock.calls[0][1].body as URLSearchParams;
+    expect(body.get('start')).toBeNull();
+    expect(body.get('end')).toBeNull();
+    expect(body.get('limit')).toBe('501');
+  });
+
   it('reports when the VictoriaLogs URL is not configured', () => {
     const client = createClient('');
 
     expect(client.isConfigured()).toBe(false);
     expect(() =>
       client.query('error', {
-        start: new Date(),
-        end: new Date(),
         limit: 100,
+        order: 'asc',
       }),
     ).rejects.toThrow('VICTORIA_LOGS_URL is not configured');
   });
@@ -91,9 +136,8 @@ describe('VictoriaLogsClient', () => {
 
     await expect(
       client.query('error', {
-        start: new Date(),
-        end: new Date(),
         limit: 100,
+        order: 'asc',
       }),
     ).rejects.toThrow('VictoriaLogs query failed with status 503');
   });

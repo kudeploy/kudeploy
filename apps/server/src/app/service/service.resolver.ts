@@ -14,7 +14,10 @@ import {
   KubernetesMetricsService,
   ServiceMetrics,
 } from '@/app/kubernetes-metrics';
-import { KubernetesLogsService, ServiceLogs } from '@/app/kubernetes-logs';
+import {
+  KubernetesLogsService,
+  ServiceLogConnection,
+} from '@/app/kubernetes-logs';
 import { Workspace } from '@/app/workspace/workspace.entity';
 import { CurrentWorkspace } from '@/common/decorators/current-workspace.decorator';
 
@@ -91,22 +94,28 @@ export class ServiceResolver {
   }
 
   @Can(PermissionAction.READ, Service)
-  @ResolveField(() => ServiceLogs)
+  @ResolveField(() => ServiceLogConnection)
   async logs(
     @CurrentWorkspace() workspace: Workspace,
     @Parent() service: Service,
-    @Args({ name: 'rangeSeconds', type: () => Int, nullable: true })
-    rangeSeconds?: number | null,
-    @Args({ name: 'limit', type: () => Int, nullable: true })
-    limit?: number | null,
-  ): Promise<ServiceLogs> {
+    @Args({ name: 'first', type: () => Int, nullable: true })
+    first?: number | null,
+    @Args({ name: 'after', type: () => String, nullable: true })
+    after?: string | null,
+    @Args({ name: 'last', type: () => Int, nullable: true })
+    last?: number | null,
+    @Args({ name: 'before', type: () => String, nullable: true })
+    before?: string | null,
+  ): Promise<ServiceLogConnection> {
     return await this.kubernetesLogsService.getServiceLogs(
       workspace,
       service.projectId,
       service.id,
       {
-        limit,
-        rangeSeconds,
+        after,
+        before,
+        first,
+        last,
       },
     );
   }

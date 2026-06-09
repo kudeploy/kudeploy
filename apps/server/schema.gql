@@ -633,7 +633,7 @@ type Service {
   healthCheck: ServiceHealthCheck
   id: ID!
   image: String!
-  logs(limit: Int, rangeSeconds: Int): ServiceLogs!
+  logs(after: String, before: String, first: Int, last: Int): ServiceLogConnection!
   metrics(rangeSeconds: Int, stepSeconds: Int): ServiceMetrics!
   name: String!
   ports: [ServicePort!]!
@@ -699,20 +699,26 @@ enum ServiceHealthCheckType {
   TCP
 }
 
-type ServiceLogEntry {
+type ServiceLog {
   containerName: String
   deploymentName: String
+  id: ID!
+  level: String
   message: String!
   namespace: String
   podName: String
   timestamp: DateTime!
 }
 
-type ServiceLogs {
+type ServiceLogConnection {
   available: Boolean!
-  entries: [ServiceLogEntry!]!
-  limit: Int!
-  rangeSeconds: Int!
+  edges: [ServiceLogEdge!]!
+  pageInfo: PageInfo!
+}
+
+type ServiceLogEdge {
+  cursor: String!
+  node: ServiceLog!
 }
 
 type ServiceMetrics {

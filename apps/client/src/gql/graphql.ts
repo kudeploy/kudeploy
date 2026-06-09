@@ -697,7 +697,7 @@ export type Service = {
   healthCheck?: Maybe<ServiceHealthCheck>;
   id: Scalars["ID"]["output"];
   image: Scalars["String"]["output"];
-  logs: ServiceLogs;
+  logs: ServiceLogConnection;
   metrics: ServiceMetrics;
   name: Scalars["String"]["output"];
   ports: Array<ServicePort>;
@@ -709,8 +709,10 @@ export type Service = {
 };
 
 export type ServiceLogsArgs = {
-  limit?: InputMaybe<Scalars["Int"]["input"]>;
-  rangeSeconds?: InputMaybe<Scalars["Int"]["input"]>;
+  after?: InputMaybe<Scalars["String"]["input"]>;
+  before?: InputMaybe<Scalars["String"]["input"]>;
+  first?: InputMaybe<Scalars["Int"]["input"]>;
+  last?: InputMaybe<Scalars["Int"]["input"]>;
 };
 
 export type ServiceMetricsArgs = {
@@ -766,22 +768,29 @@ export enum ServiceHealthCheckType {
   TCP = "TCP",
 }
 
-export type ServiceLogEntry = {
-  __typename?: "ServiceLogEntry";
+export type ServiceLog = {
+  __typename?: "ServiceLog";
   containerName?: Maybe<Scalars["String"]["output"]>;
   deploymentName?: Maybe<Scalars["String"]["output"]>;
+  id: Scalars["ID"]["output"];
+  level?: Maybe<Scalars["String"]["output"]>;
   message: Scalars["String"]["output"];
   namespace?: Maybe<Scalars["String"]["output"]>;
   podName?: Maybe<Scalars["String"]["output"]>;
   timestamp: Scalars["DateTime"]["output"];
 };
 
-export type ServiceLogs = {
-  __typename?: "ServiceLogs";
+export type ServiceLogConnection = {
+  __typename?: "ServiceLogConnection";
   available: Scalars["Boolean"]["output"];
-  entries: Array<ServiceLogEntry>;
-  limit: Scalars["Int"]["output"];
-  rangeSeconds: Scalars["Int"]["output"];
+  edges: Array<ServiceLogEdge>;
+  pageInfo: PageInfo;
+};
+
+export type ServiceLogEdge = {
+  __typename?: "ServiceLogEdge";
+  cursor: Scalars["String"]["output"];
+  node: ServiceLog;
 };
 
 export type ServiceMetrics = {
@@ -1909,8 +1918,10 @@ export type UpdateServiceEnvironmentFromServiceEnvironmentRouteMutation = {
 export type GetServiceLogsFromServiceLogsRouteQueryVariables = Exact<{
   projectId: Scalars["ID"]["input"];
   id: Scalars["ID"]["input"];
-  rangeSeconds?: InputMaybe<Scalars["Int"]["input"]>;
-  limit?: InputMaybe<Scalars["Int"]["input"]>;
+  first?: InputMaybe<Scalars["Int"]["input"]>;
+  after?: InputMaybe<Scalars["String"]["input"]>;
+  last?: InputMaybe<Scalars["Int"]["input"]>;
+  before?: InputMaybe<Scalars["String"]["input"]>;
 }>;
 
 export type GetServiceLogsFromServiceLogsRouteQuery = {
@@ -1919,17 +1930,28 @@ export type GetServiceLogsFromServiceLogsRouteQuery = {
     __typename?: "Service";
     id: string;
     logs: {
-      __typename?: "ServiceLogs";
+      __typename?: "ServiceLogConnection";
       available: boolean;
-      rangeSeconds: number;
-      limit: number;
-      entries: Array<{
-        __typename?: "ServiceLogEntry";
-        timestamp: any;
-        message: string;
-        namespace?: string | null;
-        deploymentName?: string | null;
+      edges: Array<{
+        __typename?: "ServiceLogEdge";
+        cursor: string;
+        node: {
+          __typename?: "ServiceLog";
+          id: string;
+          timestamp: any;
+          level?: string | null;
+          message: string;
+          namespace?: string | null;
+          deploymentName?: string | null;
+        };
       }>;
+      pageInfo: {
+        __typename?: "PageInfo";
+        startCursor?: string | null;
+        endCursor?: string | null;
+        hasPreviousPage: boolean;
+        hasNextPage: boolean;
+      };
     };
   } | null;
 };
@@ -6147,7 +6169,7 @@ export const GetServiceLogsFromServiceLogsRouteDocument = {
           kind: "VariableDefinition",
           variable: {
             kind: "Variable",
-            name: { kind: "Name", value: "rangeSeconds" },
+            name: { kind: "Name", value: "first" },
           },
           type: { kind: "NamedType", name: { kind: "Name", value: "Int" } },
         },
@@ -6155,9 +6177,22 @@ export const GetServiceLogsFromServiceLogsRouteDocument = {
           kind: "VariableDefinition",
           variable: {
             kind: "Variable",
-            name: { kind: "Name", value: "limit" },
+            name: { kind: "Name", value: "after" },
           },
+          type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "last" } },
           type: { kind: "NamedType", name: { kind: "Name", value: "Int" } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "before" },
+          },
+          type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
         },
       ],
       selectionSet: {
@@ -6194,18 +6229,34 @@ export const GetServiceLogsFromServiceLogsRouteDocument = {
                   arguments: [
                     {
                       kind: "Argument",
-                      name: { kind: "Name", value: "rangeSeconds" },
+                      name: { kind: "Name", value: "first" },
                       value: {
                         kind: "Variable",
-                        name: { kind: "Name", value: "rangeSeconds" },
+                        name: { kind: "Name", value: "first" },
                       },
                     },
                     {
                       kind: "Argument",
-                      name: { kind: "Name", value: "limit" },
+                      name: { kind: "Name", value: "after" },
                       value: {
                         kind: "Variable",
-                        name: { kind: "Name", value: "limit" },
+                        name: { kind: "Name", value: "after" },
+                      },
+                    },
+                    {
+                      kind: "Argument",
+                      name: { kind: "Name", value: "last" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "last" },
+                      },
+                    },
+                    {
+                      kind: "Argument",
+                      name: { kind: "Name", value: "before" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "before" },
                       },
                     },
                   ],
@@ -6218,30 +6269,74 @@ export const GetServiceLogsFromServiceLogsRouteDocument = {
                       },
                       {
                         kind: "Field",
-                        name: { kind: "Name", value: "rangeSeconds" },
-                      },
-                      { kind: "Field", name: { kind: "Name", value: "limit" } },
-                      {
-                        kind: "Field",
-                        name: { kind: "Name", value: "entries" },
+                        name: { kind: "Name", value: "edges" },
                         selectionSet: {
                           kind: "SelectionSet",
                           selections: [
                             {
                               kind: "Field",
-                              name: { kind: "Name", value: "timestamp" },
+                              name: { kind: "Name", value: "cursor" },
                             },
                             {
                               kind: "Field",
-                              name: { kind: "Name", value: "message" },
+                              name: { kind: "Name", value: "node" },
+                              selectionSet: {
+                                kind: "SelectionSet",
+                                selections: [
+                                  {
+                                    kind: "Field",
+                                    name: { kind: "Name", value: "id" },
+                                  },
+                                  {
+                                    kind: "Field",
+                                    name: { kind: "Name", value: "timestamp" },
+                                  },
+                                  {
+                                    kind: "Field",
+                                    name: { kind: "Name", value: "level" },
+                                  },
+                                  {
+                                    kind: "Field",
+                                    name: { kind: "Name", value: "message" },
+                                  },
+                                  {
+                                    kind: "Field",
+                                    name: { kind: "Name", value: "namespace" },
+                                  },
+                                  {
+                                    kind: "Field",
+                                    name: {
+                                      kind: "Name",
+                                      value: "deploymentName",
+                                    },
+                                  },
+                                ],
+                              },
+                            },
+                          ],
+                        },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "pageInfo" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "startCursor" },
                             },
                             {
                               kind: "Field",
-                              name: { kind: "Name", value: "namespace" },
+                              name: { kind: "Name", value: "endCursor" },
                             },
                             {
                               kind: "Field",
-                              name: { kind: "Name", value: "deploymentName" },
+                              name: { kind: "Name", value: "hasPreviousPage" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "hasNextPage" },
                             },
                           ],
                         },

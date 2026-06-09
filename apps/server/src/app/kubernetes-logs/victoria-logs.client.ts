@@ -1,20 +1,24 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { createHash } from 'node:crypto';
 
 import {
   LOG_FIELD_CONTAINER,
   LOG_FIELD_DEPLOYMENT,
+  LOG_FIELD_LEVEL,
   LOG_FIELD_MESSAGE,
   LOG_FIELD_NAMESPACE,
   LOG_FIELD_POD,
+  LOG_FIELD_STREAM_ID,
   LOG_FIELD_TIME,
 } from './logsql';
-import { ServiceLogEntry } from './kubernetes-logs.object';
+import { ServiceLog } from './kubernetes-logs.object';
 
 interface QueryOptions {
-  start: Date;
-  end: Date;
+  start?: Date;
+  end?: Date;
   limit: number;
+  order: 'asc' | 'desc';
 }
 
 type RawLogEntry = Record<string, unknown>;
@@ -30,7 +34,7 @@ export class VictoriaLogsClient {
   async query(
     query: string,
     options: QueryOptions,
-  ): Promise<ServiceLogEntry[]> {
+  ): Promise<ServiceLog[]> {
     const response = await fetch(this.buildUrl('/select/logsql/query'), {
       method: 'POST',
       headers: {
@@ -45,15 +49,19 @@ export class VictoriaLogsClient {
       );
     }
 
-    return parseJsonLines(await response.text());
+    return parseJsonLines(await response.text(), options.order);
   }
 
   private buildBody(query: string, options: QueryOptions): URLSearchParams {
     const body = new URLSearchParams();
 
     body.set('query', query);
-    body.set('start', options.start.toISOString());
-    body.set('end', options.end.toISOString());
+    if (options.start) {
+      body.set('start', options.start.toISOString());
+    }
+    if (options.end) {
+      body.set('end', options.end.toISOString());
+    }
     body.set('limit', String(options.limit));
 
     return body;
@@ -78,8 +86,11 @@ export class VictoriaLogsClient {
   }
 }
 
-function parseJsonLines(body: string): ServiceLogEntry[] {
-  const entries: ServiceLogEntry[] = [];
+function parseJsonLines(
+  body: string,
+  order: QueryOptions['order'],
+): ServiceLog[] {
+  const entries: ServiceLog[] = [];
 
   for (const line of body.split('\n')) {
     const trimmedLine = line.trim();
@@ -93,8 +104,10 @@ function parseJsonLines(body: string): ServiceLogEntry[] {
     }
   }
 
-  return entries.sort(
-    (left, right) => left.timestamp.getTime() - right.timestamp.getTime(),
+  return entries.sort((left, right) =>
+    order === 'desc'
+      ? compareServiceLogs(right, left)
+      : compareServiceLogs(left, right),
   );
 }
 
@@ -108,31 +121,101 @@ function parseJsonLine(line: string): RawLogEntry | null {
   }
 }
 
-function toServiceLogEntry(entry: RawLogEntry | null): ServiceLogEntry | null {
+function toServiceLogEntry(entry: RawLogEntry | null): ServiceLog | null {
   if (!entry) {
     return null;
   }
 
-  const timestamp = toDate(stringField(entry, LOG_FIELD_TIME));
+  const rawTime = stringField(entry, LOG_FIELD_TIME);
+  const timestamp = toDate(rawTime);
   const message = stringField(entry, LOG_FIELD_MESSAGE);
-  if (!timestamp || message == null) {
+  if (!rawTime || !timestamp || message == null) {
     return null;
   }
 
+  const streamId = stringField(entry, LOG_FIELD_STREAM_ID);
+  const level = normalizeLogLevel(stringField(entry, LOG_FIELD_LEVEL));
+  const namespace = stringField(entry, LOG_FIELD_NAMESPACE);
+  const podName = stringField(entry, LOG_FIELD_POD);
+  const containerName = stringField(entry, LOG_FIELD_CONTAINER);
+  const deploymentName = stringField(entry, LOG_FIELD_DEPLOYMENT);
+
   return {
-    containerName: stringField(entry, LOG_FIELD_CONTAINER),
-    deploymentName: stringField(entry, LOG_FIELD_DEPLOYMENT),
+    containerName,
+    deploymentName,
+    id: createServiceLogId({
+      containerName,
+      deploymentName,
+      message,
+      namespace,
+      podName,
+      rawTime,
+      streamId,
+    }),
+    level,
     message,
-    namespace: stringField(entry, LOG_FIELD_NAMESPACE),
-    podName: stringField(entry, LOG_FIELD_POD),
+    namespace,
+    podName,
+    rawTime,
+    streamId,
     timestamp,
   };
+}
+
+function createServiceLogId(input: {
+  containerName: string | null;
+  deploymentName: string | null;
+  message: string;
+  namespace: string | null;
+  podName: string | null;
+  rawTime: string;
+  streamId: string | null;
+}): string {
+  return createHash('sha256')
+    .update(
+      [
+        input.rawTime,
+        input.streamId ?? '',
+        input.namespace ?? '',
+        input.podName ?? '',
+        input.containerName ?? '',
+        input.deploymentName ?? '',
+        input.message,
+      ].join('\0'),
+    )
+    .digest('hex');
+}
+
+function compareServiceLogs(left: ServiceLog, right: ServiceLog): number {
+  const timeComparison = left.rawTime.localeCompare(right.rawTime);
+  if (timeComparison !== 0) {
+    return timeComparison;
+  }
+
+  return left.id.localeCompare(right.id);
 }
 
 function stringField(entry: RawLogEntry, field: string): string | null {
   const value = entry[field];
 
   return typeof value === 'string' && value.length ? value : null;
+}
+
+function normalizeLogLevel(value: string | null): string | null {
+  const level = value?.trim().toUpperCase();
+  if (!level) {
+    return null;
+  }
+
+  if (level === 'WARNING') {
+    return 'WARN';
+  }
+
+  if (level === 'ERR') {
+    return 'ERROR';
+  }
+
+  return level;
 }
 
 function toDate(value: string | null): Date | null {

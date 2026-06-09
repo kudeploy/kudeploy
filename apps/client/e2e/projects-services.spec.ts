@@ -102,7 +102,7 @@ test.describe("workspace Projects and Services", () => {
     });
 
     const workspaceId = await createFirstWorkspace(page, workspaceName);
-    await mockProjectsAndServicesGraphql(page);
+    const graphqlMock = await mockProjectsAndServicesGraphql(page);
 
     await page.getByTestId("workspace-sidebar-projects-link").click();
     await expect(page).toHaveURL(
@@ -355,53 +355,88 @@ test.describe("workspace Projects and Services", () => {
     );
     await expect(page.getByTestId("service-logs-page")).toBeVisible();
     await expect(page.getByTestId("service-logs-page")).toContainText(
-      "API booted",
+      "API log 80",
     );
     await expect(page.getByTestId("service-logs-page")).toContainText(
       "deployment-v1",
     );
     const logsTable = page.getByTestId("service-logs-page").getByRole("table");
     await expect(logsTable).toBeVisible();
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            document.documentElement.scrollHeight -
+            document.documentElement.clientHeight,
+        ),
+      )
+      .toBeLessThanOrEqual(1);
+    const logsScrollContainer = logsTable.locator(
+      "xpath=ancestor::*[contains(concat(' ', normalize-space(@class), ' '), ' overflow-auto ')][1]",
+    );
+    await expect
+      .poll(() =>
+        logsTable.evaluate(() => {
+          const rows = [...document.querySelectorAll('[role="row"]')]
+            .map((row) => row.textContent ?? "")
+            .filter(
+              (text) => text.includes("API log") || text.includes("API booted"),
+            );
+
+          return rows[0] ?? "";
+        }),
+      )
+      .toContain("API log 80");
+    const timeHeader = logsTable.getByRole("columnheader", { name: "时间" });
     await expect(
-      logsTable.getByRole("columnheader", { name: "时间" }),
+      timeHeader,
     ).toBeVisible();
     await expect(
       logsTable.getByRole("columnheader", { name: "部署" }),
     ).toBeVisible();
     await expect(
+      logsTable.getByRole("columnheader", { name: "级别" }),
+    ).toBeVisible();
+    await expect(
       logsTable.getByRole("columnheader", { name: "消息" }),
     ).toBeVisible();
-    const deploymentCell = page.getByText(
-      "deployment-v1-with-a-very-long-generated-name",
-    );
-    const deploymentTrigger = page.getByTestId("service-log-deployment-0");
-    await expect
-      .poll(async () => {
-        const cellBox = await deploymentTrigger
-          .locator("xpath=ancestor::td")
-          .boundingBox();
-        const textBox = await deploymentTrigger.locator("span").boundingBox();
-
-        if (!cellBox || !textBox) {
-          return false;
-        }
-
-        return textBox.x + textBox.width <= cellBox.x + cellBox.width + 1;
-      })
-      .toBe(true);
+    await expect(page.getByTestId("service-logs-page")).toContainText("ERROR");
+    const deploymentCell = page.getByText("00003");
+    await expect(deploymentCell).toBeVisible();
     await deploymentCell.hover();
     await expect(
-      page.locator('[data-slot="tooltip-content"]').filter({
-        hasText: "deployment-v1-with-a-very-long-generated-name",
-      }),
-    ).toBeVisible();
-    const logRow = page.getByText("API booted").locator("..");
+      page.locator('[data-slot="tooltip-content"]'),
+    ).toHaveCount(0);
+    await expect(page.getByTestId("service-logs-page")).not.toContainText(
+      "service-e2e-00003",
+    );
+    const logRow = page.getByText("API log 80").locator("..");
     await logRow.hover();
     await expect
       .poll(() =>
         logRow.evaluate((element) => getComputedStyle(element).backgroundColor),
       )
       .not.toBe("rgba(0, 0, 0, 0)");
+    const scrollBox = await logsScrollContainer.boundingBox();
+    const headerBoxBefore = await timeHeader.boundingBox();
+    expect(scrollBox).not.toBeNull();
+    expect(headerBoxBefore).not.toBeNull();
+    await logsScrollContainer.evaluate((element) => {
+      element.scrollTop = 240;
+      element.dispatchEvent(new Event("scroll"));
+    });
+    await expect
+      .poll(async () => {
+        const nextScrollBox = await logsScrollContainer.boundingBox();
+        const headerBox = await timeHeader.boundingBox();
+
+        if (!nextScrollBox || !headerBox) {
+          return Number.NaN;
+        }
+
+        return Math.abs(headerBox.y - nextScrollBox.y);
+      })
+      .toBeLessThanOrEqual(2);
     await expect(page.getByTestId("service-logs-page")).toContainText("时间");
     await expect(page.getByTestId("service-logs-page")).toContainText("部署");
     await expect(page.getByTestId("service-logs-page")).not.toContainText(
@@ -411,17 +446,71 @@ test.describe("workspace Projects and Services", () => {
       "api-75d4db5d87-lkxgh-with-a-very-long-generated-name / api",
     );
     await expect(page.getByTestId("service-logs-page")).toContainText("消息");
-    await page.getByLabel("日志条数").click();
-    await page.getByRole("option", { name: "100" }).click();
-    await expect(page.getByTestId("service-logs-page")).toContainText(
-      "暂无日志",
-    );
-    await expect(page.getByTestId("service-logs-page")).toContainText("时间");
-    await expect(page.getByTestId("service-logs-page")).toContainText("部署");
-    await expect(page.getByTestId("service-logs-page")).not.toContainText(
-      "Pod / 容器",
-    );
-    await expect(page.getByTestId("service-logs-page")).toContainText("消息");
+    await expect(page.getByLabel("日志条数")).toHaveCount(0);
+    await expect(page.getByLabel("时间范围")).toHaveCount(0);
+    await expect(
+      page.getByTestId("service-logs-top-pull-zone"),
+    ).toHaveCount(0);
+    await expect(
+      page.getByTestId("service-logs-bottom-pull-zone"),
+    ).toHaveCount(0);
+    const elasticContent = page.getByTestId("service-logs-elastic-content");
+    const latestLogRequestCount = () =>
+      graphqlMock.serviceLogRequests.filter(
+        (variables) =>
+          variables.first === 100 &&
+          variables.after == null &&
+          variables.before == null &&
+          variables.last == null,
+      ).length;
+    const olderLogRequestCount = () =>
+      graphqlMock.serviceLogRequests.filter(
+        (variables) => variables.first === 100 && variables.after != null,
+      ).length;
+    const latestRequestsBeforeWheel = latestLogRequestCount();
+    await logsScrollContainer.evaluate((element) => {
+      element.scrollTop = 0;
+      element.dispatchEvent(new Event("scroll"));
+      element.dispatchEvent(
+        new WheelEvent("wheel", { bubbles: true, deltaY: -200 }),
+      );
+    });
+    await expect
+      .poll(() =>
+        elasticContent.evaluate((element) =>
+          Number(element.getAttribute("data-elastic-offset") ?? "0"),
+        ),
+      )
+      .toBe(0);
+    await expect
+      .poll(latestLogRequestCount, { timeout: 1_000 })
+      .toBe(latestRequestsBeforeWheel);
+    const latestRequestsBeforeButton = latestLogRequestCount();
+    await page.getByLabel("刷新").click();
+    await expect
+      .poll(latestLogRequestCount)
+      .toBe(latestRequestsBeforeButton + 1);
+    const olderRequestsBeforeBottomScroll = olderLogRequestCount();
+    await logsScrollContainer.evaluate((element) => {
+      element.scrollTop = element.scrollHeight;
+      element.dispatchEvent(new Event("scroll"));
+    });
+    await expect
+      .poll(olderLogRequestCount)
+      .toBe(olderRequestsBeforeBottomScroll + 1);
+    await expect(
+      graphqlMock.serviceLogRequests.some(
+        (variables) => variables.last === 100 || variables.before != null,
+      ),
+    ).toBe(false);
+    await expect
+      .poll(() =>
+        logsScrollContainer.evaluate(
+          (element) =>
+            element.scrollHeight - element.clientHeight - element.scrollTop,
+        ),
+      )
+      .toBeGreaterThanOrEqual(0);
 
     await page.getByTestId("service-metrics-tab").click();
     await expect(page).toHaveURL(
@@ -472,6 +561,7 @@ async function mockProjectsAndServicesGraphql(page: Page) {
   const projects: MockProject[] = [];
   const services: MockService[] = [];
   const deployments: MockDeployment[] = [];
+  const serviceLogRequests: Array<Record<string, any>> = [];
 
   await page.route("**/api/graphql", async (route) => {
     const request = route.request();
@@ -603,28 +693,45 @@ async function mockProjectsAndServicesGraphql(page: Page) {
         return;
       }
       case "getServiceLogsFromServiceLogsRoute": {
+        serviceLogRequests.push(variables);
+        const initialLogs =
+          variables.first === 100 &&
+          variables.last == null &&
+          variables.after == null &&
+          variables.before == null;
+        const logs = initialLogs
+          ? Array.from({ length: 80 }, (_, index) => ({
+              id: `service-log-e2e-${index}`,
+              timestamp: new Date(
+                Date.parse("2026-06-06T00:00:00.000Z") + index * 1000,
+              ).toISOString(),
+              message: index === 0 ? "API booted" : `API log ${index + 1}`,
+              level: index === 79 ? "ERROR" : "INFO",
+              namespace: variables.projectId,
+              podName:
+                "api-75d4db5d87-lkxgh-with-a-very-long-generated-name",
+              containerName: "api",
+              deploymentName:
+                index === 79
+                  ? `${variables.id}-00003`
+                  : "deployment-v1",
+            })).reverse()
+          : [];
         await fulfill(route, {
           service: {
             id: variables.id,
             logs: {
               available: true,
-              rangeSeconds: variables.rangeSeconds ?? 3600,
-              limit: variables.limit ?? 200,
-              entries:
-                variables.limit === 100
-                  ? []
-                  : [
-                      {
-                        timestamp: "2026-06-06T00:00:00.000Z",
-                        message: "API booted",
-                        namespace: variables.projectId,
-                        podName:
-                          "api-75d4db5d87-lkxgh-with-a-very-long-generated-name",
-                        containerName: "api",
-                        deploymentName:
-                          "deployment-v1-with-a-very-long-generated-name",
-                      },
-                    ],
+              edges: logs.map((node) => ({
+                cursor: node.id,
+                node,
+              })),
+              pageInfo: {
+                endCursor: logs.at(-1)?.id ?? null,
+                hasNextPage: initialLogs,
+                hasPreviousPage: initialLogs,
+                startCursor: logs[0]?.id ?? null,
+              },
             },
           },
         });
@@ -761,6 +868,10 @@ async function mockProjectsAndServicesGraphql(page: Page) {
         await route.continue();
     }
   });
+
+  return {
+    serviceLogRequests,
+  };
 }
 
 function createDeploymentSnapshot(

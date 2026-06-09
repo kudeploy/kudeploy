@@ -1,108 +1,66 @@
-import { useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useQuery } from "@apollo/client/react";
 import { createFileRoute } from "@tanstack/react-router";
-import {
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import dayjs from "dayjs";
 import { Activity, RefreshCw } from "lucide-react";
 import { t } from "i18next";
-import type { ColumnDef } from "@tanstack/react-table";
+import type { RefObject } from "react";
 
-import { Page } from "@/components/fabric-ui/page";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Spinner } from "@/components/ui/spinner";
 import { graphql } from "@/gql";
+import type { GetServiceLogsFromServiceLogsRouteQuery } from "@/gql/graphql";
 import { cn } from "@/lib/utils";
+
+const LOG_PAGE_SIZE = 100;
+const BOTTOM_THRESHOLD_PX = 48;
+const LOG_ROW_LAYOUT = "flex min-w-full";
+const LOG_TIME_COLUMN = "w-44 shrink-0";
+const LOG_DEPLOYMENT_COLUMN = "w-20 shrink-0";
+const LOG_LEVEL_COLUMN = "w-20 shrink-0";
+const LOG_MESSAGE_COLUMN = "min-w-0 flex-1";
 
 const GET_SERVICE_LOGS_FROM_SERVICE_LOGS_ROUTE = graphql(`
   query getServiceLogsFromServiceLogsRoute(
     $projectId: ID!
     $id: ID!
-    $rangeSeconds: Int
-    $limit: Int
+    $first: Int
+    $after: String
+    $last: Int
+    $before: String
   ) {
     service(projectId: $projectId, id: $id) {
       id
-      logs(rangeSeconds: $rangeSeconds, limit: $limit) {
+      logs(first: $first, after: $after, last: $last, before: $before) {
         available
-        rangeSeconds
-        limit
-        entries {
-          timestamp
-          message
-          namespace
-          deploymentName
+        edges {
+          cursor
+          node {
+            id
+            timestamp
+            level
+            message
+            namespace
+            deploymentName
+          }
+        }
+        pageInfo {
+          startCursor
+          endCursor
+          hasPreviousPage
+          hasNextPage
         }
       }
     }
   }
 `);
-
-const RANGE_OPTIONS = [
-  {
-    key: "one_hour",
-    rangeSeconds: 60 * 60,
-  },
-  {
-    key: "three_hours",
-    rangeSeconds: 3 * 60 * 60,
-  },
-  {
-    key: "six_hours",
-    rangeSeconds: 6 * 60 * 60,
-  },
-  {
-    key: "twelve_hours",
-    rangeSeconds: 12 * 60 * 60,
-  },
-  {
-    key: "day",
-    rangeSeconds: 24 * 60 * 60,
-  },
-  {
-    key: "three_days",
-    rangeSeconds: 3 * 24 * 60 * 60,
-  },
-  {
-    key: "seven_days",
-    rangeSeconds: 7 * 24 * 60 * 60,
-  },
-] as const;
-
-const LIMIT_OPTIONS = [100, 200, 500] as const;
-const DEFAULT_RANGE = RANGE_OPTIONS.find(
-  (option) => option.key === "one_hour",
-)!;
-const DEFAULT_LIMIT = 200;
 
 export const Route = createFileRoute(
   "/_authenticated/workspaces/$workspaceId/projects/$projectId/services/$serviceId/_service_layout/logs/",
@@ -111,306 +69,549 @@ export const Route = createFileRoute(
   beforeLoad: () => ({ title: null }),
 });
 
-type LogEntry = {
-  deploymentName?: string | null;
-  message: string;
-  namespace?: string | null;
-  timestamp: string | number | Date;
-};
+type LogsConnection = NonNullable<
+  NonNullable<GetServiceLogsFromServiceLogsRouteQuery["service"]>["logs"]
+>;
+type LogEdge = LogsConnection["edges"][number];
+type LogsPageInfo = LogsConnection["pageInfo"];
 
 function ServiceLogsComponent() {
   const { projectId, serviceId } = Route.useParams();
-  const [range, setRange] =
-    useState<(typeof RANGE_OPTIONS)[number]>(DEFAULT_RANGE);
-  const [limit, setLimit] =
-    useState<(typeof LIMIT_OPTIONS)[number]>(DEFAULT_LIMIT);
-  const { data, error, loading, refetch } = useQuery(
+  const scrollParentRef = useRef<HTMLDivElement>(null);
+  const atLatestRef = useRef(true);
+  const pageInfoRef = useRef<LogsPageInfo | null>(null);
+  const initializedRef = useRef(false);
+  const isLoadingOlderRef = useRef(false);
+  const [available, setAvailable] = useState(true);
+  const [edges, setEdges] = useState<LogEdge[]>([]);
+  const [pageInfo, setPageInfo] = useState<LogsPageInfo | null>(null);
+  const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
+  const [isAtLatest, setIsAtLatest] = useState(true);
+  const [isLoadingOlder, setIsLoadingOlder] = useState(false);
+  const { data, error, fetchMore, loading, refetch } = useQuery(
     GET_SERVICE_LOGS_FROM_SERVICE_LOGS_ROUTE,
     {
       variables: {
         projectId,
         id: serviceId,
-        rangeSeconds: range.rangeSeconds,
-        limit,
+        first: LOG_PAGE_SIZE,
       },
       notifyOnNetworkStatusChange: true,
-      pollInterval: 15_000,
     },
   );
-  const logs = data?.service?.logs;
-  const entries = useMemo(
-    () => [...(logs?.entries ?? [])].reverse(),
-    [logs?.entries],
+
+  useEffect(() => {
+    initializedRef.current = false;
+    pageInfoRef.current = null;
+    atLatestRef.current = true;
+    isLoadingOlderRef.current = false;
+    setAvailable(true);
+    setEdges([]);
+    setPageInfo(null);
+    setUpdatedAt(null);
+    setIsAtLatest(true);
+    setIsLoadingOlder(false);
+  }, [projectId, serviceId]);
+
+  useEffect(() => {
+    pageInfoRef.current = pageInfo;
+  }, [pageInfo]);
+
+  const scrollToLatest = useCallback(() => {
+    const element = scrollParentRef.current;
+    if (!element) {
+      return;
+    }
+
+    element.scrollTop = 0;
+    atLatestRef.current = true;
+    setIsAtLatest(true);
+  }, []);
+
+  const replaceConnection = useCallback(
+    (connection: LogsConnection | null | undefined, shouldScroll = false) => {
+      if (!connection) {
+        return;
+      }
+
+      setAvailable(connection.available);
+      setEdges(connection.edges);
+      setPageInfo(connection.pageInfo);
+      setUpdatedAt(new Date());
+
+      if (shouldScroll) {
+        requestAnimationFrame(scrollToLatest);
+      }
+    },
+    [scrollToLatest],
   );
-  const updatedAt = useMemo(() => new Date(), [logs]);
 
+  useEffect(() => {
+    if (initializedRef.current) {
+      return;
+    }
+
+    const connection = data?.service?.logs;
+    if (!connection) {
+      return;
+    }
+
+    initializedRef.current = true;
+    replaceConnection(connection, true);
+  }, [data?.service?.logs, replaceConnection]);
+
+  const loadOlder = useCallback(async () => {
+    const currentPageInfo = pageInfoRef.current;
+
+    if (
+      isLoadingOlderRef.current ||
+      !currentPageInfo?.hasNextPage ||
+      !currentPageInfo.endCursor
+    ) {
+      return;
+    }
+
+    isLoadingOlderRef.current = true;
+    setIsLoadingOlder(true);
+
+    try {
+      const result = await fetchMore({
+        variables: {
+          projectId,
+          id: serviceId,
+          first: LOG_PAGE_SIZE,
+          after: currentPageInfo.endCursor,
+        },
+      });
+      const connection = result.data?.service?.logs;
+
+      if (!connection) {
+        return;
+      }
+
+      setAvailable(connection.available);
+      setEdges((currentEdges) =>
+        mergeEdges(currentEdges, connection.edges),
+      );
+      setPageInfo((current) =>
+        mergePageInfoForOlder(current, connection.pageInfo),
+      );
+      setUpdatedAt(new Date());
+    } finally {
+      isLoadingOlderRef.current = false;
+      setIsLoadingOlder(false);
+    }
+  }, [fetchMore, projectId, serviceId]);
+
+  const handleScroll = useCallback(() => {
+    const element = scrollParentRef.current;
+    if (!element) {
+      return;
+    }
+
+    const nextIsAtLatest = element.scrollTop <= BOTTOM_THRESHOLD_PX;
+    atLatestRef.current = nextIsAtLatest;
+    setIsAtLatest(nextIsAtLatest);
+
+    if (isNearBottom(element)) {
+      void loadOlder();
+    }
+  }, [loadOlder]);
+
+  const refreshLogs = useCallback(async () => {
+    const result = await refetch({
+      projectId,
+      id: serviceId,
+      first: LOG_PAGE_SIZE,
+      after: undefined,
+      before: undefined,
+      last: undefined,
+    });
+
+    initializedRef.current = true;
+    replaceConnection(result.data?.service?.logs, true);
+  }, [projectId, refetch, replaceConnection, serviceId]);
+
+  const statusText = getStatusText({
+    available,
+    count: edges.length,
+    error: Boolean(error),
+    loading: loading && !edges.length,
+    updatedAt,
+  });
   return (
-    <Page
-      fullWidth
-      title={t("service:tabs.logs")}
-      description={t("service:logs.description")}
+    <section
+      className="flex h-[calc(100dvh-7rem)] min-h-0 flex-col"
+      data-testid="service-logs-page"
     >
-      <div className="space-y-4" data-testid="service-logs-page">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="text-muted-foreground flex items-center gap-2 text-sm">
-            <Activity className="size-4" />
-            <span>
-              {error
-                ? t("service:logs.error")
-                : logs?.available
-                  ? t("service:logs.updated", {
-                      count: logs.entries.length,
-                      time: dayjs(updatedAt).format("HH:mm:ss"),
-                    })
-                  : loading
-                    ? t("service:logs.loading")
-                    : t("service:logs.unavailable")}
+      <div className="flex shrink-0 flex-col gap-2 border-b px-4 py-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="text-muted-foreground flex min-w-0 flex-wrap items-center gap-2 text-sm">
+          <Activity className="size-4 shrink-0" />
+          <span>{statusText}</span>
+          {isLoadingOlder ? (
+            <span className="text-muted-foreground inline-flex items-center gap-1.5">
+              <Spinner />
+              {t("service:logs.loading_older")}
             </span>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <Select
-              items={RANGE_OPTIONS.map((option) => ({
-                label: t(`service:logs.ranges.${option.key}`),
-                value: option.key,
-              }))}
-              value={range.key}
-              onValueChange={(value) => {
-                const option = RANGE_OPTIONS.find((item) => item.key === value);
-                if (option) {
-                  setRange(option);
-                }
-              }}
-            >
-              <SelectTrigger aria-label={t("service:logs.range")}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent align="end" alignItemWithTrigger={false}>
-                {RANGE_OPTIONS.map((option) => (
-                  <SelectItem key={option.key} value={option.key}>
-                    {t(`service:logs.ranges.${option.key}`)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select
-              items={LIMIT_OPTIONS.map((option) => ({
-                label: String(option),
-                value: String(option),
-              }))}
-              value={String(limit)}
-              onValueChange={(value) => {
-                const option = LIMIT_OPTIONS.find(
-                  (item) => String(item) === value,
-                );
-                if (option) {
-                  setLimit(option);
-                }
-              }}
-            >
-              <SelectTrigger aria-label={t("service:logs.limit")}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent align="end" alignItemWithTrigger={false}>
-                {LIMIT_OPTIONS.map((option) => (
-                  <SelectItem key={option} value={String(option)}>
-                    {option}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Button
-              aria-label={t("service:logs.refresh")}
-              disabled={loading}
-              size="icon"
-              variant="outline"
-              onClick={() => void refetch()}
-            >
-              <RefreshCw className={loading ? "animate-spin" : undefined} />
-            </Button>
-          </div>
+          ) : null}
+          {!isAtLatest ? (
+            <span className="text-muted-foreground">
+              {t("service:logs.paused")}
+            </span>
+          ) : null}
         </div>
 
-        <Card>
-          <CardHeader className="border-b">
-            <CardTitle className="text-sm">
-              {t("service:logs.recent")}
-            </CardTitle>
-            <CardDescription>
-              {t("service:logs.recent_description")}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-0">
-            <LogEntries entries={entries} loading={loading && !logs} />
-          </CardContent>
-        </Card>
+        <Button
+          aria-label={t("service:logs.refresh")}
+          className="shrink-0 self-start sm:self-auto"
+          disabled={loading || isLoadingOlder}
+          size="icon"
+          variant="outline"
+          onClick={() => void refreshLogs()}
+        >
+          <RefreshCw
+            className={loading || isLoadingOlder ? "animate-spin" : undefined}
+          />
+        </Button>
       </div>
-    </Page>
+
+      <div className="min-h-0 flex-1">
+        <LogEntries
+          entries={edges}
+          loadingOlder={isLoadingOlder}
+          loading={loading && !edges.length}
+          onScroll={handleScroll}
+          serviceId={serviceId}
+          scrollParentRef={scrollParentRef}
+        />
+      </div>
+    </section>
   );
 }
 
 function LogEntries({
   entries,
   loading,
+  loadingOlder,
+  onScroll,
+  serviceId,
+  scrollParentRef,
 }: {
-  entries: ReadonlyArray<LogEntry>;
+  entries: ReadonlyArray<LogEdge>;
   loading: boolean;
+  loadingOlder: boolean;
+  onScroll: () => void;
+  serviceId: string;
+  scrollParentRef: RefObject<HTMLDivElement | null>;
 }) {
-  const data = useMemo(() => [...entries], [entries]);
-  const columns = useMemo<Array<ColumnDef<LogEntry>>>(
-    () => [
-      {
-        id: "time",
-        size: 176,
-        header: () => t("service:logs.columns.time"),
-        cell: ({ row }) => {
-          const timestamp = toTimestamp(row.original.timestamp);
-
-          return (
-            <time
-              className="text-muted-foreground font-mono tabular-nums"
-              dateTime={timestamp}
-              title={timestamp}
-            >
-              {dayjs(row.original.timestamp).format("YYYY-MM-DD HH:mm:ss")}
-            </time>
-          );
-        },
-      },
-      {
-        id: "deployment",
-        size: 224,
-        header: () => t("service:logs.columns.deployment"),
-        cell: ({ row }) => (
-          <DeploymentCell
-            deployment={row.original.deploymentName ?? "-"}
-            index={row.index}
-          />
-        ),
-      },
-      {
-        id: "message",
-        header: () => t("service:logs.columns.message"),
-        cell: ({ row }) => (
-          <pre className="min-w-0 font-mono break-words whitespace-pre-wrap">
-            {row.original.message}
-          </pre>
-        ),
-      },
-    ],
-    [],
-  );
-  const table = useReactTable({
-    data,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
+  const rows = useMemo(() => [...entries], [entries]);
+  const rowVirtualizer = useVirtualizer({
+    count: rows.length,
+    estimateSize: () => 40,
+    getScrollElement: () => scrollParentRef.current,
+    overscan: 20,
   });
+  const virtualRows = rowVirtualizer.getVirtualItems();
 
   return (
-    <div className="max-h-160 overflow-auto">
-      <Table className="table-fixed text-xs">
-        <colgroup>
-          {table.getVisibleLeafColumns().map((column) => (
-            <col
-              key={column.id}
-              style={
-                column.id === "message"
-                  ? undefined
-                  : { width: column.getSize() }
-              }
-            />
-          ))}
-        </colgroup>
-        <TableHeader>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id} className="hover:bg-transparent">
-              {headerGroup.headers.map((header) => (
-                <TableHead
-                  key={header.id}
-                  className={cn(
-                    "bg-background text-muted-foreground sticky top-0 z-10 h-auto px-4 py-2 text-xs font-medium",
-                    header.column.id === "message"
-                      ? "whitespace-normal"
-                      : "whitespace-nowrap",
-                  )}
-                >
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext(),
-                      )}
-                </TableHead>
-              ))}
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody>
+    <div
+      ref={scrollParentRef}
+      className="h-full min-h-0 overflow-auto overscroll-contain"
+      onScroll={onScroll}
+    >
+      <div className="grid min-w-0 text-xs" role="table">
+        <div
+          className="bg-background sticky top-0 z-20 border-b"
+          role="rowgroup"
+        >
+          <div className={LOG_ROW_LAYOUT} role="row">
+            <div
+              className={cn(
+                "text-muted-foreground px-4 py-2 text-xs font-medium whitespace-nowrap",
+                LOG_TIME_COLUMN,
+              )}
+              role="columnheader"
+            >
+              {t("service:logs.columns.time")}
+            </div>
+            <div
+              className={cn(
+                "text-muted-foreground px-4 py-2 text-xs font-medium whitespace-nowrap",
+                LOG_DEPLOYMENT_COLUMN,
+              )}
+              role="columnheader"
+            >
+              {t("service:logs.columns.deployment")}
+            </div>
+            <div
+              className={cn(
+                "text-muted-foreground px-4 py-2 text-xs font-medium whitespace-nowrap",
+                LOG_LEVEL_COLUMN,
+              )}
+              role="columnheader"
+            >
+              {t("service:logs.columns.level")}
+            </div>
+            <div
+              className={cn(
+                "text-muted-foreground px-4 py-2 text-xs font-medium whitespace-normal",
+                LOG_MESSAGE_COLUMN,
+              )}
+              role="columnheader"
+            >
+              {t("service:logs.columns.message")}
+            </div>
+          </div>
+        </div>
+        <div
+          data-elastic-offset={0}
+          data-testid="service-logs-elastic-content"
+        >
           {loading ? (
-            <TableRow className="hover:bg-transparent">
-              <TableCell
-                className="bg-muted/50 h-96 text-center text-sm"
-                colSpan={columns.length}
+            <LogLoadingRow
+              label={t("service:logs.loading")}
+              className="h-96"
+            />
+          ) : rows.length ? (
+            <>
+              <div
+                className="relative grid"
+                role="rowgroup"
+                style={{ height: rowVirtualizer.getTotalSize() }}
               >
-                {t("service:logs.loading")}
-              </TableCell>
-            </TableRow>
-          ) : table.getRowModel().rows.length ? (
-            table.getRowModel().rows.map((row) => (
-              <TableRow key={row.id} className="group">
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell
-                    key={cell.id}
-                    className={cn(
-                      "group-hover:bg-muted/50 px-4 py-2 text-xs transition-colors",
-                      cell.column.id === "message" && "whitespace-normal",
-                      cell.column.id === "deployment" &&
-                        "overflow-hidden whitespace-nowrap",
-                      cell.column.id === "time" && "whitespace-nowrap",
-                    )}
-                  >
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))
+                {virtualRows.map((virtualRow) => {
+                  const edge = rows[virtualRow.index];
+                  const timestamp = toTimestamp(edge.node.timestamp);
+
+                  return (
+                    <div
+                      key={edge.node.id}
+                      ref={(node) => rowVirtualizer.measureElement(node)}
+                      className={cn(
+                        "group absolute w-full border-b transition-colors",
+                        LOG_ROW_LAYOUT,
+                      )}
+                      data-index={virtualRow.index}
+                      role="row"
+                      style={{
+                        transform: `translateY(${virtualRow.start}px)`,
+                      }}
+                    >
+                      <div
+                        className={cn(
+                          "group-hover:bg-muted/50 px-4 py-2 text-xs whitespace-nowrap transition-colors",
+                          LOG_TIME_COLUMN,
+                        )}
+                        role="cell"
+                      >
+                        <time
+                          className="text-muted-foreground font-mono tabular-nums"
+                          dateTime={timestamp}
+                          title={timestamp}
+                        >
+                          {dayjs(edge.node.timestamp).format(
+                            "YYYY-MM-DD HH:mm:ss",
+                          )}
+                        </time>
+                      </div>
+                      <div
+                        className={cn(
+                          "group-hover:bg-muted/50 overflow-hidden px-4 py-2 text-xs whitespace-nowrap transition-colors",
+                          LOG_DEPLOYMENT_COLUMN,
+                        )}
+                        role="cell"
+                      >
+                        <DeploymentCell
+                          deployment={edge.node.deploymentName ?? "-"}
+                          serviceId={serviceId}
+                        />
+                      </div>
+                      <div
+                        className={cn(
+                          "group-hover:bg-muted/50 px-4 py-2 text-xs whitespace-nowrap transition-colors",
+                          LOG_LEVEL_COLUMN,
+                        )}
+                        role="cell"
+                      >
+                        <LogLevelCell level={edge.node.level} />
+                      </div>
+                      <div
+                        className={cn(
+                          "group-hover:bg-muted/50 px-4 py-2 text-xs whitespace-normal transition-colors",
+                          LOG_MESSAGE_COLUMN,
+                        )}
+                        role="cell"
+                      >
+                        <pre className="min-w-0 font-mono break-words whitespace-pre-wrap">
+                          {edge.node.message}
+                        </pre>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {loadingOlder ? (
+                <LogLoadingRow label={t("service:logs.loading_older")} />
+              ) : null}
+            </>
           ) : (
-            <TableRow className="hover:bg-transparent">
-              <TableCell
-                className="border-border text-muted-foreground h-96 border-dashed text-center text-sm"
-                colSpan={columns.length}
-              >
-                {t("service:logs.empty")}
-              </TableCell>
-            </TableRow>
+            <div role="rowgroup">
+              <div className={LOG_ROW_LAYOUT} role="row">
+                <div
+                  className="border-border text-muted-foreground flex h-96 flex-1 items-center justify-center border-dashed text-center text-sm"
+                  role="cell"
+                >
+                  {t("service:logs.empty")}
+                </div>
+              </div>
+            </div>
           )}
-        </TableBody>
-      </Table>
+        </div>
+      </div>
     </div>
+  );
+}
+
+function LogLoadingRow({
+  className,
+  label,
+}: {
+  className?: string;
+  label: string;
+}) {
+  return (
+    <div role="rowgroup">
+      <div className={LOG_ROW_LAYOUT} role="row">
+        <div
+          className={cn(
+            "text-muted-foreground flex flex-1 items-center justify-center gap-2 py-3 text-sm",
+            className,
+          )}
+          role="cell"
+        >
+          <Spinner />
+          <span>{label}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LogLevelCell({ level }: { level?: string | null }) {
+  const label = level?.trim() || "-";
+
+  return (
+    <span
+      className={cn(
+        "font-mono",
+        getLogLevelClass(label),
+      )}
+    >
+      {label}
+    </span>
   );
 }
 
 function DeploymentCell({
   deployment,
-  index,
+  serviceId,
 }: {
   deployment: string;
-  index: number;
+  serviceId: string;
 }) {
+  const label = formatDeploymentName(deployment, serviceId);
+
   return (
-    <Tooltip>
-      <TooltipTrigger
-        className="text-muted-foreground flex min-h-6 w-full min-w-0 items-center overflow-hidden bg-transparent p-0 text-left font-mono outline-none"
-        data-testid={`service-log-deployment-${index}`}
-      >
-        <span className="block min-w-0 flex-1 truncate">{deployment}</span>
-      </TooltipTrigger>
-      <TooltipContent>
-        <p>{deployment}</p>
-      </TooltipContent>
-    </Tooltip>
+    <span className="text-muted-foreground block min-w-0 truncate font-mono">
+      {label}
+    </span>
+  );
+}
+
+function formatDeploymentName(deployment: string, serviceId: string): string {
+  const prefix = `${serviceId}-`;
+
+  return deployment.startsWith(prefix) ? deployment.slice(prefix.length) : deployment;
+}
+
+function getLogLevelClass(level: string): string {
+  switch (level.toUpperCase()) {
+    case "ERROR":
+    case "FATAL":
+    case "PANIC":
+    case "CRITICAL":
+      return "text-destructive";
+    case "WARN":
+    case "WARNING":
+      return "text-amber-600 dark:text-amber-400";
+    case "INFO":
+    case "NOTICE":
+      return "text-sky-600 dark:text-sky-400";
+    default:
+      return "text-muted-foreground";
+  }
+}
+
+function mergeEdges(
+  firstEdges: ReadonlyArray<LogEdge>,
+  secondEdges: ReadonlyArray<LogEdge>,
+): LogEdge[] {
+  const edgesByCursor = new Map<string, LogEdge>();
+
+  for (const edge of [...firstEdges, ...secondEdges]) {
+    edgesByCursor.set(edge.cursor, edge);
+  }
+
+  return [...edgesByCursor.values()];
+}
+
+function mergePageInfoForOlder(
+  current: LogsPageInfo | null,
+  older: LogsPageInfo,
+): LogsPageInfo {
+  return {
+    endCursor: older.endCursor ?? current?.endCursor ?? null,
+    hasNextPage: older.hasNextPage,
+    hasPreviousPage: current?.hasPreviousPage ?? older.hasPreviousPage,
+    startCursor: current?.startCursor ?? older.startCursor ?? null,
+  };
+}
+
+function getStatusText({
+  available,
+  count,
+  error,
+  loading,
+  updatedAt,
+}: {
+  available: boolean;
+  count: number;
+  error: boolean;
+  loading: boolean;
+  updatedAt: Date | null;
+}) {
+  if (error) {
+    return t("service:logs.error");
+  }
+
+  if (!available) {
+    return t("service:logs.unavailable");
+  }
+
+  if (loading || !updatedAt) {
+    return t("service:logs.loading");
+  }
+
+  return t("service:logs.updated", {
+    count,
+    time: dayjs(updatedAt).format("HH:mm:ss"),
+  });
+}
+
+function isNearBottom(element: HTMLElement): boolean {
+  return (
+    element.scrollHeight - element.scrollTop - element.clientHeight <=
+    BOTTOM_THRESHOLD_PX
   );
 }
 
