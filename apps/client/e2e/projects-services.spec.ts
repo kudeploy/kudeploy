@@ -331,6 +331,22 @@ test.describe("workspace Projects and Services", () => {
       .poll(() => terminalSocket.events.filter((event) => event[0] === "data"))
       .not.toHaveLength(0);
 
+    const dataEventCount = terminalSocket.events.filter(
+      (event) => event[0] === "data",
+    ).length;
+    terminalSocket.end();
+    await expect(page.getByTestId("service-terminal-status")).toContainText(
+      "未连接",
+    );
+    await page.locator(".xterm").click();
+    await page.keyboard.type("echo after-exit");
+    await expect
+      .poll(
+        () =>
+          terminalSocket.events.filter((event) => event[0] === "data").length,
+      )
+      .toBe(dataEventCount);
+
     await page.getByTestId("service-logs-tab").click();
     await expect(page).toHaveURL(
       new RegExp(
@@ -711,7 +727,7 @@ async function mockServiceTerminalSocket(page: Page) {
   let socket: WebSocketRoute | null = null;
 
   await page.routeWebSocket(
-    (url) => url.pathname === "/socket.io/",
+    (url) => url.pathname === "/api/socket.io/",
     (ws) => {
       socket = ws;
       ws.send(
@@ -745,6 +761,9 @@ async function mockServiceTerminalSocket(page: Page) {
     events,
     start: () => {
       socket?.send('42/service-terminal,["started"]');
+    },
+    end: () => {
+      socket?.send('42/service-terminal,["ended"]');
     },
   };
 }

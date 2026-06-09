@@ -4,55 +4,51 @@ jest.mock('@kubernetes/client-node', () => ({
 }));
 
 import { RequestContext } from '@nest-boot/request-context';
-import type { CoreV1Api, Exec } from '@kubernetes/client-node';
+import type { CoreV1Api, Exec, V1Status } from '@kubernetes/client-node';
+import { GUARDS_METADATA } from '@nestjs/common/constants';
+import { GATEWAY_OPTIONS } from '@nestjs/websockets/constants';
 import { PassThrough } from 'stream';
 import type { Socket } from 'socket.io';
 
 import { ServiceService } from '@/app/service/service.service';
 import { Workspace } from '@/app/workspace/workspace.entity';
 
-import {
-  ServiceTerminalGateway,
-  isServiceTerminalOriginAllowed,
-} from './service-terminal.gateway';
+import { ServiceTerminalGateway } from './service-terminal.gateway';
+import { ServiceTerminalGuard } from './service-terminal.guard';
 
 describe('ServiceTerminalGateway', () => {
-  const originEnvKeys = ['APP_URL'] as const;
-  const originalOriginEnv = Object.fromEntries(
-    originEnvKeys.map((key) => [key, process.env[key]]),
-  );
+  it('serves terminal socket traffic on the API-routed same-origin Socket.IO path', () => {
+    const options = Reflect.getMetadata(
+      GATEWAY_OPTIONS,
+      ServiceTerminalGateway,
+    ) as { cors?: unknown; path?: string };
 
-  afterEach(() => {
-    for (const key of originEnvKeys) {
-      const value = originalOriginEnv[key];
-      if (value === undefined) {
-        delete process.env[key];
-      } else {
-        process.env[key] = value;
-      }
-    }
+    expect(options.path).toBe('/api/socket.io');
+    expect(options.cors).toBeUndefined();
   });
 
-  it('uses APP_URL as the terminal socket origin allowlist', () => {
-    clearOriginEnv(originEnvKeys);
-    process.env.APP_URL = 'https://app.example.com/';
-
-    expect(isServiceTerminalOriginAllowed('https://app.example.com')).toBe(
-      true,
-    );
-    expect(isServiceTerminalOriginAllowed('https://evil.example.com')).toBe(
-      false,
-    );
-  });
-
-  it('allows localhost origins when no terminal origin allowlist is configured', () => {
-    clearOriginEnv(originEnvKeys);
-
-    expect(isServiceTerminalOriginAllowed('http://localhost:3000')).toBe(true);
-    expect(isServiceTerminalOriginAllowed('http://127.0.0.1:3100')).toBe(true);
-    expect(isServiceTerminalOriginAllowed('https://evil.example.com')).toBe(
-      false,
-    );
+  it('authenticates only terminal start events', () => {
+    expect(
+      Reflect.getMetadata(GUARDS_METADATA, ServiceTerminalGateway),
+    ).toBeUndefined();
+    expect(
+      Reflect.getMetadata(
+        GUARDS_METADATA,
+        ServiceTerminalGateway.prototype.handleStart,
+      ),
+    ).toEqual([ServiceTerminalGuard]);
+    expect(
+      Reflect.getMetadata(
+        GUARDS_METADATA,
+        ServiceTerminalGateway.prototype.handleData,
+      ),
+    ).toBeUndefined();
+    expect(
+      Reflect.getMetadata(
+        GUARDS_METADATA,
+        ServiceTerminalGateway.prototype.handleResize,
+      ),
+    ).toBeUndefined();
   });
 
   it('starts an interactive exec session for the selected service pod', async () => {
@@ -127,6 +123,53 @@ describe('ServiceTerminalGateway', () => {
 
     gateway.handleDisconnect(socket);
     expect(execSocket.close).toHaveBeenCalledTimes(1);
+  });
+
+  it('closes the terminal session when Kubernetes reports a successful exit', async () => {
+    const workspace = { id: 'workspace_1' } as Workspace;
+    const { gateway, coreV1Api, exec, serviceService } = createGateway();
+    const socket = createSocket(await createWsContext(workspace));
+    const execSocket = { close: jest.fn() };
+    let statusCallback: ((status: V1Status) => void) | undefined;
+
+    serviceService.findService.mockResolvedValue({
+      id: 'service-1',
+      projectId: 'project-1',
+    } as never);
+    coreV1Api.listNamespacedPod.mockResolvedValue({
+      items: [
+        {
+          metadata: { name: 'pod-1' },
+          spec: { containers: [{ name: 'app' }] },
+          status: { phase: 'Running' },
+        },
+      ],
+    });
+    exec.exec.mockImplementation(async (...args: unknown[]) => {
+      statusCallback = args[8] as (status: V1Status) => void;
+      statusCallback({ status: 'Success' } as V1Status);
+
+      return execSocket as never;
+    });
+
+    await gateway.handleStart(socket, {
+      projectId: 'project-1',
+      serviceId: 'service-1',
+    });
+
+    expect(socket.emit).toHaveBeenCalledWith('started');
+
+    statusCallback?.({ status: 'Success' } as V1Status);
+
+    expect(socket.emit).toHaveBeenCalledWith('ended');
+    expect(execSocket.close).toHaveBeenCalledTimes(1);
+
+    const stdin = exec.exec.mock.calls[0][6] as PassThrough;
+    const inputChunks: Buffer[] = [];
+    stdin.on('data', (chunk: Buffer) => inputChunks.push(chunk));
+
+    gateway.handleData(socket, { data: 'echo after-exit\r' });
+    expect(inputChunks).toHaveLength(0);
   });
 
   it('prefers the active deployment pod when older deployment pods are still running', async () => {
@@ -348,10 +391,4 @@ function createSocket(ctx: RequestContext): Socket {
     emit: jest.fn(),
     id: 'socket-1',
   } as unknown as Socket;
-}
-
-function clearOriginEnv(keys: readonly string[]) {
-  for (const key of keys) {
-    delete process.env[key];
-  }
 }

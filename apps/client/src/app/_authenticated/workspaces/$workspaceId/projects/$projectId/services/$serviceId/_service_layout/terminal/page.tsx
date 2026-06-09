@@ -57,6 +57,7 @@ function ServiceTerminalComponent() {
     instance.loadAddon(fitAddon);
     const socket: Socket = io("/service-terminal", {
       auth: { workspaceId },
+      path: "/api/socket.io",
       transports: ["websocket"],
     });
 
@@ -114,6 +115,13 @@ function ServiceTerminalComponent() {
 
     socket.on("data", (data: string) => {
       instance.write(data);
+    });
+
+    socket.on("ended", () => {
+      setTerminalReady(false);
+      setStatus("disconnected");
+      setError(null);
+      socket.disconnect();
     });
 
     socket.on("error", (socketError: { message?: string } | string) => {

@@ -34,10 +34,6 @@ const config = defineConfig(({ mode }) => {
         "/api": {
           target: env.API_URL,
           changeOrigin: true,
-        },
-        "/socket.io": {
-          target: env.API_URL,
-          changeOrigin: true,
           ws: true,
         },
       },

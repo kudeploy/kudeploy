@@ -25,6 +25,7 @@ import { Workspace } from '@/app/workspace/workspace.entity';
 import { ServiceTerminalGuard } from './service-terminal.guard';
 
 interface ServiceTerminalSession {
+  closed?: boolean;
   stdin: PassThrough;
   stdout: ServiceTerminalOutputStream;
   webSocket?: { close: () => void };
@@ -36,37 +37,14 @@ interface ServiceTerminalStartPayload {
 }
 
 const SERVICE_TERMINAL_SHELLS = [['/bin/sh']];
+const SERVICE_TERMINAL_SOCKET_PATH = '/api/socket.io';
 const SHELL_STARTUP_GRACE_MS = 1500;
 const NO_INTERACTIVE_SHELL_MESSAGE =
   'Unable to start an interactive shell in this container. Ensure the image includes /bin/sh.';
-const LOCALHOST_ORIGIN_PATTERN =
-  /^https?:\/\/(?:localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/;
 
-export function isServiceTerminalOriginAllowed(origin?: string): boolean {
-  if (!origin) {
-    return true;
-  }
-
-  const allowedOrigins = getServiceTerminalAllowedOrigins();
-  if (allowedOrigins.length === 0) {
-    return LOCALHOST_ORIGIN_PATTERN.test(origin);
-  }
-
-  return allowedOrigins.includes(origin);
-}
-
-@UseGuards(ServiceTerminalGuard)
 @WebSocketGateway({
   namespace: 'service-terminal',
-  cors: {
-    origin: (
-      origin: string | undefined,
-      callback: (error: Error | null, success?: boolean) => void,
-    ) => {
-      callback(null, isServiceTerminalOriginAllowed(origin));
-    },
-    credentials: true,
-  },
+  path: SERVICE_TERMINAL_SOCKET_PATH,
 })
 export class ServiceTerminalGateway
   implements OnGatewayConnection, OnGatewayDisconnect
@@ -96,6 +74,7 @@ export class ServiceTerminalGateway
     });
   }
 
+  @UseGuards(ServiceTerminalGuard)
   @SubscribeMessage('start')
   async handleStart(
     @ConnectedSocket() client: Socket,
@@ -262,16 +241,23 @@ export class ServiceTerminalGateway
               resolveStartupStatus(status);
             }
 
-            if (activeSession && isFailureStatus(status)) {
+            if (!activeSession || session.closed) {
+              return;
+            }
+
+            if (isFailureStatus(status)) {
               client.emit('error', {
                 message: getTerminalStatusMessage(status),
               });
-              this.closeSession(client.id);
+            } else {
+              client.emit('ended');
             }
+
+            this.closeSession(client.id, session);
           },
         );
       } catch (error) {
-        session.stdin.end();
+        this.closeSession(client.id, session);
 
         if (isMissingShellError(error)) {
           this.logger.debug('Service terminal shell candidate failed', {
@@ -290,8 +276,7 @@ export class ServiceTerminalGateway
       const status = await startupStatus;
 
       if (isFailureStatus(status)) {
-        session.stdin.end();
-        session.webSocket?.close();
+        this.closeSession(client.id, session);
         continue;
       }
 
@@ -340,15 +325,22 @@ export class ServiceTerminalGateway
     return pod;
   }
 
-  private closeSession(clientId: string) {
-    const session = this.sessions.get(clientId);
+  private closeSession(
+    clientId: string,
+    fallbackSession?: ServiceTerminalSession,
+  ) {
+    const session = this.sessions.get(clientId) ?? fallbackSession;
 
     if (!session) {
       return;
     }
 
-    session.stdin.end();
-    session.webSocket?.close();
+    if (!session.closed) {
+      session.closed = true;
+      session.stdin.end();
+      session.webSocket?.close();
+    }
+
     this.sessions.delete(clientId);
   }
 }
@@ -394,14 +386,6 @@ function isMissingShellError(error: unknown) {
     message.includes('no such file or directory') ||
     message.includes('executable file not found')
   );
-}
-
-function getServiceTerminalAllowedOrigins() {
-  return [process.env.APP_URL]
-    .filter((value): value is string => Boolean(value?.trim()))
-    .flatMap((value) => value.split(','))
-    .map((value) => value.trim().replace(/\/+$/, ''))
-    .filter(Boolean);
 }
 
 function getErrorMessage(error: unknown, fallback: string) {
