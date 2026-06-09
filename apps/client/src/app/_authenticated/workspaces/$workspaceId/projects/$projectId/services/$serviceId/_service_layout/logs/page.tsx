@@ -1,7 +1,6 @@
 import {
   useCallback,
   useEffect,
-  useMemo,
   useRef,
   useState,
 } from "react";
@@ -20,7 +19,7 @@ import type { GetServiceLogsFromServiceLogsRouteQuery } from "@/gql/graphql";
 import { cn } from "@/lib/utils";
 
 const LOG_PAGE_SIZE = 100;
-const BOTTOM_THRESHOLD_PX = 48;
+const LOAD_OLDER_THRESHOLD_PX = 48;
 const LOG_ROW_LAYOUT = "flex min-w-full";
 const LOG_TIME_COLUMN = "w-44 shrink-0";
 const LOG_DEPLOYMENT_COLUMN = "w-20 shrink-0";
@@ -78,15 +77,14 @@ type LogsPageInfo = LogsConnection["pageInfo"];
 function ServiceLogsComponent() {
   const { projectId, serviceId } = Route.useParams();
   const scrollParentRef = useRef<HTMLDivElement>(null);
-  const atLatestRef = useRef(true);
   const pageInfoRef = useRef<LogsPageInfo | null>(null);
   const initializedRef = useRef(false);
   const isLoadingOlderRef = useRef(false);
   const [available, setAvailable] = useState(true);
   const [edges, setEdges] = useState<LogEdge[]>([]);
+  const [failed, setFailed] = useState(false);
   const [pageInfo, setPageInfo] = useState<LogsPageInfo | null>(null);
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
-  const [isAtLatest, setIsAtLatest] = useState(true);
   const [isLoadingOlder, setIsLoadingOlder] = useState(false);
   const { data, error, fetchMore, loading, refetch } = useQuery(
     GET_SERVICE_LOGS_FROM_SERVICE_LOGS_ROUTE,
@@ -103,13 +101,12 @@ function ServiceLogsComponent() {
   useEffect(() => {
     initializedRef.current = false;
     pageInfoRef.current = null;
-    atLatestRef.current = true;
     isLoadingOlderRef.current = false;
     setAvailable(true);
     setEdges([]);
+    setFailed(false);
     setPageInfo(null);
     setUpdatedAt(null);
-    setIsAtLatest(true);
     setIsLoadingOlder(false);
   }, [projectId, serviceId]);
 
@@ -124,8 +121,6 @@ function ServiceLogsComponent() {
     }
 
     element.scrollTop = 0;
-    atLatestRef.current = true;
-    setIsAtLatest(true);
   }, []);
 
   const replaceConnection = useCallback(
@@ -136,6 +131,7 @@ function ServiceLogsComponent() {
 
       setAvailable(connection.available);
       setEdges(connection.edges);
+      setFailed(false);
       setPageInfo(connection.pageInfo);
       setUpdatedAt(new Date());
 
@@ -190,6 +186,7 @@ function ServiceLogsComponent() {
       }
 
       setAvailable(connection.available);
+      setFailed(false);
       setEdges((currentEdges) =>
         mergeEdges(currentEdges, connection.edges),
       );
@@ -197,6 +194,8 @@ function ServiceLogsComponent() {
         mergePageInfoForOlder(current, connection.pageInfo),
       );
       setUpdatedAt(new Date());
+    } catch {
+      setFailed(true);
     } finally {
       isLoadingOlderRef.current = false;
       setIsLoadingOlder(false);
@@ -209,33 +208,33 @@ function ServiceLogsComponent() {
       return;
     }
 
-    const nextIsAtLatest = element.scrollTop <= BOTTOM_THRESHOLD_PX;
-    atLatestRef.current = nextIsAtLatest;
-    setIsAtLatest(nextIsAtLatest);
-
     if (isNearBottom(element)) {
       void loadOlder();
     }
   }, [loadOlder]);
 
   const refreshLogs = useCallback(async () => {
-    const result = await refetch({
-      projectId,
-      id: serviceId,
-      first: LOG_PAGE_SIZE,
-      after: undefined,
-      before: undefined,
-      last: undefined,
-    });
+    try {
+      const result = await refetch({
+        projectId,
+        id: serviceId,
+        first: LOG_PAGE_SIZE,
+        after: undefined,
+        before: undefined,
+        last: undefined,
+      });
 
-    initializedRef.current = true;
-    replaceConnection(result.data?.service?.logs, true);
+      initializedRef.current = true;
+      replaceConnection(result.data?.service?.logs, true);
+    } catch {
+      setFailed(true);
+    }
   }, [projectId, refetch, replaceConnection, serviceId]);
 
   const statusText = getStatusText({
     available,
     count: edges.length,
-    error: Boolean(error),
+    error: failed || Boolean(error),
     loading: loading && !edges.length,
     updatedAt,
   });
@@ -252,11 +251,6 @@ function ServiceLogsComponent() {
             <span className="text-muted-foreground inline-flex items-center gap-1.5">
               <Spinner />
               {t("service:logs.loading_older")}
-            </span>
-          ) : null}
-          {!isAtLatest ? (
-            <span className="text-muted-foreground">
-              {t("service:logs.paused")}
             </span>
           ) : null}
         </div>
@@ -304,9 +298,8 @@ function LogEntries({
   serviceId: string;
   scrollParentRef: RefObject<HTMLDivElement | null>;
 }) {
-  const rows = useMemo(() => [...entries], [entries]);
   const rowVirtualizer = useVirtualizer({
-    count: rows.length,
+    count: entries.length,
     estimateSize: () => 40,
     getScrollElement: () => scrollParentRef.current,
     overscan: 20,
@@ -372,7 +365,7 @@ function LogEntries({
               label={t("service:logs.loading")}
               className="h-96"
             />
-          ) : rows.length ? (
+          ) : entries.length ? (
             <>
               <div
                 className="relative grid"
@@ -380,7 +373,7 @@ function LogEntries({
                 style={{ height: rowVirtualizer.getTotalSize() }}
               >
                 {virtualRows.map((virtualRow) => {
-                  const edge = rows[virtualRow.index];
+                  const edge = entries[virtualRow.index];
                   const timestamp = toTimestamp(edge.node.timestamp);
 
                   return (
@@ -531,7 +524,9 @@ function DeploymentCell({
 function formatDeploymentName(deployment: string, serviceId: string): string {
   const prefix = `${serviceId}-`;
 
-  return deployment.startsWith(prefix) ? deployment.slice(prefix.length) : deployment;
+  return deployment.startsWith(prefix)
+    ? deployment.slice(prefix.length)
+    : deployment;
 }
 
 function getLogLevelClass(level: string): string {
@@ -611,7 +606,7 @@ function getStatusText({
 function isNearBottom(element: HTMLElement): boolean {
   return (
     element.scrollHeight - element.scrollTop - element.clientHeight <=
-    BOTTOM_THRESHOLD_PX
+    LOAD_OLDER_THRESHOLD_PX
   );
 }
 

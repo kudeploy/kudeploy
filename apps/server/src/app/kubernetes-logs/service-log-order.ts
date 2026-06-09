@@ -30,10 +30,10 @@ export function compareServiceLogsAsc(
   left: ServiceLog,
   right: ServiceLog,
 ): number {
-  return compareSortTuples(serviceLogCursorPayload(left), {
-    ...serviceLogCursorPayload(right),
-    t: right.rawTime,
-  });
+  return compareSortTuples(
+    serviceLogCursorPayload(left),
+    serviceLogCursorPayload(right),
+  );
 }
 
 export function compareServiceLogsDesc(
