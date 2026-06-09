@@ -1,3 +1,13 @@
+## 0.3.3 (2026-06-09)
+
+### 🩹 Fixes
+
+- scale reserve deployments to zero ([6c258ba](https://github.com/kudeploy/kudeploy/commit/6c258ba))
+
+### ❤️ Thank You
+
+- Xudong Huang @xudongcc
+
 ## 0.3.2 (2026-06-07)
 
 This was a version bump only for controller to align it with other projects, there were no code changes.
