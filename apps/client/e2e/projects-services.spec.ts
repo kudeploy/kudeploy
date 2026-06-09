@@ -360,6 +360,24 @@ test.describe("workspace Projects and Services", () => {
     await expect(page.getByTestId("service-logs-page")).toContainText(
       "deployment-v1",
     );
+    await expect(
+      page.getByText("deployment-v1-with-a-very-long-generated-name"),
+    ).toHaveAttribute("title", "deployment-v1-with-a-very-long-generated-name");
+    await expect(
+      page.getByText(
+        "api-75d4db5d87-lkxgh-with-a-very-long-generated-name / api",
+      ),
+    ).toHaveAttribute(
+      "title",
+      "api-75d4db5d87-lkxgh-with-a-very-long-generated-name / api",
+    );
+    const logRow = page.getByText("API booted").locator("..");
+    await logRow.hover();
+    await expect
+      .poll(() =>
+        logRow.evaluate((element) => getComputedStyle(element).backgroundColor),
+      )
+      .not.toBe("rgba(0, 0, 0, 0)");
     await expect(page.getByTestId("service-logs-page")).toContainText("时间");
     await expect(page.getByTestId("service-logs-page")).toContainText("部署");
     await expect(page.getByTestId("service-logs-page")).toContainText(
@@ -573,9 +591,11 @@ async function mockProjectsAndServicesGraphql(page: Page) {
                         timestamp: "2026-06-06T00:00:00.000Z",
                         message: "API booted",
                         namespace: variables.projectId,
-                        podName: "api-75d4db5d87-lkxgh",
+                        podName:
+                          "api-75d4db5d87-lkxgh-with-a-very-long-generated-name",
                         containerName: "api",
-                        deploymentName: "deployment-v1",
+                        deploymentName:
+                          "deployment-v1-with-a-very-long-generated-name",
                       },
                     ],
             },

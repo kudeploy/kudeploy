@@ -257,28 +257,41 @@ function LogEntries({
           </div>
         ) : entries.length ? (
           <div className="divide-y">
-            {entries.map((entry, index) => (
-              <div
-                key={`${toTimestamp(entry.timestamp)}-${entry.podName ?? "pod"}-${index}`}
-                className="grid grid-cols-[11rem_14rem_14rem_minmax(0,1fr)] gap-3 px-4 py-2 text-xs"
-              >
-                <time
-                  className="text-muted-foreground font-mono tabular-nums"
-                  dateTime={toTimestamp(entry.timestamp)}
+            {entries.map((entry, index) => {
+              const deployment = entry.deploymentName ?? "-";
+              const runtime = formatRuntime(entry);
+              const timestamp = toTimestamp(entry.timestamp);
+
+              return (
+                <div
+                  key={`${timestamp}-${entry.podName ?? "pod"}-${index}`}
+                  className="hover:bg-muted/50 grid grid-cols-[11rem_14rem_14rem_minmax(0,1fr)] gap-3 px-4 py-2 text-xs transition-colors"
                 >
-                  {dayjs(entry.timestamp).format("YYYY-MM-DD HH:mm:ss")}
-                </time>
-                <div className="text-muted-foreground min-w-0 truncate font-mono">
-                  {entry.deploymentName ?? "-"}
+                  <time
+                    className="text-muted-foreground font-mono tabular-nums"
+                    dateTime={timestamp}
+                    title={timestamp}
+                  >
+                    {dayjs(entry.timestamp).format("YYYY-MM-DD HH:mm:ss")}
+                  </time>
+                  <div
+                    className="text-muted-foreground min-w-0 truncate font-mono"
+                    title={deployment}
+                  >
+                    {deployment}
+                  </div>
+                  <div
+                    className="text-muted-foreground min-w-0 truncate font-mono"
+                    title={runtime}
+                  >
+                    {runtime}
+                  </div>
+                  <pre className="min-w-0 font-mono break-words whitespace-pre-wrap">
+                    {entry.message}
+                  </pre>
                 </div>
-                <div className="text-muted-foreground min-w-0 truncate font-mono">
-                  {formatRuntime(entry)}
-                </div>
-                <pre className="min-w-0 font-mono break-words whitespace-pre-wrap">
-                  {entry.message}
-                </pre>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="border-border text-muted-foreground flex h-96 items-center justify-center border-dashed text-sm">
