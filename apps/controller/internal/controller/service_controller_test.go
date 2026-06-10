@@ -21,6 +21,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -50,6 +51,7 @@ var _ = Describe("Service Controller", func() {
 
 	newScheme := func() *runtime.Scheme {
 		scheme := runtime.NewScheme()
+		Expect(appsv1.AddToScheme(scheme)).To(Succeed())
 		Expect(corev1.AddToScheme(scheme)).To(Succeed())
 		Expect(kudeployv1alpha1.AddToScheme(scheme)).To(Succeed())
 		return scheme
@@ -76,7 +78,7 @@ var _ = Describe("Service Controller", func() {
 				UID:        types.UID("service-uid"),
 			},
 			Spec: kudeployv1alpha1.ServiceSpec{
-				Replicas: ptrInt32(2),
+				Replicas: ptrInt32(1),
 				Image:    "ghcr.io/kudeploy/whoami:latest",
 				ImageSecretRef: &corev1.LocalObjectReference{
 					Name: "registry-credentials",
@@ -105,6 +107,14 @@ var _ = Describe("Service Controller", func() {
 				},
 				Ports: []kudeployv1alpha1.ServicePort{
 					{Port: 80, TargetPort: 8080},
+				},
+				Volumes: []kudeployv1alpha1.ServiceVolume{
+					{
+						Name:      "kd-volume-data",
+						MountPath: "/data",
+						SubPath:   "app",
+						ReadOnly:  true,
+					},
 				},
 				ReadinessProbe: &corev1.Probe{
 					ProbeHandler: corev1.ProbeHandler{
@@ -187,7 +197,7 @@ var _ = Describe("Service Controller", func() {
 		Expect(kudeployDeployment.Spec.ServiceName).To(Equal(serviceName))
 		Expect(kudeployDeployment.Spec.Version).To(Equal(int64(1)))
 		Expect(kudeployDeployment.Spec.ServiceAccountName).To(Equal("service-whoami"))
-		Expect(kudeployDeployment.Spec.Replicas).To(Equal(ptrInt32(2)))
+		Expect(kudeployDeployment.Spec.Replicas).To(Equal(ptrInt32(1)))
 		Expect(kudeployDeployment.Spec.Image).To(Equal("ghcr.io/kudeploy/whoami:latest"))
 		Expect(kudeployDeployment.Spec.ImageSecretRef).To(Equal(&corev1.LocalObjectReference{Name: "registry-credentials"}))
 		Expect(kudeployDeployment.Spec.Command).To(Equal([]string{"/whoami"}))
@@ -203,6 +213,12 @@ var _ = Describe("Service Controller", func() {
 			},
 		}))
 		Expect(kudeployDeployment.Spec.Ports).To(ConsistOf(kudeployv1alpha1.ServicePort{Port: 80, TargetPort: 8080}))
+		Expect(kudeployDeployment.Spec.Volumes).To(ConsistOf(kudeployv1alpha1.ServiceVolume{
+			Name:      "kd-volume-data",
+			MountPath: "/data",
+			SubPath:   "app",
+			ReadOnly:  true,
+		}))
 		Expect(kudeployDeployment.Spec.ReadinessProbe.HTTPGet.Path).To(Equal("/ready"))
 		Expect(kudeployDeployment.Spec.LivenessProbe.HTTPGet.Path).To(Equal("/live"))
 		Expect(kudeployDeployment.Spec.StartupProbe.HTTPGet.Path).To(Equal("/startup"))
@@ -548,6 +564,7 @@ var _ = Describe("Service Controller", func() {
 
 	It("creates a new version when Service spec changes and keeps traffic on the previous active version", func() {
 		service := newService()
+		service.Spec.Volumes = nil
 		service.Generation = 2
 		service.Status.ObservedGeneration = 1
 		service.Status.LatestVersion = 1
@@ -601,8 +618,192 @@ var _ = Describe("Service Controller", func() {
 		Expect(service.Status.ActiveDeploymentName).To(Equal(firstDeploymentName))
 	})
 
+	It("scales down the active Deployment before creating a new volume-backed version", func() {
+		service := newService()
+		service.Generation = 2
+		service.Status.ObservedGeneration = 1
+		service.Status.LatestVersion = 1
+		service.Status.LatestDeploymentName = firstDeploymentName
+		service.Status.LatestEnvSecretHash = envSecretHash(nil)
+		service.Status.ActiveVersion = 1
+		service.Status.ActiveDeploymentName = firstDeploymentName
+		service.Spec.Image = "ghcr.io/kudeploy/whoami:v2"
+
+		activeDeployment := &kudeployv1alpha1.Deployment{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      firstDeploymentName,
+				Namespace: namespaceName,
+				Labels:    deploymentLabels(firstDeploymentName, routingStateActive),
+			},
+			Spec: kudeployv1alpha1.DeploymentSpec{
+				ServiceName: serviceName,
+				Version:     1,
+				Image:       "ghcr.io/kudeploy/whoami:latest",
+				Ports:       []kudeployv1alpha1.ServicePort{{Port: 80, TargetPort: 8080}},
+				Volumes:     service.Spec.Volumes,
+			},
+			Status: kudeployv1alpha1.DeploymentStatus{
+				KubernetesDeploymentName: firstDeploymentName,
+			},
+		}
+		ownDeployment(service, activeDeployment)
+		activeKubernetesDeployment := buildKubernetesDeployment(activeDeployment, ptrInt32(1))
+		activeKubernetesDeployment.Status.Replicas = 1
+		activeKubernetesDeployment.Status.ReadyReplicas = 1
+		activeKubernetesDeployment.Status.AvailableReplicas = 1
+		activeKubernetesDeployment.Status.UpdatedReplicas = 1
+		kubernetesService := buildKubernetesService(service, map[string]string{
+			deploymentLabel: firstDeploymentName,
+		})
+		reconciler := newReconciler(service, activeDeployment, activeKubernetesDeployment, kubernetesService)
+
+		result, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: serviceKey})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(result.RequeueAfter).To(Equal(recreateRolloutRequeueAfter))
+
+		newDeployment := &kudeployv1alpha1.Deployment{}
+		Expect(apierrors.IsNotFound(reconciler.Get(ctx, types.NamespacedName{Name: secondDeploymentName, Namespace: namespaceName}, newDeployment))).To(BeTrue())
+
+		Expect(reconciler.Get(ctx, types.NamespacedName{Name: firstDeploymentName, Namespace: namespaceName}, activeDeployment)).To(Succeed())
+		Expect(activeDeployment.Labels).To(HaveKeyWithValue(routingStateLabel, routingStateReserve))
+
+		Expect(reconciler.Get(ctx, serviceKey, kubernetesService)).To(Succeed())
+		Expect(kubernetesService.Spec.Selector).To(Equal(map[string]string{
+			deploymentLabel: firstDeploymentName,
+		}))
+
+		Expect(reconciler.Get(ctx, serviceKey, service)).To(Succeed())
+		Expect(service.Status.ObservedGeneration).To(Equal(int64(1)))
+		Expect(service.Status.LatestVersion).To(Equal(int64(1)))
+		Expect(service.Status.ActiveDeploymentName).To(Equal(firstDeploymentName))
+		Expect(service.Status.Conditions).To(ContainElement(SatisfyAll(
+			HaveField("Type", "Ready"),
+			HaveField("Status", metav1.ConditionFalse),
+			HaveField("Reason", "DeploymentRecreating"),
+		)))
+	})
+
+	It("creates a new volume-backed version after the active Deployment has scaled down", func() {
+		service := newService()
+		service.Generation = 2
+		service.Status.ObservedGeneration = 1
+		service.Status.LatestVersion = 1
+		service.Status.LatestDeploymentName = firstDeploymentName
+		service.Status.LatestEnvSecretHash = envSecretHash(nil)
+		service.Status.ActiveVersion = 1
+		service.Status.ActiveDeploymentName = firstDeploymentName
+		service.Spec.Image = "ghcr.io/kudeploy/whoami:v2"
+
+		activeDeployment := &kudeployv1alpha1.Deployment{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      firstDeploymentName,
+				Namespace: namespaceName,
+				Labels:    deploymentLabels(firstDeploymentName, routingStateReserve),
+			},
+			Spec: kudeployv1alpha1.DeploymentSpec{
+				ServiceName: serviceName,
+				Version:     1,
+				Image:       "ghcr.io/kudeploy/whoami:latest",
+				Ports:       []kudeployv1alpha1.ServicePort{{Port: 80, TargetPort: 8080}},
+				Volumes:     service.Spec.Volumes,
+			},
+			Status: kudeployv1alpha1.DeploymentStatus{
+				KubernetesDeploymentName: firstDeploymentName,
+			},
+		}
+		ownDeployment(service, activeDeployment)
+		activeKubernetesDeployment := buildKubernetesDeployment(activeDeployment, ptrInt32(0))
+		kubernetesService := buildKubernetesService(service, map[string]string{
+			deploymentLabel: firstDeploymentName,
+		})
+		reconciler := newReconciler(service, activeDeployment, activeKubernetesDeployment, kubernetesService)
+
+		_, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: serviceKey})
+		Expect(err).NotTo(HaveOccurred())
+
+		newDeployment := &kudeployv1alpha1.Deployment{}
+		Expect(reconciler.Get(ctx, types.NamespacedName{Name: secondDeploymentName, Namespace: namespaceName}, newDeployment)).To(Succeed())
+		Expect(newDeployment.Spec.Version).To(Equal(int64(2)))
+		Expect(newDeployment.Spec.Image).To(Equal("ghcr.io/kudeploy/whoami:v2"))
+		Expect(newDeployment.Spec.Volumes).To(Equal(service.Spec.Volumes))
+		Expect(newDeployment.Labels).To(HaveKeyWithValue(routingStateLabel, routingStatePending))
+
+		Expect(reconciler.Get(ctx, types.NamespacedName{Name: firstDeploymentName, Namespace: namespaceName}, activeDeployment)).To(Succeed())
+		Expect(activeDeployment.Labels).To(HaveKeyWithValue(routingStateLabel, routingStateReserve))
+
+		Expect(reconciler.Get(ctx, serviceKey, service)).To(Succeed())
+		Expect(service.Status.ObservedGeneration).To(Equal(int64(2)))
+		Expect(service.Status.LatestVersion).To(Equal(int64(2)))
+		Expect(service.Status.LatestDeploymentName).To(Equal(secondDeploymentName))
+		Expect(service.Status.ActiveDeploymentName).To(Equal(firstDeploymentName))
+	})
+
+	It("waits for active Deployment pods to disappear before creating a new volume-backed version", func() {
+		service := newService()
+		service.Generation = 2
+		service.Status.ObservedGeneration = 1
+		service.Status.LatestVersion = 1
+		service.Status.LatestDeploymentName = firstDeploymentName
+		service.Status.LatestEnvSecretHash = envSecretHash(nil)
+		service.Status.ActiveVersion = 1
+		service.Status.ActiveDeploymentName = firstDeploymentName
+		service.Spec.Image = "ghcr.io/kudeploy/whoami:v2"
+
+		activeDeployment := &kudeployv1alpha1.Deployment{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      firstDeploymentName,
+				Namespace: namespaceName,
+				Labels:    deploymentLabels(firstDeploymentName, routingStateReserve),
+			},
+			Spec: kudeployv1alpha1.DeploymentSpec{
+				ServiceName: serviceName,
+				Version:     1,
+				Image:       "ghcr.io/kudeploy/whoami:latest",
+				Ports:       []kudeployv1alpha1.ServicePort{{Port: 80, TargetPort: 8080}},
+				Volumes:     service.Spec.Volumes,
+			},
+			Status: kudeployv1alpha1.DeploymentStatus{
+				KubernetesDeploymentName: firstDeploymentName,
+			},
+		}
+		ownDeployment(service, activeDeployment)
+		activeKubernetesDeployment := buildKubernetesDeployment(activeDeployment, ptrInt32(0))
+		now := metav1.Now()
+		activePod := &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:              "whoami-00001-pod",
+				Namespace:         namespaceName,
+				Labels:            map[string]string{deploymentLabel: firstDeploymentName},
+				DeletionTimestamp: &now,
+				Finalizers:        []string{"test.kudeploy.com/finalizer"},
+			},
+		}
+		kubernetesService := buildKubernetesService(service, map[string]string{
+			deploymentLabel: firstDeploymentName,
+		})
+		reconciler := newReconciler(service, activeDeployment, activeKubernetesDeployment, activePod, kubernetesService)
+
+		result, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: serviceKey})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(result.RequeueAfter).To(Equal(recreateRolloutRequeueAfter))
+
+		newDeployment := &kudeployv1alpha1.Deployment{}
+		Expect(apierrors.IsNotFound(reconciler.Get(ctx, types.NamespacedName{Name: secondDeploymentName, Namespace: namespaceName}, newDeployment))).To(BeTrue())
+
+		Expect(reconciler.Get(ctx, serviceKey, service)).To(Succeed())
+		Expect(service.Status.ObservedGeneration).To(Equal(int64(1)))
+		Expect(service.Status.LatestVersion).To(Equal(int64(1)))
+		Expect(service.Status.ActiveDeploymentName).To(Equal(firstDeploymentName))
+		Expect(service.Status.Conditions).To(ContainElement(SatisfyAll(
+			HaveField("Type", "Ready"),
+			HaveField("Status", metav1.ConditionFalse),
+			HaveField("Reason", "DeploymentRecreating"),
+		)))
+	})
+
 	It("creates a new version when the Service env Secret data changes", func() {
 		service := newService()
+		service.Spec.Volumes = nil
 		service.Labels = map[string]string{
 			projectLabel:   namespaceName,
 			managedByLabel: managedByLabelValue,

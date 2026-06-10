@@ -252,12 +252,7 @@ func buildKubernetesDeployment(kudeployDeployment *kudeployv1alpha1.Deployment, 
 		Spec: appsv1.DeploymentSpec{
 			Replicas:             replicas,
 			RevisionHistoryLimit: ptrInt32(0),
-			Strategy: appsv1.DeploymentStrategy{
-				Type: appsv1.RollingUpdateDeploymentStrategyType,
-				RollingUpdate: &appsv1.RollingUpdateDeployment{
-					MaxUnavailable: ptrIntOrString(intstr.FromInt32(0)),
-				},
-			},
+			Strategy:             deploymentStrategyFor(kudeployDeployment.Spec.Volumes),
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
 					deploymentLabel: kudeployDeployment.Name,
@@ -280,14 +275,28 @@ func buildKubernetesDeployment(kudeployDeployment *kudeployv1alpha1.Deployment, 
 							Env:             kudeployDeployment.Spec.Env,
 							EnvFrom:         containerEnvFromFor(kudeployDeployment),
 							Ports:           containerPortsFor(kudeployDeployment.Spec.Ports),
+							VolumeMounts:    containerVolumeMountsFor(kudeployDeployment.Spec.Volumes),
 							ReadinessProbe:  kudeployDeployment.Spec.ReadinessProbe,
 							LivenessProbe:   kudeployDeployment.Spec.LivenessProbe,
 							StartupProbe:    kudeployDeployment.Spec.StartupProbe,
 						},
 					},
+					Volumes:          podVolumesFor(kudeployDeployment.Spec.Volumes),
 					ImagePullSecrets: imagePullSecretsFor(kudeployDeployment.Spec.ImageSecretRef),
 				},
 			},
+		},
+	}
+}
+
+func deploymentStrategyFor(volumes []kudeployv1alpha1.ServiceVolume) appsv1.DeploymentStrategy {
+	if len(volumes) > 0 {
+		return appsv1.DeploymentStrategy{Type: appsv1.RecreateDeploymentStrategyType}
+	}
+	return appsv1.DeploymentStrategy{
+		Type: appsv1.RollingUpdateDeploymentStrategyType,
+		RollingUpdate: &appsv1.RollingUpdateDeployment{
+			MaxUnavailable: ptrIntOrString(intstr.FromInt32(0)),
 		},
 	}
 }
@@ -323,6 +332,35 @@ func containerPortsFor(ports []kudeployv1alpha1.ServicePort) []corev1.ContainerP
 		})
 	}
 	return containerPorts
+}
+
+func podVolumesFor(volumes []kudeployv1alpha1.ServiceVolume) []corev1.Volume {
+	podVolumes := make([]corev1.Volume, 0, len(volumes))
+	for _, volume := range volumes {
+		podVolumes = append(podVolumes, corev1.Volume{
+			Name: volume.Name,
+			VolumeSource: corev1.VolumeSource{
+				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+					ClaimName: volume.Name,
+					ReadOnly:  volume.ReadOnly,
+				},
+			},
+		})
+	}
+	return podVolumes
+}
+
+func containerVolumeMountsFor(volumes []kudeployv1alpha1.ServiceVolume) []corev1.VolumeMount {
+	volumeMounts := make([]corev1.VolumeMount, 0, len(volumes))
+	for _, volume := range volumes {
+		volumeMounts = append(volumeMounts, corev1.VolumeMount{
+			Name:      volume.Name,
+			MountPath: volume.MountPath,
+			SubPath:   volume.SubPath,
+			ReadOnly:  volume.ReadOnly,
+		})
+	}
+	return volumeMounts
 }
 
 func imagePullSecretsFor(secretRef *corev1.LocalObjectReference) []corev1.LocalObjectReference {

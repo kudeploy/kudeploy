@@ -22,6 +22,7 @@ import (
 )
 
 // DeploymentSpec defines the desired state of Deployment.
+// +kubebuilder:validation:XValidation:rule="!has(self.volumes) || self.volumes.size() == 0 || !has(self.replicas) || self.replicas <= 1",message="replicas must be 0 or 1 when volumes are configured"
 type DeploymentSpec struct {
 	// serviceName is the owning Kudeploy Service name.
 	// +required
@@ -67,6 +68,14 @@ type DeploymentSpec struct {
 	// +required
 	// +listType=atomic
 	Ports []ServicePort `json:"ports"`
+
+	// volumes describe PersistentVolumeClaims mounted into the Deployment container.
+	// +optional
+	// +listType=map
+	// +listMapKey=name
+	// +kubebuilder:validation:MaxItems=32
+	// +kubebuilder:validation:XValidation:rule="self.all(volume, self.exists_one(other, other.mountPath == volume.mountPath))",message="mountPath values must be unique"
+	Volumes []ServiceVolume `json:"volumes,omitempty"`
 
 	// env describes plain Kubernetes container environment variables captured for this Deployment version.
 	// +optional

@@ -836,6 +836,52 @@ spec:
                   represented by this Deployment.
                 format: int64
                 type: integer
+              volumes:
+                description: volumes describe PersistentVolumeClaims mounted into
+                  the Deployment container.
+                items:
+                  description: ServiceVolume describes one PersistentVolumeClaim mounted
+                    by a Kudeploy workload.
+                  properties:
+                    mountPath:
+                      description: mountPath is the absolute path where the volume
+                        is mounted in the container.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^/[^:]*$
+                      type: string
+                    name:
+                      description: name is the PersistentVolumeClaim name. It is also
+                        used as the Pod volume name and mount name.
+                      maxLength: 63
+                      minLength: 1
+                      pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                      type: string
+                    readOnly:
+                      description: readOnly mounts the volume read-only when true.
+                      type: boolean
+                    subPath:
+                      description: subPath is an optional path within the volume to
+                        mount.
+                      maxLength: 1024
+                      type: string
+                      x-kubernetes-validations:
+                      - message: subPath must be relative and must not contain '..'
+                          path elements
+                        rule: self == "" || (!self.startsWith("/") && !self.matches("(^|/)\\.\\.(/|$)"))
+                  required:
+                  - mountPath
+                  - name
+                  type: object
+                maxItems: 32
+                type: array
+                x-kubernetes-list-map-keys:
+                - name
+                x-kubernetes-list-type: map
+                x-kubernetes-validations:
+                - message: mountPath values must be unique
+                  rule: self.all(volume, self.exists_one(other, other.mountPath ==
+                    volume.mountPath))
             required:
             - image
             - ports
@@ -843,6 +889,10 @@ spec:
             - serviceName
             - version
             type: object
+            x-kubernetes-validations:
+            - message: replicas must be 0 or 1 when volumes are configured
+              rule: '!has(self.volumes) || self.volumes.size() == 0 || !has(self.replicas)
+                || self.replicas <= 1'
           status:
             description: status defines the observed state of Deployment.
             properties:

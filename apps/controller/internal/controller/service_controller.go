@@ -19,7 +19,9 @@ package controller
 import (
 	"context"
 	"fmt"
+	"time"
 
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -43,6 +45,8 @@ const (
 	routingStatePending   = "pending"
 	routingStateActive    = "active"
 	routingStateReserve   = "reserve"
+
+	recreateRolloutRequeueAfter = 5 * time.Second
 )
 
 // ServiceReconciler reconciles a Service object.
@@ -55,7 +59,9 @@ type ServiceReconciler struct {
 // +kubebuilder:rbac:groups=kudeploy.com,resources=services/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=kudeploy.com,resources=services/finalizers,verbs=update
 // +kubebuilder:rbac:groups=kudeploy.com,resources=deployments,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch
+// +kubebuilder:rbac:groups="",resources=pods,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update;patch
 
@@ -103,6 +109,34 @@ func (r *ServiceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 }
 
 func (r *ServiceReconciler) reconcileNewServiceVersion(ctx context.Context, service *kudeployv1alpha1.Service, envHash string) (ctrl.Result, error) {
+	if serviceRequiresRecreateRollout(service) && service.Status.ActiveDeploymentName != "" {
+		activeScaledDown, err := r.activeDeploymentScaledDown(ctx, service)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+		if !activeScaledDown {
+			if err := r.createOrUpdateRuntimeServiceAccount(ctx, service); err != nil {
+				return ctrl.Result{}, err
+			}
+			if err := r.createOrUpdateKubernetesService(ctx, service, activeDeploymentSelector(service)); err != nil {
+				return ctrl.Result{}, err
+			}
+			if err := r.syncDeploymentRoutingStates(ctx, service, "", ""); err != nil {
+				return ctrl.Result{}, err
+			}
+
+			originalService := service.DeepCopy()
+			service.Status.ServiceAccountName = runtimeServiceAccountNameFor(service.Name)
+			meta.SetStatusCondition(&service.Status.Conditions, metav1.Condition{
+				Type:    serviceReadyCondition,
+				Status:  metav1.ConditionFalse,
+				Reason:  "DeploymentRecreating",
+				Message: "Active Deployment is scaling down before starting the next volume-backed Deployment.",
+			})
+			return ctrl.Result{RequeueAfter: recreateRolloutRequeueAfter}, r.patchServiceStatus(ctx, service, originalService)
+		}
+	}
+
 	version := service.Status.LatestVersion + 1
 	if version == 0 {
 		version = 1
@@ -123,7 +157,11 @@ func (r *ServiceReconciler) reconcileNewServiceVersion(ctx context.Context, serv
 	if err := r.createOrUpdateKubernetesService(ctx, service, activeDeploymentSelector(service)); err != nil {
 		return ctrl.Result{}, err
 	}
-	if err := r.syncDeploymentRoutingStates(ctx, service, service.Status.ActiveDeploymentName, deploymentName); err != nil {
+	activeDeploymentName := service.Status.ActiveDeploymentName
+	if serviceRequiresRecreateRollout(service) {
+		activeDeploymentName = ""
+	}
+	if err := r.syncDeploymentRoutingStates(ctx, service, activeDeploymentName, deploymentName); err != nil {
 		return ctrl.Result{}, err
 	}
 
@@ -193,13 +231,32 @@ func (r *ServiceReconciler) reconcileServiceTraffic(ctx context.Context, service
 	}
 
 	if !isKudeployDeploymentReady(latestKudeployDeployment) {
+		result := ctrl.Result{}
+		pendingDeploymentName := latestKudeployDeployment.Name
+		activeDeploymentName := service.Status.ActiveDeploymentName
+		conditionReason := "DeploymentProgressing"
+		conditionMessage := "Latest Deployment is not ready yet."
+		if deploymentRequiresRecreateRollout(latestKudeployDeployment) && service.Status.ActiveDeploymentName != "" {
+			activeScaledDown, err := r.activeDeploymentScaledDown(ctx, service)
+			if err != nil {
+				return ctrl.Result{}, err
+			}
+			activeDeploymentName = ""
+			if !activeScaledDown {
+				pendingDeploymentName = ""
+				conditionReason = "DeploymentRecreating"
+				conditionMessage = "Active Deployment is scaling down before starting the next volume-backed Deployment."
+				result = ctrl.Result{RequeueAfter: recreateRolloutRequeueAfter}
+			}
+		}
+
 		if err := r.createOrUpdateKubernetesService(ctx, service, activeDeploymentSelector(service)); err != nil {
 			return ctrl.Result{}, err
 		}
 		if err := r.createOrUpdateRuntimeServiceAccount(ctx, service); err != nil {
 			return ctrl.Result{}, err
 		}
-		if err := r.syncDeploymentRoutingStates(ctx, service, service.Status.ActiveDeploymentName, latestKudeployDeployment.Name); err != nil {
+		if err := r.syncDeploymentRoutingStates(ctx, service, activeDeploymentName, pendingDeploymentName); err != nil {
 			return ctrl.Result{}, err
 		}
 		originalService := service.DeepCopy()
@@ -207,10 +264,10 @@ func (r *ServiceReconciler) reconcileServiceTraffic(ctx context.Context, service
 		meta.SetStatusCondition(&service.Status.Conditions, metav1.Condition{
 			Type:    serviceReadyCondition,
 			Status:  metav1.ConditionFalse,
-			Reason:  "DeploymentProgressing",
-			Message: "Latest Deployment is not ready yet.",
+			Reason:  conditionReason,
+			Message: conditionMessage,
 		})
-		return ctrl.Result{}, r.patchServiceStatus(ctx, service, originalService)
+		return result, r.patchServiceStatus(ctx, service, originalService)
 	}
 
 	selector := map[string]string{deploymentLabel: latestKudeployDeployment.Name}
@@ -356,6 +413,73 @@ func (r *ServiceReconciler) patchDeploymentRoutingState(ctx context.Context, kud
 	return ignoreConflict(r.Patch(ctx, kudeployDeployment, client.MergeFrom(originalKudeployDeployment)))
 }
 
+func (r *ServiceReconciler) activeDeploymentScaledDown(ctx context.Context, service *kudeployv1alpha1.Service) (bool, error) {
+	if service.Status.ActiveDeploymentName == "" {
+		return true, nil
+	}
+
+	activeKudeployDeployment := &kudeployv1alpha1.Deployment{}
+	err := r.Get(ctx, client.ObjectKey{Name: service.Status.ActiveDeploymentName, Namespace: service.Namespace}, activeKudeployDeployment)
+	if apierrors.IsNotFound(err) {
+		return true, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	if activeKudeployDeployment.Labels[routingStateLabel] != routingStateReserve {
+		return false, nil
+	}
+
+	kubernetesDeploymentName := activeKudeployDeployment.Status.KubernetesDeploymentName
+	if kubernetesDeploymentName == "" {
+		kubernetesDeploymentName = activeKudeployDeployment.Name
+	}
+	kubernetesDeployment := &appsv1.Deployment{}
+	err = r.Get(ctx, client.ObjectKey{Name: kubernetesDeploymentName, Namespace: service.Namespace}, kubernetesDeployment)
+	if apierrors.IsNotFound(err) {
+		return true, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	if !kubernetesDeploymentScaledDown(kubernetesDeployment) {
+		return false, nil
+	}
+	return r.kubernetesDeploymentPodsGone(ctx, kubernetesDeployment)
+}
+
+func serviceRequiresRecreateRollout(service *kudeployv1alpha1.Service) bool {
+	return len(service.Spec.Volumes) > 0
+}
+
+func deploymentRequiresRecreateRollout(kudeployDeployment *kudeployv1alpha1.Deployment) bool {
+	return len(kudeployDeployment.Spec.Volumes) > 0
+}
+
+func kubernetesDeploymentScaledDown(kubernetesDeployment *appsv1.Deployment) bool {
+	replicas := int32(1)
+	if kubernetesDeployment.Spec.Replicas != nil {
+		replicas = *kubernetesDeployment.Spec.Replicas
+	}
+	return replicas == 0 &&
+		kubernetesDeployment.Status.Replicas == 0 &&
+		kubernetesDeployment.Status.ReadyReplicas == 0 &&
+		kubernetesDeployment.Status.AvailableReplicas == 0 &&
+		kubernetesDeployment.Status.UpdatedReplicas == 0
+}
+
+func (r *ServiceReconciler) kubernetesDeploymentPodsGone(ctx context.Context, kubernetesDeployment *appsv1.Deployment) (bool, error) {
+	selector, err := metav1.LabelSelectorAsSelector(kubernetesDeployment.Spec.Selector)
+	if err != nil {
+		return false, err
+	}
+	podList := &corev1.PodList{}
+	if err := r.List(ctx, podList, client.InNamespace(kubernetesDeployment.Namespace), client.MatchingLabelsSelector{Selector: selector}); err != nil {
+		return false, err
+	}
+	return len(podList.Items) == 0, nil
+}
+
 func ensureServiceMetadata(service *kudeployv1alpha1.Service, workspaceID string) bool {
 	changed := false
 	if service.Labels == nil {
@@ -396,6 +520,7 @@ func buildKudeployDeployment(kudeployService *kudeployv1alpha1.Service, version 
 			Args:               kudeployService.Spec.Args,
 			Resources:          kudeployService.Spec.Resources,
 			Ports:              kudeployService.Spec.Ports,
+			Volumes:            kudeployService.Spec.Volumes,
 			Env:                kudeployService.Spec.Env,
 			EnvFrom:            kudeployService.Spec.EnvFrom,
 			ReadinessProbe:     kudeployService.Spec.ReadinessProbe,
