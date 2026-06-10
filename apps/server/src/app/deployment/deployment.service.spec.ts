@@ -19,26 +19,26 @@ describe('DeploymentService', () => {
     const workspace = { id: 'workspace_1' } as Workspace;
 
     serviceService.findService.mockResolvedValue({
-      activeDeploymentName: 'deployment-2',
-      id: 'service-1',
-      latestDeploymentName: 'deployment-2',
-      projectId: 'project-1',
+      activeDeploymentName: 'kd-service-1-00002',
+      id: '1',
+      latestDeploymentName: 'kd-service-1-00002',
+      projectId: '1',
     });
     customObjectsApi.listNamespacedCustomObject.mockResolvedValue({
       items: [
         deploymentCrd({
-          name: 'deployment-1',
+          name: 'kd-service-1-00001',
           version: 1,
           image: 'traefik/whoami',
         }),
         deploymentCrd({
-          name: 'deployment-2',
+          name: 'kd-service-1-00002',
           version: 2,
           image: 'nginx',
         }),
         deploymentCrd({
-          name: 'deployment-hidden',
-          serviceId: 'service-hidden',
+          name: 'kd-service-hidden-00003',
+          serviceId: 'kd-service-hidden',
           version: 3,
         }),
       ],
@@ -59,25 +59,22 @@ describe('DeploymentService', () => {
       }),
     );
 
-    const result = await service.findDeployments(
-      workspace,
-      'project-1',
-      'service-1',
-      { first: 20 },
-    );
+    const result = await service.findDeployments(workspace, '1', '1', {
+      first: 20,
+    });
 
     expect(serviceService.findService).toHaveBeenCalledWith(
       workspace,
-      'project-1',
-      'service-1',
+      '1',
+      '1',
     );
     expect(customObjectsApi.listNamespacedCustomObject).toHaveBeenCalledWith({
       group: 'kudeploy.com',
       version: 'v1alpha1',
-      namespace: 'project-1',
+      namespace: 'kd-project-1',
       plural: 'deployments',
       labelSelector:
-        'app.kubernetes.io/managed-by=kudeploy,kudeploy.com/workspace-id=workspace_1,kudeploy.com/project=project-1,kudeploy.com/service=service-1',
+        'app.kubernetes.io/managed-by=kudeploy,kudeploy.com/workspace-id=workspace_1,kudeploy.com/project=kd-project-1,kudeploy.com/service=kd-service-1',
     });
     expect(connectionManager.find).toHaveBeenCalledWith(
       DeploymentConnection,
@@ -86,10 +83,11 @@ describe('DeploymentService', () => {
         items: [
           expect.objectContaining({
             active: false,
-            id: 'deployment-1',
+            id: '1-00001',
             image: 'traefik/whoami',
             latest: false,
-            serviceId: 'service-1',
+            projectId: '1',
+            serviceId: '1',
             status: DeploymentStatus.READY,
             version: 1,
           }),
@@ -102,7 +100,7 @@ describe('DeploymentService', () => {
               { kind: 'ConfigMap', name: 'service-config', prefix: null },
               { kind: 'Secret', name: 'service-secret', prefix: null },
             ],
-            id: 'deployment-2',
+            id: '1-00002',
             image: 'nginx',
             latest: true,
             ports: [{ port: 80, targetPort: 8080 }],
@@ -112,8 +110,9 @@ describe('DeploymentService', () => {
               memoryLimit: '512Mi',
               memoryRequest: '256Mi',
             },
-            serviceAccountName: 'service-service-1',
-            serviceId: 'service-1',
+            serviceAccountName: 'service-kd-service-1',
+            projectId: '1',
+            serviceId: '1',
             status: DeploymentStatus.READY,
             version: 2,
           }),
@@ -130,18 +129,52 @@ describe('DeploymentService', () => {
     serviceService.findService.mockResolvedValue(null);
 
     await expect(
-      service.findDeployments(
-        { id: 'workspace_1' } as Workspace,
-        'project-1',
-        'service-1',
-        {
-          first: 20,
-        },
-      ),
+      service.findDeployments({ id: 'workspace_1' } as Workspace, '1', '1', {
+        first: 20,
+      }),
     ).rejects.toThrow('Service not found');
 
     expect(customObjectsApi.listNamespacedCustomObject).not.toHaveBeenCalled();
     expect(connectionManager.find).not.toHaveBeenCalled();
+  });
+
+  it('reads a Deployment CRD by adding the service prefix to the GraphQL deployment id', async () => {
+    const { service, customObjectsApi, serviceService } = createService();
+    const workspace = { id: 'workspace_1' } as Workspace;
+
+    customObjectsApi.getNamespacedCustomObject.mockResolvedValue(
+      deploymentCrd({
+        name: 'kd-service-1-00001',
+      }),
+    );
+    serviceService.findService.mockResolvedValue({
+      activeDeploymentName: 'kd-service-1-00001',
+      id: '1',
+      latestDeploymentName: 'kd-service-1-00001',
+      projectId: '1',
+    });
+
+    const result = await service.findDeployment(workspace, '1', '1-00001');
+
+    expect(customObjectsApi.getNamespacedCustomObject).toHaveBeenCalledWith({
+      group: 'kudeploy.com',
+      version: 'v1alpha1',
+      namespace: 'kd-project-1',
+      plural: 'deployments',
+      name: 'kd-service-1-00001',
+    });
+    expect(serviceService.findService).toHaveBeenCalledWith(
+      workspace,
+      '1',
+      '1',
+    );
+    expect(result).toMatchObject({
+      active: true,
+      id: '1-00001',
+      latest: true,
+      projectId: '1',
+      serviceId: '1',
+    });
   });
 });
 
@@ -176,9 +209,9 @@ function deploymentCrd(
 ): DeploymentResource {
   const {
     image = 'nginx',
-    name = 'deployment-1',
-    projectId = 'project-1',
-    serviceId = 'service-1',
+    name = 'kd-service-1-00001',
+    projectId = 'kd-project-1',
+    serviceId = 'kd-service-1',
     version = 1,
   } = options;
 

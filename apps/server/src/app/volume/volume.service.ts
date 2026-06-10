@@ -6,6 +6,13 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { Sonyflake } from 'sonyflake-js';
 
 import {
+  hasKubernetesVolumeNamePrefix,
+  toGraphqlProjectId,
+  toGraphqlVolumeId,
+  toKubernetesProjectName,
+  toKubernetesVolumeName,
+} from '@/app/kubernetes/resource-names';
+import {
   DISPLAY_NAME_ANNOTATION,
   KUDEPLOY_FIELD_MANAGER,
   MANAGED_BY_LABEL,
@@ -63,16 +70,18 @@ export class VolumeService {
     projectId: string,
     args: VolumeConnectionArgs,
   ): Promise<VolumeConnection> {
+    const projectName = toKubernetesProjectName(projectId);
+
     await this.ensureProject(workspace, projectId);
 
     const list = (await this.coreV1Api.listNamespacedPersistentVolumeClaim({
-      namespace: projectId,
-      labelSelector: this.volumeLabelSelector(workspace, projectId),
+      namespace: projectName,
+      labelSelector: this.volumeLabelSelector(workspace, projectName),
     })) as { items?: VolumeResource[] };
 
     const items = (list.items ?? [])
       .filter((resource) =>
-        this.belongsToWorkspaceAndProject(resource, workspace, projectId),
+        this.belongsToWorkspaceAndProject(resource, workspace, projectName),
       )
       .map((resource) => this.toVolume(resource));
 
@@ -86,16 +95,21 @@ export class VolumeService {
     projectId: string,
     id: string,
   ): Promise<Volume | null> {
+    const projectName = toKubernetesProjectName(projectId);
+    const name = toKubernetesVolumeName(id);
+
     await this.ensureProject(workspace, projectId);
 
     try {
       const resource =
         (await this.coreV1Api.readNamespacedPersistentVolumeClaim({
-          namespace: projectId,
-          name: id,
+          namespace: projectName,
+          name,
         })) as VolumeResource;
 
-      if (!this.belongsToWorkspaceAndProject(resource, workspace, projectId)) {
+      if (
+        !this.belongsToWorkspaceAndProject(resource, workspace, projectName)
+      ) {
         return null;
       }
 
@@ -112,13 +126,15 @@ export class VolumeService {
     workspace: Workspace,
     input: CreateVolumeInput,
   ): Promise<Volume> {
+    const projectName = toKubernetesProjectName(input.projectId);
+
     await this.ensureProject(workspace, input.projectId);
 
-    const name = `volume-${Sonyflake.next()}`;
+    const name = toKubernetesVolumeName(String(Sonyflake.next()));
     const resource =
       (await this.coreV1Api.createNamespacedPersistentVolumeClaim({
-        namespace: input.projectId,
-        body: this.buildVolumeResource(workspace, input.projectId, name, input),
+        namespace: projectName,
+        body: this.buildVolumeResource(workspace, projectName, name, input),
         fieldManager: KUDEPLOY_FIELD_MANAGER,
       })) as VolumeResource;
 
@@ -130,13 +146,16 @@ export class VolumeService {
     projectId: string,
     id: string,
   ): Promise<Volume> {
+    const projectName = toKubernetesProjectName(projectId);
+    const name = toKubernetesVolumeName(id);
+
     await this.ensureProject(workspace, projectId);
 
-    const resource = await this.getOwnedVolume(workspace, projectId, id);
+    const resource = await this.getOwnedVolume(workspace, projectName, name);
 
     await this.coreV1Api.deleteNamespacedPersistentVolumeClaim({
-      namespace: projectId,
-      name: id,
+      namespace: projectName,
+      name,
     });
 
     return this.toVolume(resource);
@@ -144,13 +163,15 @@ export class VolumeService {
 
   toVolume(resource: VolumeResource): Volume {
     const createdAt = this.toDate(resource.metadata?.creationTimestamp);
-    const size = this.toVolumeSize(
-      resource.spec?.resources?.requests?.storage,
-    );
+    const size = this.toVolumeSize(resource.spec?.resources?.requests?.storage);
 
     return {
-      id: resource.metadata?.name ?? '',
-      projectId: resource.metadata?.namespace ?? '',
+      id: resource.metadata?.name
+        ? toGraphqlVolumeId(resource.metadata.name)
+        : '',
+      projectId: resource.metadata?.namespace
+        ? toGraphqlProjectId(resource.metadata.namespace)
+        : '',
       name:
         resource.metadata?.annotations?.[DISPLAY_NAME_ANNOTATION] ??
         resource.metadata?.name ??
@@ -251,6 +272,8 @@ export class VolumeService {
   ): boolean {
     return (
       resource.metadata?.namespace === projectId &&
+      !!resource.metadata?.name &&
+      hasKubernetesVolumeNamePrefix(resource.metadata.name) &&
       resource.metadata?.labels?.[MANAGED_BY_LABEL] ===
         MANAGED_BY_LABEL_VALUE &&
       resource.metadata?.labels?.[WORKSPACE_ID_LABEL] === workspace.id &&

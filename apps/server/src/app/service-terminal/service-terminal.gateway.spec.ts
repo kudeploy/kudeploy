@@ -58,8 +58,8 @@ describe('ServiceTerminalGateway', () => {
     const execSocket = { close: jest.fn() };
 
     serviceService.findService.mockResolvedValue({
-      id: 'service-1',
-      projectId: 'project-1',
+      id: '1',
+      projectId: '1',
     });
     coreV1Api.listNamespacedPod.mockResolvedValue({
       items: [
@@ -78,22 +78,22 @@ describe('ServiceTerminalGateway', () => {
     });
 
     await gateway.handleStart(socket, {
-      projectId: 'project-1',
-      serviceId: 'service-1',
+      projectId: '1',
+      serviceId: '1',
     });
 
     expect(serviceService.findService).toHaveBeenCalledWith(
       workspace,
-      'project-1',
-      'service-1',
+      '1',
+      '1',
     );
     expect(coreV1Api.listNamespacedPod).toHaveBeenCalledWith({
-      namespace: 'project-1',
+      namespace: 'kd-project-1',
       labelSelector:
-        'app.kubernetes.io/managed-by=kudeploy,kudeploy.com/workspace-id=workspace_1,kudeploy.com/project=project-1,kudeploy.com/service=service-1',
+        'app.kubernetes.io/managed-by=kudeploy,kudeploy.com/workspace-id=workspace_1,kudeploy.com/project=kd-project-1,kudeploy.com/service=kd-service-1',
     });
     expect(exec.exec).toHaveBeenCalledWith(
-      'project-1',
+      'kd-project-1',
       'pod-1',
       'app',
       ['/bin/sh'],
@@ -133,8 +133,8 @@ describe('ServiceTerminalGateway', () => {
     let statusCallback: ((status: V1Status) => void) | undefined;
 
     serviceService.findService.mockResolvedValue({
-      id: 'service-1',
-      projectId: 'project-1',
+      id: '1',
+      projectId: '1',
     });
     coreV1Api.listNamespacedPod.mockResolvedValue({
       items: [
@@ -153,8 +153,8 @@ describe('ServiceTerminalGateway', () => {
     });
 
     await gateway.handleStart(socket, {
-      projectId: 'project-1',
-      serviceId: 'service-1',
+      projectId: '1',
+      serviceId: '1',
     });
 
     expect(socket.emit).toHaveBeenCalledWith('started');
@@ -184,8 +184,8 @@ describe('ServiceTerminalGateway', () => {
     });
 
     serviceService.findService.mockResolvedValue({
-      id: 'service-1',
-      projectId: 'project-1',
+      id: '1',
+      projectId: '1',
     });
     coreV1Api.listNamespacedPod.mockResolvedValue({
       items: [
@@ -204,8 +204,8 @@ describe('ServiceTerminalGateway', () => {
     });
 
     const start = gateway.handleStart(socket, {
-      projectId: 'project-1',
-      serviceId: 'service-1',
+      projectId: '1',
+      serviceId: '1',
     });
 
     await execStarted;
@@ -231,15 +231,15 @@ describe('ServiceTerminalGateway', () => {
     const socket = createSocket(await createWsContext(workspace));
 
     serviceService.findService.mockResolvedValue({
-      activeDeploymentName: 'deployment-2',
-      id: 'service-1',
-      projectId: 'project-1',
+      activeDeploymentName: 'kd-service-1-00002',
+      id: '1',
+      projectId: '1',
     });
     coreV1Api.listNamespacedPod.mockResolvedValue({
       items: [
         {
           metadata: {
-            labels: { 'kudeploy.com/deployment': 'deployment-1' },
+            labels: { 'kudeploy.com/deployment': 'kd-service-1-00001' },
             name: 'old-pod',
           },
           spec: { containers: [{ name: 'app' }] },
@@ -247,7 +247,7 @@ describe('ServiceTerminalGateway', () => {
         },
         {
           metadata: {
-            labels: { 'kudeploy.com/deployment': 'deployment-2' },
+            labels: { 'kudeploy.com/deployment': 'kd-service-1-00002' },
             name: 'active-pod',
           },
           spec: { containers: [{ name: 'app' }] },
@@ -258,12 +258,12 @@ describe('ServiceTerminalGateway', () => {
     exec.exec.mockResolvedValue({ close: jest.fn() });
 
     await gateway.handleStart(socket, {
-      projectId: 'project-1',
-      serviceId: 'service-1',
+      projectId: '1',
+      serviceId: '1',
     });
 
     expect(exec.exec).toHaveBeenCalledWith(
-      'project-1',
+      'kd-project-1',
       'active-pod',
       'app',
       ['/bin/sh'],
@@ -281,14 +281,14 @@ describe('ServiceTerminalGateway', () => {
     const socket = createSocket(await createWsContext(workspace));
 
     serviceService.findService.mockResolvedValue({
-      id: 'service-1',
-      projectId: 'project-1',
+      id: '1',
+      projectId: '1',
     });
     coreV1Api.listNamespacedPod.mockResolvedValue({ items: [] });
 
     await gateway.handleStart(socket, {
-      projectId: 'project-1',
-      serviceId: 'service-1',
+      projectId: '1',
+      serviceId: '1',
     });
 
     expect(socket.emit).toHaveBeenCalledWith('error', {
@@ -304,8 +304,8 @@ describe('ServiceTerminalGateway', () => {
     const execSocket = { close: jest.fn() };
 
     serviceService.findService.mockResolvedValue({
-      id: 'service-1',
-      projectId: 'project-1',
+      id: '1',
+      projectId: '1',
     });
     coreV1Api.listNamespacedPod.mockResolvedValue({
       items: [
@@ -331,8 +331,8 @@ describe('ServiceTerminalGateway', () => {
     });
 
     await gateway.handleStart(socket, {
-      projectId: 'project-1',
-      serviceId: 'service-1',
+      projectId: '1',
+      serviceId: '1',
     });
 
     expect(socket.emit).toHaveBeenCalledWith('error', {
@@ -350,8 +350,8 @@ describe('ServiceTerminalGateway', () => {
     const socket = createSocket(await createWsContext(workspace));
 
     serviceService.findService.mockResolvedValue({
-      id: 'service-1',
-      projectId: 'project-1',
+      id: '1',
+      projectId: '1',
     });
     coreV1Api.listNamespacedPod.mockResolvedValue({
       items: [
@@ -367,8 +367,8 @@ describe('ServiceTerminalGateway', () => {
     });
 
     await gateway.handleStart(socket, {
-      projectId: 'project-1',
-      serviceId: 'service-1',
+      projectId: '1',
+      serviceId: '1',
     });
 
     expect(exec.exec).toHaveBeenCalledTimes(1);
@@ -387,8 +387,8 @@ describe('ServiceTerminalGateway', () => {
     serviceService.findService.mockResolvedValue(null);
 
     await gateway.handleStart(socket, {
-      projectId: 'project-1',
-      serviceId: 'service-1',
+      projectId: '1',
+      serviceId: '1',
     });
 
     expect(socket.emit).toHaveBeenCalledWith('error', {

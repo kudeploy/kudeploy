@@ -2,6 +2,10 @@ import type { V1Pod } from '@kubernetes/client-node';
 import { CoreV1Api } from '@kubernetes/client-node';
 import { Injectable } from '@nestjs/common';
 
+import {
+  toKubernetesProjectName,
+  toKubernetesServiceName,
+} from '@/app/kubernetes/resource-names';
 import { Workspace } from '@/app/workspace/workspace.entity';
 
 import { ServiceMetrics } from './kubernetes-metrics.object';
@@ -144,13 +148,16 @@ export class KubernetesMetricsService {
     serviceId: string,
     activeDeploymentName?: string | null,
   ): Promise<V1Pod[]> {
+    const projectName = toKubernetesProjectName(projectId);
+    const serviceName = toKubernetesServiceName(serviceId);
+
     const list = await this.coreV1Api.listNamespacedPod({
-      namespace: projectId,
+      namespace: projectName,
       labelSelector: buildServicePodLabelSelector({
         deploymentName: activeDeploymentName,
         workspaceId: workspace.id,
-        projectId,
-        serviceId,
+        projectId: projectName,
+        serviceId: serviceName,
       }),
     });
 
