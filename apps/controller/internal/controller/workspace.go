@@ -28,42 +28,42 @@ func namespaceWorkspaceID(ctx context.Context, reader client.Reader, namespaceNa
 	namespace := &corev1.Namespace{}
 	if err := reader.Get(ctx, client.ObjectKey{Name: namespaceName}, namespace); err != nil {
 		if apierrors.IsNotFound(err) {
-			return workspaceIDFromLabels(fallbackLabels), nil
+			return workspaceFromLabels(fallbackLabels), nil
 		}
 		return "", err
 	}
-	return workspaceIDFromLabels(namespace.Labels), nil
+	return workspaceFromLabels(namespace.Labels), nil
 }
 
-func workspaceIDFromLabels(labels map[string]string) string {
+func workspaceFromLabels(labels map[string]string) string {
 	if labels == nil {
 		return ""
 	}
-	return labels[workspaceIDLabel]
+	return labels[workspaceLabel]
 }
 
-func syncWorkspaceIDLabel(labels map[string]string, workspaceID string) bool {
+func syncWorkspaceLabel(labels map[string]string, workspaceID string) bool {
 	if workspaceID == "" {
-		if _, ok := labels[workspaceIDLabel]; ok {
-			delete(labels, workspaceIDLabel)
+		if _, ok := labels[workspaceLabel]; ok {
+			delete(labels, workspaceLabel)
 			return true
 		}
 		return false
 	}
-	if labels[workspaceIDLabel] == workspaceID {
+	if labels[workspaceLabel] == workspaceID {
 		return false
 	}
-	labels[workspaceIDLabel] = workspaceID
+	labels[workspaceLabel] = workspaceID
 	return true
 }
 
-func addWorkspaceIDLabel(labels map[string]string, workspaceID string) map[string]string {
+func addWorkspaceLabel(labels map[string]string, workspaceID string) map[string]string {
 	if workspaceID == "" {
 		return labels
 	}
 	if labels == nil {
 		labels = map[string]string{}
 	}
-	labels[workspaceIDLabel] = workspaceID
+	labels[workspaceLabel] = workspaceID
 	return labels
 }

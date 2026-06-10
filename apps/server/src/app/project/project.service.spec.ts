@@ -41,7 +41,7 @@ describe('ProjectService', () => {
             name: expect.stringMatching(/^kd-project-\d+$/),
             labels: {
               'app.kubernetes.io/managed-by': 'kudeploy',
-              'kudeploy.com/workspace-id': 'workspace_1',
+              'kudeploy.com/workspace': 'workspace_1',
               'kudeploy.com/project': expect.stringMatching(/^kd-project-\d+$/),
             },
             annotations: {
@@ -126,7 +126,7 @@ describe('ProjectService', () => {
 
     expect(coreV1Api.listNamespace).toHaveBeenCalledWith({
       labelSelector:
-        'app.kubernetes.io/managed-by=kudeploy,kudeploy.com/workspace-id=workspace_1',
+        'app.kubernetes.io/managed-by=kudeploy,kudeploy.com/workspace=workspace_1',
     });
     expect(connectionManager.find).toHaveBeenCalledWith(
       ProjectConnection,
@@ -219,7 +219,7 @@ function namespaceResource(
       name,
       labels: {
         'app.kubernetes.io/managed-by': 'kudeploy',
-        'kudeploy.com/workspace-id': workspaceId,
+        'kudeploy.com/workspace': workspaceId,
         'kudeploy.com/project': name,
       },
       annotations: {

@@ -149,9 +149,9 @@ var _ = Describe("Service Controller", func() {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: namespaceName,
 				Labels: map[string]string{
-					projectLabel:     namespaceName,
-					workspaceIDLabel: workspaceID,
-					managedByLabel:   managedByLabelValue,
+					projectLabel:   namespaceName,
+					workspaceLabel: workspaceID,
+					managedByLabel: managedByLabelValue,
 				},
 			},
 		}
@@ -179,7 +179,7 @@ var _ = Describe("Service Controller", func() {
 	It("creates the first versioned Kudeploy Deployment and a stable Kubernetes Service", func() {
 		service := newService()
 		service.Labels = map[string]string{
-			"kudeploy.com/workspace-id": "workspace-stale",
+			"kudeploy.com/workspace": "workspace-stale",
 		}
 		reconciler := newReconciler(newNamespace(), service)
 
@@ -191,7 +191,7 @@ var _ = Describe("Service Controller", func() {
 		Expect(kudeployDeployment.Labels).To(HaveKeyWithValue("kudeploy.com/project", namespaceName))
 		Expect(kudeployDeployment.Labels).To(HaveKeyWithValue("kudeploy.com/service", serviceName))
 		Expect(kudeployDeployment.Labels).To(HaveKeyWithValue("kudeploy.com/deployment", firstDeploymentName))
-		Expect(kudeployDeployment.Labels).To(HaveKeyWithValue("kudeploy.com/workspace-id", workspaceID))
+		Expect(kudeployDeployment.Labels).To(HaveKeyWithValue("kudeploy.com/workspace", workspaceID))
 		Expect(kudeployDeployment.Labels).To(HaveKeyWithValue(routingStateLabel, routingStatePending))
 		Expect(kudeployDeployment.Labels).To(HaveKeyWithValue("app.kubernetes.io/managed-by", "kudeploy"))
 		Expect(kudeployDeployment.Spec.ServiceName).To(Equal(serviceName))
@@ -227,7 +227,7 @@ var _ = Describe("Service Controller", func() {
 		Expect(reconciler.Get(ctx, types.NamespacedName{Name: "service-whoami-env", Namespace: namespaceName}, serviceEnvSecret)).To(Succeed())
 		Expect(serviceEnvSecret.Labels).To(HaveKeyWithValue("kudeploy.com/project", namespaceName))
 		Expect(serviceEnvSecret.Labels).To(HaveKeyWithValue("kudeploy.com/service", serviceName))
-		Expect(serviceEnvSecret.Labels).To(HaveKeyWithValue("kudeploy.com/workspace-id", workspaceID))
+		Expect(serviceEnvSecret.Labels).To(HaveKeyWithValue("kudeploy.com/workspace", workspaceID))
 		Expect(serviceEnvSecret.Labels).To(HaveKeyWithValue("app.kubernetes.io/managed-by", "kudeploy"))
 		Expect(serviceEnvSecret.OwnerReferences).To(HaveLen(1))
 		Expect(serviceEnvSecret.OwnerReferences[0].Name).To(Equal(serviceName))
@@ -236,7 +236,7 @@ var _ = Describe("Service Controller", func() {
 		Expect(reconciler.Get(ctx, serviceKey, kubernetesService)).To(Succeed())
 		Expect(kubernetesService.Labels).To(HaveKeyWithValue("kudeploy.com/project", namespaceName))
 		Expect(kubernetesService.Labels).To(HaveKeyWithValue("kudeploy.com/service", serviceName))
-		Expect(kubernetesService.Labels).To(HaveKeyWithValue("kudeploy.com/workspace-id", workspaceID))
+		Expect(kubernetesService.Labels).To(HaveKeyWithValue("kudeploy.com/workspace", workspaceID))
 		Expect(kubernetesService.Labels).To(HaveKeyWithValue("app.kubernetes.io/managed-by", "kudeploy"))
 		Expect(kubernetesService.Spec.Ports).To(HaveLen(1))
 		Expect(kubernetesService.Spec.Ports[0].Port).To(Equal(int32(80)))
@@ -247,14 +247,14 @@ var _ = Describe("Service Controller", func() {
 		Expect(reconciler.Get(ctx, types.NamespacedName{Name: "service-whoami", Namespace: namespaceName}, serviceAccount)).To(Succeed())
 		Expect(serviceAccount.Labels).To(HaveKeyWithValue("kudeploy.com/project", namespaceName))
 		Expect(serviceAccount.Labels).To(HaveKeyWithValue("kudeploy.com/service", serviceName))
-		Expect(serviceAccount.Labels).To(HaveKeyWithValue("kudeploy.com/workspace-id", workspaceID))
+		Expect(serviceAccount.Labels).To(HaveKeyWithValue("kudeploy.com/workspace", workspaceID))
 		Expect(serviceAccount.Labels).To(HaveKeyWithValue("app.kubernetes.io/managed-by", "kudeploy"))
 		Expect(serviceAccount.OwnerReferences).To(HaveLen(1))
 		Expect(serviceAccount.OwnerReferences[0].Name).To(Equal(serviceName))
 
 		Expect(reconciler.Get(ctx, serviceKey, service)).To(Succeed())
 		Expect(service.Labels).To(HaveKeyWithValue("kudeploy.com/project", namespaceName))
-		Expect(service.Labels).To(HaveKeyWithValue("kudeploy.com/workspace-id", workspaceID))
+		Expect(service.Labels).To(HaveKeyWithValue("kudeploy.com/workspace", workspaceID))
 		Expect(service.Labels).To(HaveKeyWithValue("app.kubernetes.io/managed-by", "kudeploy"))
 		Expect(service.Status.ObservedGeneration).To(Equal(int64(1)))
 		Expect(service.Status.LatestVersion).To(Equal(int64(1)))

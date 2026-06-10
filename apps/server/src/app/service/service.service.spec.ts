@@ -71,7 +71,7 @@ describe('ServiceService', () => {
             namespace: 'kd-project-123',
             labels: {
               'app.kubernetes.io/managed-by': 'kudeploy',
-              'kudeploy.com/workspace-id': 'workspace_1',
+              'kudeploy.com/workspace': 'workspace_1',
               'kudeploy.com/project': 'kd-project-123',
             },
             annotations: {
@@ -293,7 +293,7 @@ describe('ServiceService', () => {
       namespace: 'kd-project-123',
       plural: 'services',
       labelSelector:
-        'app.kubernetes.io/managed-by=kudeploy,kudeploy.com/workspace-id=workspace_1,kudeploy.com/project=kd-project-123',
+        'app.kubernetes.io/managed-by=kudeploy,kudeploy.com/workspace=workspace_1,kudeploy.com/project=kd-project-123',
     });
     expect(connectionManager.find).toHaveBeenCalledWith(
       ServiceConnection,
@@ -431,7 +431,7 @@ function serviceCrd(
       namespace,
       labels: {
         'app.kubernetes.io/managed-by': 'kudeploy',
-        'kudeploy.com/workspace-id': workspaceId,
+        'kudeploy.com/workspace': workspaceId,
         'kudeploy.com/project': namespace,
       },
       annotations: {

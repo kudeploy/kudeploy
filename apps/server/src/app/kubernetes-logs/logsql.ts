@@ -3,7 +3,7 @@ const MANAGED_BY_LABEL_VALUE = 'kudeploy';
 const LOG_FIELD_MANAGED_BY =
   'kubernetes.pod_labels.app.kubernetes.io/managed-by';
 const LOG_FIELD_WORKSPACE_ID =
-  'kubernetes.pod_labels.kudeploy.com/workspace-id';
+  'kubernetes.pod_labels.kudeploy.com/workspace';
 const LOG_FIELD_PROJECT = 'kubernetes.pod_labels.kudeploy.com/project';
 const LOG_FIELD_SERVICE = 'kubernetes.pod_labels.kudeploy.com/service';
 

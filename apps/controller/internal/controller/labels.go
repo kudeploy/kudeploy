@@ -18,7 +18,7 @@ package controller
 
 const (
 	projectLabel        = "kudeploy.com/project"
-	workspaceIDLabel    = "kudeploy.com/workspace-id"
+	workspaceLabel      = "kudeploy.com/workspace"
 	managedByLabel      = "app.kubernetes.io/managed-by"
 	managedByLabelValue = "kudeploy"
 )

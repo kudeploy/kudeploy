@@ -25,7 +25,7 @@ export const KUDEPLOY_API_VERSION_NAME = 'v1alpha1';
 export const KUDEPLOY_FIELD_MANAGER = 'kudeploy-server';
 export const MANAGED_BY_LABEL = 'app.kubernetes.io/managed-by';
 export const MANAGED_BY_LABEL_VALUE = 'kudeploy';
-export const WORKSPACE_ID_LABEL = 'kudeploy.com/workspace-id';
+export const WORKSPACE_LABEL = 'kudeploy.com/workspace';
 export const DISPLAY_NAME_ANNOTATION = 'kudeploy.com/display-name';
 export const PROJECT_LABEL = 'kudeploy.com/project';
 
@@ -178,7 +178,7 @@ export class ProjectService {
         name,
         labels: {
           [MANAGED_BY_LABEL]: MANAGED_BY_LABEL_VALUE,
-          [WORKSPACE_ID_LABEL]: workspace.id,
+          [WORKSPACE_LABEL]: workspace.id,
           [PROJECT_LABEL]: name,
         },
         annotations: {
@@ -212,13 +212,13 @@ export class ProjectService {
     return (
       resource.metadata.labels?.[MANAGED_BY_LABEL] === MANAGED_BY_LABEL_VALUE &&
       hasKubernetesProjectNamePrefix(resource.metadata.name) &&
-      resource.metadata.labels?.[WORKSPACE_ID_LABEL] === workspace.id &&
+      resource.metadata.labels?.[WORKSPACE_LABEL] === workspace.id &&
       resource.metadata.labels?.[PROJECT_LABEL] === resource.metadata.name
     );
   }
 
   private workspaceLabelSelector(workspace: Workspace): string {
-    return `${MANAGED_BY_LABEL}=${MANAGED_BY_LABEL_VALUE},${WORKSPACE_ID_LABEL}=${workspace.id}`;
+    return `${MANAGED_BY_LABEL}=${MANAGED_BY_LABEL_VALUE},${WORKSPACE_LABEL}=${workspace.id}`;
   }
 
   private toDate(value?: string): Date {
