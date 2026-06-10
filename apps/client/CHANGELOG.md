@@ -1,3 +1,13 @@
+## 0.8.0 (2026-06-10)
+
+### 🚀 Features
+
+- add project registry credentials ([53aaa52](https://github.com/kudeploy/kudeploy/commit/53aaa52))
+
+### ❤️ Thank You
+
+- Xudong Huang @xudongcc
+
 ## 0.7.0 (2026-06-10)
 
 ### 🚀 Features

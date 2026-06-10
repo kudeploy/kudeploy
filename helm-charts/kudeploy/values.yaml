@@ -156,7 +156,7 @@ client:
   image:
     registry: ghcr.io
     repository: kudeploy/client
-    tag: '0.7.0'
+    tag: '0.8.0'
     digest: ""
     pullPolicy: IfNotPresent
     pullSecrets: []
@@ -225,7 +225,7 @@ server:
   image:
     registry: ghcr.io
     repository: kudeploy/server
-    tag: '1.9.2'
+    tag: '1.10.0'
     digest: ""
     pullPolicy: IfNotPresent
     pullSecrets: []
