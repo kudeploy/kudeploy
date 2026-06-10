@@ -1,3 +1,7 @@
+## 0.4.0 (2026-06-10)
+
+This was a version bump only for crds-helm-chart to align it with other projects, there were no code changes.
+
 ## 0.3.0 (2026-06-07)
 
 This was a version bump only for crds-helm-chart to align it with other projects, there were no code changes.

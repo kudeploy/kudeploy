@@ -1,3 +1,17 @@
+## 0.9.0 (2026-06-10)
+
+### 🚀 Features
+
+- remove Project CRD backing ([#10](https://github.com/kudeploy/kudeploy/pull/10))
+
+### 🧱 Updated Dependencies
+
+- Updated crds-helm-chart to 0.4.0
+
+### ❤️ Thank You
+
+- Xudong Huang @xudongcc
+
 ## 0.8.0 (2026-06-10)
 
 ### 🚀 Features

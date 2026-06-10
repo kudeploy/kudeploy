@@ -1,3 +1,13 @@
+## 0.4.0 (2026-06-10)
+
+### 🚀 Features
+
+- remove Project CRD backing ([#10](https://github.com/kudeploy/kudeploy/pull/10))
+
+### ❤️ Thank You
+
+- Xudong Huang @xudongcc
+
 ## 0.3.3 (2026-06-09)
 
 ### 🩹 Fixes
