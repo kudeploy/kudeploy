@@ -252,12 +252,7 @@ func buildKubernetesDeployment(kudeployDeployment *kudeployv1alpha1.Deployment, 
 		Spec: appsv1.DeploymentSpec{
 			Replicas:             replicas,
 			RevisionHistoryLimit: ptrInt32(0),
-			Strategy: appsv1.DeploymentStrategy{
-				Type: appsv1.RollingUpdateDeploymentStrategyType,
-				RollingUpdate: &appsv1.RollingUpdateDeployment{
-					MaxUnavailable: ptrIntOrString(intstr.FromInt32(0)),
-				},
-			},
+			Strategy:             deploymentStrategyFor(kudeployDeployment.Spec.Volumes),
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
 					deploymentLabel: kudeployDeployment.Name,
@@ -290,6 +285,18 @@ func buildKubernetesDeployment(kudeployDeployment *kudeployv1alpha1.Deployment, 
 					ImagePullSecrets: imagePullSecretsFor(kudeployDeployment.Spec.ImageSecretRef),
 				},
 			},
+		},
+	}
+}
+
+func deploymentStrategyFor(volumes []kudeployv1alpha1.ServiceVolume) appsv1.DeploymentStrategy {
+	if len(volumes) > 0 {
+		return appsv1.DeploymentStrategy{Type: appsv1.RecreateDeploymentStrategyType}
+	}
+	return appsv1.DeploymentStrategy{
+		Type: appsv1.RollingUpdateDeploymentStrategyType,
+		RollingUpdate: &appsv1.RollingUpdateDeployment{
+			MaxUnavailable: ptrIntOrString(intstr.FromInt32(0)),
 		},
 	}
 }

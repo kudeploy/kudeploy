@@ -195,9 +195,8 @@ var _ = Describe("Deployment Controller", func() {
 		Expect(kubernetesDeployment.Labels).To(HaveKeyWithValue("app.kubernetes.io/managed-by", "kudeploy"))
 		Expect(kubernetesDeployment.Spec.Replicas).To(Equal(ptrInt32(0)))
 		Expect(kubernetesDeployment.Spec.RevisionHistoryLimit).To(Equal(ptrInt32(0)))
-		Expect(kubernetesDeployment.Spec.Strategy.Type).To(Equal(appsv1.RollingUpdateDeploymentStrategyType))
-		Expect(kubernetesDeployment.Spec.Strategy.RollingUpdate).NotTo(BeNil())
-		Expect(kubernetesDeployment.Spec.Strategy.RollingUpdate.MaxUnavailable.IntVal).To(Equal(int32(0)))
+		Expect(kubernetesDeployment.Spec.Strategy.Type).To(Equal(appsv1.RecreateDeploymentStrategyType))
+		Expect(kubernetesDeployment.Spec.Strategy.RollingUpdate).To(BeNil())
 		Expect(kubernetesDeployment.Spec.Selector.MatchLabels).To(Equal(map[string]string{
 			deploymentLabel: deploymentName,
 		}))
@@ -371,6 +370,21 @@ var _ = Describe("Deployment Controller", func() {
 		kubernetesDeployment := &appsv1.Deployment{}
 		Expect(reconciler.Get(ctx, deploymentKey, kubernetesDeployment)).To(Succeed())
 		Expect(kubernetesDeployment.Spec.Replicas).To(Equal(ptrInt32(1)))
+	})
+
+	It("uses rolling updates for Kubernetes Deployments without volumes", func() {
+		deployment := newDeployment()
+		deployment.Spec.Volumes = nil
+		reconciler := newReconciler(deployment)
+
+		_, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: deploymentKey})
+		Expect(err).NotTo(HaveOccurred())
+
+		kubernetesDeployment := &appsv1.Deployment{}
+		Expect(reconciler.Get(ctx, deploymentKey, kubernetesDeployment)).To(Succeed())
+		Expect(kubernetesDeployment.Spec.Strategy.Type).To(Equal(appsv1.RollingUpdateDeploymentStrategyType))
+		Expect(kubernetesDeployment.Spec.Strategy.RollingUpdate).NotTo(BeNil())
+		Expect(kubernetesDeployment.Spec.Strategy.RollingUpdate.MaxUnavailable.IntVal).To(Equal(int32(0)))
 	})
 
 	It("scales reserve Kubernetes Deployments to zero", func() {

@@ -61,6 +61,7 @@ type ServiceReconciler struct {
 // +kubebuilder:rbac:groups=kudeploy.com,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch
+// +kubebuilder:rbac:groups="",resources=pods,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update;patch
 
@@ -441,7 +442,10 @@ func (r *ServiceReconciler) activeDeploymentScaledDown(ctx context.Context, serv
 	if err != nil {
 		return false, err
 	}
-	return kubernetesDeploymentScaledDown(kubernetesDeployment), nil
+	if !kubernetesDeploymentScaledDown(kubernetesDeployment) {
+		return false, nil
+	}
+	return r.kubernetesDeploymentPodsGone(ctx, kubernetesDeployment)
 }
 
 func serviceRequiresRecreateRollout(service *kudeployv1alpha1.Service) bool {
@@ -462,6 +466,18 @@ func kubernetesDeploymentScaledDown(kubernetesDeployment *appsv1.Deployment) boo
 		kubernetesDeployment.Status.ReadyReplicas == 0 &&
 		kubernetesDeployment.Status.AvailableReplicas == 0 &&
 		kubernetesDeployment.Status.UpdatedReplicas == 0
+}
+
+func (r *ServiceReconciler) kubernetesDeploymentPodsGone(ctx context.Context, kubernetesDeployment *appsv1.Deployment) (bool, error) {
+	selector, err := metav1.LabelSelectorAsSelector(kubernetesDeployment.Spec.Selector)
+	if err != nil {
+		return false, err
+	}
+	podList := &corev1.PodList{}
+	if err := r.List(ctx, podList, client.InNamespace(kubernetesDeployment.Namespace), client.MatchingLabelsSelector{Selector: selector}); err != nil {
+		return false, err
+	}
+	return len(podList.Items) == 0, nil
 }
 
 func ensureServiceMetadata(service *kudeployv1alpha1.Service, workspaceID string) bool {
