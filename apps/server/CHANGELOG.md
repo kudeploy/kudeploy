@@ -1,3 +1,13 @@
+## 1.9.2 (2026-06-10)
+
+### 🩹 Fixes
+
+- rename workspace label ([#14](https://github.com/kudeploy/kudeploy/pull/14))
+
+### ❤️ Thank You
+
+- Xudong Huang @xudongcc
+
 ## 1.9.1 (2026-06-10)
 
 ### 🩹 Fixes
