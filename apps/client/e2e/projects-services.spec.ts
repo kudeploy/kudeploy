@@ -249,13 +249,11 @@ test.describe("workspace Projects and Services", () => {
         {
           volumeId: "volume-data",
           mountPath: "/data",
+          subPath: null,
           readOnly: true,
         },
       ],
     });
-    expect(
-      graphqlMock.serviceUpdateRequests.at(-1)?.input.volumes[0],
-    ).not.toHaveProperty("subPath");
     await expect(page.getByTestId("service-name-input")).toHaveValue(
       "API Edited",
     );

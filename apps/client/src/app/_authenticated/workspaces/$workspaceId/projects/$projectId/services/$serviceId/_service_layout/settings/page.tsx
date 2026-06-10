@@ -300,7 +300,7 @@ function ServiceSettingsComponent() {
       return {
         volumeId: volume.volumeId,
         mountPath: volume.mountPath.trim(),
-        ...(subPath ? { subPath } : {}),
+        subPath,
         readOnly: volume.readOnly,
       };
     });
@@ -962,8 +962,8 @@ function toHealthCheckValue(
 function toVolumeSubPathInput(value: string) {
   const trimmed = value.trim();
 
-  if (trimmed === "/") {
-    return "";
+  if (!trimmed || trimmed === "/") {
+    return null;
   }
 
   return trimmed.replace(/^\/+/, "");
