@@ -55,12 +55,29 @@ var _ = Describe("Deployment Controller", func() {
 		return scheme
 	}
 
+	newNamespace := func() *corev1.Namespace {
+		return &corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: namespaceName,
+				Labels: map[string]string{
+					projectLabel:     namespaceName,
+					workspaceIDLabel: workspaceID,
+					managedByLabel:   managedByLabelValue,
+				},
+			},
+		}
+	}
+
 	newReconciler := func(objects ...client.Object) *DeploymentReconciler {
 		scheme := newScheme()
-		objects = append([]client.Object{
-			&corev1.Namespace{
-				ObjectMeta: metav1.ObjectMeta{Name: namespaceName},
-			},
+		hasNamespace := false
+		for _, object := range objects {
+			if namespace, ok := object.(*corev1.Namespace); ok && namespace.Name == namespaceName {
+				hasNamespace = true
+				break
+			}
+		}
+		defaultObjects := []client.Object{
 			&corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "service-whoami-env",
@@ -70,7 +87,11 @@ var _ = Describe("Deployment Controller", func() {
 					"TOKEN": []byte("secret"),
 				},
 			},
-		}, objects...)
+		}
+		if !hasNamespace {
+			defaultObjects = append([]client.Object{newNamespace()}, defaultObjects...)
+		}
+		objects = append(defaultObjects, objects...)
 		return &DeploymentReconciler{
 			Client: fake.NewClientBuilder().
 				WithScheme(scheme).
@@ -147,23 +168,12 @@ var _ = Describe("Deployment Controller", func() {
 		}
 	}
 
-	newProject := func() *kudeployv1alpha1.Project {
-		return &kudeployv1alpha1.Project{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: namespaceName,
-				Labels: map[string]string{
-					"kudeploy.com/workspace-id": workspaceID,
-				},
-			},
-		}
-	}
-
 	It("creates one matching Kubernetes Deployment for the Kudeploy Deployment", func() {
 		deployment := newDeployment()
 		deployment.Labels = map[string]string{
 			"kudeploy.com/workspace-id": "workspace-stale",
 		}
-		reconciler := newReconciler(newProject(), deployment)
+		reconciler := newReconciler(deployment)
 
 		_, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: deploymentKey})
 		Expect(err).NotTo(HaveOccurred())
@@ -245,16 +255,16 @@ var _ = Describe("Deployment Controller", func() {
 		)))
 	})
 
-	It("removes stale workspace labels when the Project has no workspace label", func() {
-		project := newProject()
-		project.Labels = nil
+	It("removes stale workspace labels when the Namespace has no workspace label", func() {
+		namespace := newNamespace()
+		namespace.Labels = nil
 		deployment := newDeployment()
 		deployment.Labels = map[string]string{
 			"kudeploy.com/workspace-id":   "workspace-stale",
 			"external.example.com/team":   "platform",
 			"external.example.com/region": "east",
 		}
-		reconciler := newReconciler(project, deployment)
+		reconciler := newReconciler(namespace, deployment)
 
 		_, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: deploymentKey})
 		Expect(err).NotTo(HaveOccurred())
@@ -273,13 +283,13 @@ var _ = Describe("Deployment Controller", func() {
 		Expect(envSecret.Labels).NotTo(HaveKey("kudeploy.com/workspace-id"))
 	})
 
-	It("enqueues Deployments when Project metadata changes", func() {
+	It("enqueues Deployments when Namespace labels change", func() {
 		deployment := newDeployment()
 		otherDeployment := newDeployment()
 		otherDeployment.Name = "whoami-00002"
 		reconciler := newReconciler(deployment, otherDeployment)
 
-		requests := reconciler.deploymentsForProject(ctx, newProject())
+		requests := reconciler.deploymentsForNamespace(ctx, newNamespace())
 
 		Expect(requests).To(ConsistOf(
 			reconcile.Request{NamespacedName: deploymentKey},

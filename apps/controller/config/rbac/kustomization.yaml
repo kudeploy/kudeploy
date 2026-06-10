@@ -21,10 +21,7 @@ resources:
 # For each CRD, "Admin", "Editor" and "Viewer" roles are scaffolded by
 # default, aiding admins in cluster management. Those roles are
 # not used by the kudeploy-controller itself. You can comment the following lines
-# if you do not want those helpers be installed with your Project.
+# if you do not want those helpers to be installed with your controller.
 - buildrun_admin_role.yaml
 - buildrun_editor_role.yaml
 - buildrun_viewer_role.yaml
-- project_admin_role.yaml
-- project_editor_role.yaml
-- project_viewer_role.yaml

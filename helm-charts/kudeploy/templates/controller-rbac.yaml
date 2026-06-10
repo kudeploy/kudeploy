@@ -12,6 +12,13 @@ rules:
       - ""
     resources:
       - namespaces
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
       - serviceaccounts
       - services
     verbs:
@@ -50,7 +57,6 @@ rules:
     resources:
       - buildruns
       - deployments
-      - projects
       - services
     verbs:
       - create
@@ -65,7 +71,6 @@ rules:
     resources:
       - buildruns/finalizers
       - deployments/finalizers
-      - projects/finalizers
       - services/finalizers
     verbs:
       - update
@@ -74,7 +79,6 @@ rules:
     resources:
       - buildruns/status
       - deployments/status
-      - projects/status
       - services/status
     verbs:
       - get
@@ -277,74 +281,6 @@ rules:
       - kudeploy.com
     resources:
       - buildruns/status
-    verbs:
-      - get
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: {{ include "kudeploy.controller.fullname" . }}-project-admin
-  labels:
-    {{- include "kudeploy.controller.labels" . | nindent 4 }}
-rules:
-  - apiGroups:
-      - kudeploy.com
-    resources:
-      - projects
-    verbs:
-      - "*"
-  - apiGroups:
-      - kudeploy.com
-    resources:
-      - projects/status
-    verbs:
-      - get
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: {{ include "kudeploy.controller.fullname" . }}-project-editor
-  labels:
-    {{- include "kudeploy.controller.labels" . | nindent 4 }}
-rules:
-  - apiGroups:
-      - kudeploy.com
-    resources:
-      - projects
-    verbs:
-      - create
-      - delete
-      - get
-      - list
-      - patch
-      - update
-      - watch
-  - apiGroups:
-      - kudeploy.com
-    resources:
-      - projects/status
-    verbs:
-      - get
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: {{ include "kudeploy.controller.fullname" . }}-project-viewer
-  labels:
-    {{- include "kudeploy.controller.labels" . | nindent 4 }}
-rules:
-  - apiGroups:
-      - kudeploy.com
-    resources:
-      - projects
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
-      - kudeploy.com
-    resources:
-      - projects/status
     verbs:
       - get
 {{- end }}

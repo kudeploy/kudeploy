@@ -2,7 +2,7 @@ import { Field, ID, Int, ObjectType } from '@nest-boot/graphql';
 
 import { VolumeStatus } from './volume-status.enum';
 
-@ObjectType('Volume')
+@ObjectType()
 export class Volume {
   @Field(() => ID)
   id!: string;

@@ -64,7 +64,7 @@ type BuildRunReconciler struct {
 // +kubebuilder:rbac:groups=kudeploy.com,resources=buildruns,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=kudeploy.com,resources=buildruns/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=kudeploy.com,resources=buildruns/finalizers,verbs=update
-// +kubebuilder:rbac:groups=kudeploy.com,resources=projects,verbs=get;list;watch
+// +kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",resources=serviceaccounts,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch
 // +kubebuilder:rbac:groups=tekton.dev,resources=pipelineruns,verbs=get;list;watch;create;update;patch;delete
@@ -88,7 +88,7 @@ func (r *BuildRunReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		return r.reconcileDelete(ctx, buildRun)
 	}
 
-	workspaceID, err := projectWorkspaceID(ctx, r.Client, buildRun.Namespace, buildRun.Labels)
+	workspaceID, err := namespaceWorkspaceID(ctx, r.Client, buildRun.Namespace, buildRun.Labels)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -420,14 +420,14 @@ func ptrInt64(value int64) *int64 {
 func (r *BuildRunReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&kudeployv1alpha1.BuildRun{}).
-		Watches(&kudeployv1alpha1.Project{}, handler.EnqueueRequestsFromMapFunc(r.buildRunsForProject)).
+		Watches(&corev1.Namespace{}, handler.EnqueueRequestsFromMapFunc(r.buildRunsForNamespace)).
 		Owns(&corev1.ServiceAccount{}).
 		Owns(&tektonv1.PipelineRun{}).
 		Named("buildrun").
 		Complete(r)
 }
 
-func (r *BuildRunReconciler) buildRunsForProject(ctx context.Context, object client.Object) []reconcile.Request {
+func (r *BuildRunReconciler) buildRunsForNamespace(ctx context.Context, object client.Object) []reconcile.Request {
 	if object == nil || object.GetName() == "" {
 		return nil
 	}

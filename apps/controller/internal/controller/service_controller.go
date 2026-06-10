@@ -54,8 +54,8 @@ type ServiceReconciler struct {
 // +kubebuilder:rbac:groups=kudeploy.com,resources=services,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=kudeploy.com,resources=services/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=kudeploy.com,resources=services/finalizers,verbs=update
-// +kubebuilder:rbac:groups=kudeploy.com,resources=projects,verbs=get;list;watch
 // +kubebuilder:rbac:groups=kudeploy.com,resources=deployments,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update;patch
 
@@ -73,7 +73,7 @@ func (r *ServiceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, nil
 	}
 
-	workspaceID, err := projectWorkspaceID(ctx, r.Client, service.Namespace, service.Labels)
+	workspaceID, err := namespaceWorkspaceID(ctx, r.Client, service.Namespace, service.Labels)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -499,7 +499,7 @@ func runtimeServiceAccountNameFor(serviceName string) string {
 func (r *ServiceReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&kudeployv1alpha1.Service{}).
-		Watches(&kudeployv1alpha1.Project{}, handler.EnqueueRequestsFromMapFunc(r.servicesForProject)).
+		Watches(&corev1.Namespace{}, handler.EnqueueRequestsFromMapFunc(r.servicesForNamespace)).
 		Owns(&kudeployv1alpha1.Deployment{}).
 		Owns(&corev1.Service{}).
 		Owns(&corev1.ServiceAccount{}).
@@ -508,7 +508,7 @@ func (r *ServiceReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func (r *ServiceReconciler) servicesForProject(ctx context.Context, object client.Object) []reconcile.Request {
+func (r *ServiceReconciler) servicesForNamespace(ctx context.Context, object client.Object) []reconcile.Request {
 	if object == nil || object.GetName() == "" {
 		return nil
 	}

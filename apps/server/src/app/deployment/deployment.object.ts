@@ -47,7 +47,7 @@ export class DeploymentResources {
   memoryLimit?: string | null;
 }
 
-@ObjectType('Deployment')
+@ObjectType()
 export class Deployment {
   @Field(() => ID)
   id!: string;

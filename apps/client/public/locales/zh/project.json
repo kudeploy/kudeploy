@@ -1,14 +1,14 @@
 {
   "title": "项目",
-  "description": "项目由当前集群中的 Kubernetes Project CRD 驱动。",
+  "description": "项目由当前集群中的 Kubernetes Namespace 驱动。",
   "create": {
     "button": "创建项目",
     "title": "创建项目",
-    "description": "会立即创建一个 Project CRD。"
+    "description": "会立即创建一个 Kubernetes Namespace。"
   },
   "detail": {
     "title": "项目",
-    "description": "保存会直接更新 Project CRD。",
+    "description": "保存会直接更新底层 Namespace。",
     "services_action": "服务"
   },
   "tabs": {
@@ -71,7 +71,7 @@
     "description": "管理项目名称和删除操作。",
     "update": {
       "title": "项目信息",
-      "description": "保存会直接更新 Project CRD。"
+      "description": "保存会直接更新底层 Namespace。"
     },
     "danger_zone": {
       "title": "危险操作",

@@ -48,7 +48,7 @@ export class ServiceHealthCheck {
   path?: string | null;
 }
 
-@ObjectType('Service')
+@ObjectType()
 export class Service {
   @Field(() => ID)
   id!: string;

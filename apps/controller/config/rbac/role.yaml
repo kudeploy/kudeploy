@@ -8,11 +8,16 @@ rules:
   - ""
   resources:
   - namespaces
-  - serviceaccounts
-  - services
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - secrets
   verbs:
   - create
-  - delete
   - get
   - list
   - patch
@@ -21,9 +26,11 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - secrets
+  - serviceaccounts
+  - services
   verbs:
   - create
+  - delete
   - get
   - list
   - patch
@@ -46,7 +53,6 @@ rules:
   resources:
   - buildruns
   - deployments
-  - projects
   - services
   verbs:
   - create
@@ -61,7 +67,6 @@ rules:
   resources:
   - buildruns/finalizers
   - deployments/finalizers
-  - projects/finalizers
   - services/finalizers
   verbs:
   - update
@@ -70,7 +75,6 @@ rules:
   resources:
   - buildruns/status
   - deployments/status
-  - projects/status
   - services/status
   verbs:
   - get

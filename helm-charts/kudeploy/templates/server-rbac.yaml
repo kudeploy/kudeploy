@@ -30,6 +30,18 @@ rules:
   - apiGroups:
       - ""
     resources:
+      - namespaces
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - ""
+    resources:
       - persistentvolumeclaims
     verbs:
       - create
@@ -42,7 +54,6 @@ rules:
     resources:
       - buildruns
       - deployments
-      - projects
       - services
     verbs:
       - create
