@@ -1,3 +1,13 @@
+## 0.7.1 (2026-06-10)
+
+### 🩹 Fixes
+
+- allow server websocket pod exec ([#8](https://github.com/kudeploy/kudeploy/pull/8))
+
+### ❤️ Thank You
+
+- Xudong Huang @xudongcc
+
 ## 0.7.0 (2026-06-10)
 
 ### 🚀 Features
