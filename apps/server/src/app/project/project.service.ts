@@ -8,6 +8,7 @@ import {
   SERVER_SIDE_APPLY_OPTIONS,
   toGraphqlProjectId,
   toKubernetesProjectName,
+  toKubernetesWorkspaceName,
 } from '@/app/kubernetes';
 import { Workspace } from '@/app/workspace/workspace.entity';
 import { KubernetesConnectionManager } from '@/lib/kubernetes-graphql-connection/kubernetes-connection.manager';
@@ -178,7 +179,7 @@ export class ProjectService {
         name,
         labels: {
           [MANAGED_BY_LABEL]: MANAGED_BY_LABEL_VALUE,
-          [WORKSPACE_LABEL]: workspace.id,
+          [WORKSPACE_LABEL]: toKubernetesWorkspaceName(workspace.id),
           [PROJECT_LABEL]: name,
         },
         annotations: {
@@ -212,13 +213,14 @@ export class ProjectService {
     return (
       resource.metadata.labels?.[MANAGED_BY_LABEL] === MANAGED_BY_LABEL_VALUE &&
       hasKubernetesProjectNamePrefix(resource.metadata.name) &&
-      resource.metadata.labels?.[WORKSPACE_LABEL] === workspace.id &&
+      resource.metadata.labels?.[WORKSPACE_LABEL] ===
+        toKubernetesWorkspaceName(workspace.id) &&
       resource.metadata.labels?.[PROJECT_LABEL] === resource.metadata.name
     );
   }
 
   private workspaceLabelSelector(workspace: Workspace): string {
-    return `${MANAGED_BY_LABEL}=${MANAGED_BY_LABEL_VALUE},${WORKSPACE_LABEL}=${workspace.id}`;
+    return `${MANAGED_BY_LABEL}=${MANAGED_BY_LABEL_VALUE},${WORKSPACE_LABEL}=${toKubernetesWorkspaceName(workspace.id)}`;
   }
 
   private toDate(value?: string): Date {

@@ -55,6 +55,9 @@ describe('KubernetesLogsService', () => {
     );
     const logsQuery = victoriaLogsClient.query.mock.calls[0][0] as string;
     expect(logsQuery).toContain(
+      '`kubernetes.pod_labels.kudeploy.com/workspace`:="kd-workspace-workspace-1"',
+    );
+    expect(logsQuery).toContain(
       '`kubernetes.pod_labels.kudeploy.com/project`:="kd-project-1"',
     );
     expect(logsQuery).toContain(

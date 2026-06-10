@@ -41,7 +41,7 @@ var _ = Describe("BuildRun Controller", func() {
 	const (
 		namespaceName = "whoami"
 		buildRunName  = "whoami-latest"
-		workspaceID   = "workspace-main"
+		workspaceID   = "kd-workspace-main"
 	)
 
 	ctx := context.Background()
@@ -118,7 +118,7 @@ var _ = Describe("BuildRun Controller", func() {
 	It("creates a dedicated ServiceAccount and deterministic PipelineRun", func() {
 		buildRun := newBuildRun()
 		buildRun.Labels = map[string]string{
-			"kudeploy.com/workspace": "workspace-stale",
+			"kudeploy.com/workspace": "kd-workspace-stale",
 		}
 		reconciler := newReconciler(
 			newNamespace(),
@@ -236,7 +236,7 @@ var _ = Describe("BuildRun Controller", func() {
 	It("repairs managed labels on an existing PipelineRun", func() {
 		buildRun := newBuildRun()
 		buildRun.Labels = map[string]string{
-			"kudeploy.com/workspace": "workspace-stale",
+			"kudeploy.com/workspace": "kd-workspace-stale",
 		}
 		pipelineRun := buildPipelineRun(buildRun)
 		pipelineRun.Labels["external.example.com/team"] = "platform"

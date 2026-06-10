@@ -1,3 +1,5 @@
+import { toKubernetesWorkspaceName } from '@/app/kubernetes/resource-names';
+
 export const MANAGED_BY_LABEL = 'app.kubernetes.io/managed-by';
 export const MANAGED_BY_LABEL_VALUE = 'kudeploy';
 export const DEPLOYMENT_LABEL = 'kudeploy.com/deployment';
@@ -20,7 +22,7 @@ export function buildServicePodLabelSelector({
 }: ServicePodSelectorInput): string {
   return [
     `${MANAGED_BY_LABEL}=${MANAGED_BY_LABEL_VALUE}`,
-    `${WORKSPACE_LABEL}=${workspaceId}`,
+    `${WORKSPACE_LABEL}=${toKubernetesWorkspaceName(workspaceId)}`,
     `${PROJECT_LABEL}=${projectId}`,
     `${SERVICE_LABEL}=${serviceId}`,
     ...(deploymentName ? [`${DEPLOYMENT_LABEL}=${deploymentName}`] : []),

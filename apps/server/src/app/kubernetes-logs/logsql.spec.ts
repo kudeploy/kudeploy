@@ -9,7 +9,7 @@ describe('logsql', () => {
         workspaceId: 'workspace-1',
       }),
     ).toBe(
-      '`kubernetes.pod_labels.app.kubernetes.io/managed-by`:="kudeploy" AND `kubernetes.pod_labels.kudeploy.com/workspace`:="workspace-1" AND `kubernetes.pod_labels.kudeploy.com/project`:="kd-project-1" AND `kubernetes.pod_labels.kudeploy.com/service`:="kd-service-1" | fields _time, _stream, _stream_id, _msg, level, `kubernetes.pod_namespace`, `kubernetes.pod_name`, `kubernetes.container_name`, `kubernetes.pod_labels.kudeploy.com/deployment`',
+      '`kubernetes.pod_labels.app.kubernetes.io/managed-by`:="kudeploy" AND `kubernetes.pod_labels.kudeploy.com/workspace`:="kd-workspace-workspace-1" AND `kubernetes.pod_labels.kudeploy.com/project`:="kd-project-1" AND `kubernetes.pod_labels.kudeploy.com/service`:="kd-service-1" | fields _time, _stream, _stream_id, _msg, level, `kubernetes.pod_namespace`, `kubernetes.pod_name`, `kubernetes.container_name`, `kubernetes.pod_labels.kudeploy.com/deployment`',
     );
   });
 

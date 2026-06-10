@@ -526,7 +526,7 @@ metadata:
   labels:
     app.kubernetes.io/managed-by: kudeploy
     kudeploy.com/project: %s
-    kudeploy.com/workspace: e2e
+    kudeploy.com/workspace: kd-workspace-e2e
 `, name, name)
 }
 

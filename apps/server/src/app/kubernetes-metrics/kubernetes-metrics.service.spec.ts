@@ -63,7 +63,7 @@ describe('KubernetesMetricsService', () => {
     expect(coreV1Api.listNamespacedPod).toHaveBeenCalledWith({
       namespace: 'kd-project-1',
       labelSelector:
-        'app.kubernetes.io/managed-by=kudeploy,kudeploy.com/workspace=workspace_1,kudeploy.com/project=kd-project-1,kudeploy.com/service=kd-service-1,kudeploy.com/deployment=kd-service-1-00002',
+        'app.kubernetes.io/managed-by=kudeploy,kudeploy.com/workspace=kd-workspace-workspace_1,kudeploy.com/project=kd-project-1,kudeploy.com/service=kd-service-1,kudeploy.com/deployment=kd-service-1-00002',
     });
     expect(prometheusClient.queryRange).toHaveBeenCalledWith(
       expect.stringContaining('namespace="kd-project-1"'),

@@ -1,9 +1,10 @@
+import { toKubernetesWorkspaceName } from '@/app/kubernetes/resource-names';
+
 const MANAGED_BY_LABEL_VALUE = 'kudeploy';
 
 const LOG_FIELD_MANAGED_BY =
   'kubernetes.pod_labels.app.kubernetes.io/managed-by';
-const LOG_FIELD_WORKSPACE =
-  'kubernetes.pod_labels.kudeploy.com/workspace';
+const LOG_FIELD_WORKSPACE = 'kubernetes.pod_labels.kudeploy.com/workspace';
 const LOG_FIELD_PROJECT = 'kubernetes.pod_labels.kudeploy.com/project';
 const LOG_FIELD_SERVICE = 'kubernetes.pod_labels.kudeploy.com/service';
 
@@ -68,7 +69,7 @@ export function buildServiceLogsQuery(
   const pipes = [
     [
       exactFilter(LOG_FIELD_MANAGED_BY, MANAGED_BY_LABEL_VALUE),
-      exactFilter(LOG_FIELD_WORKSPACE, workspaceId),
+      exactFilter(LOG_FIELD_WORKSPACE, toKubernetesWorkspaceName(workspaceId)),
       exactFilter(LOG_FIELD_PROJECT, projectId),
       exactFilter(LOG_FIELD_SERVICE, serviceId),
     ]
@@ -150,9 +151,7 @@ function logsQlInteger(value: string): string | null {
 }
 
 function isSafeLogTime(value: string): boolean {
-  return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?Z$/.test(
-    value,
-  );
+  return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?Z$/.test(value);
 }
 
 function logsQlField(field: string): string {

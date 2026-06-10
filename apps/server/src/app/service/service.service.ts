@@ -12,6 +12,7 @@ import {
   toKubernetesProjectName,
   toKubernetesRegistryCredentialName,
   toKubernetesServiceName,
+  toKubernetesWorkspaceName,
 } from '@/app/kubernetes/resource-names';
 import {
   DISPLAY_NAME_ANNOTATION,
@@ -424,7 +425,7 @@ export class ServiceService {
         namespace: projectId,
         labels: {
           [MANAGED_BY_LABEL]: MANAGED_BY_LABEL_VALUE,
-          [WORKSPACE_LABEL]: workspace.id,
+          [WORKSPACE_LABEL]: toKubernetesWorkspaceName(workspace.id),
           [PROJECT_LABEL]: projectId,
         },
         annotations: {
@@ -611,7 +612,8 @@ export class ServiceService {
       resource.metadata.namespace === projectId &&
       hasKubernetesServiceNamePrefix(resource.metadata.name) &&
       resource.metadata.labels?.[MANAGED_BY_LABEL] === MANAGED_BY_LABEL_VALUE &&
-      resource.metadata.labels?.[WORKSPACE_LABEL] === workspace.id &&
+      resource.metadata.labels?.[WORKSPACE_LABEL] ===
+        toKubernetesWorkspaceName(workspace.id) &&
       resource.metadata.labels?.[PROJECT_LABEL] === projectId
     );
   }
@@ -620,7 +622,7 @@ export class ServiceService {
     workspace: Workspace,
     projectId: string,
   ): string {
-    return `${MANAGED_BY_LABEL}=${MANAGED_BY_LABEL_VALUE},${WORKSPACE_LABEL}=${workspace.id},${PROJECT_LABEL}=${projectId}`;
+    return `${MANAGED_BY_LABEL}=${MANAGED_BY_LABEL_VALUE},${WORKSPACE_LABEL}=${toKubernetesWorkspaceName(workspace.id)},${PROJECT_LABEL}=${projectId}`;
   }
 
   private toDate(value?: string): Date {
