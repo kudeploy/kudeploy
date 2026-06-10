@@ -140,20 +140,10 @@ var _ = Describe("Deployment Controller", func() {
 				Ports: []kudeployv1alpha1.ServicePort{
 					{Port: 80, TargetPort: 8080},
 				},
-				Volumes: []corev1.Volume{
-					{
-						Name: "data",
-						VolumeSource: corev1.VolumeSource{
-							PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-								ClaimName: "kd-volume-data",
-								ReadOnly:  true,
-							},
-						},
-					},
-				},
-				VolumeMounts: []corev1.VolumeMount{
+				Volumes: []kudeployv1alpha1.ServiceVolume{
 					{
 						Name:      "data",
+						ClaimName: "kd-volume-data",
 						MountPath: "/data",
 						SubPath:   "app",
 						ReadOnly:  true,
@@ -329,35 +319,6 @@ var _ = Describe("Deployment Controller", func() {
 			reconcile.Request{NamespacedName: deploymentKey},
 			reconcile.Request{NamespacedName: types.NamespacedName{Name: "whoami-00002", Namespace: namespaceName}},
 		))
-	})
-
-	It("does not create a Kubernetes Deployment when the Kudeploy Deployment uses an unsupported volume source", func() {
-		deployment := newDeployment()
-		deployment.Spec.Volumes = []corev1.Volume{
-			{
-				Name: "host",
-				VolumeSource: corev1.VolumeSource{
-					HostPath: &corev1.HostPathVolumeSource{Path: "/var/run"},
-				},
-			},
-		}
-		deployment.Spec.VolumeMounts = []corev1.VolumeMount{
-			{Name: "host", MountPath: "/host"},
-		}
-		reconciler := newReconciler(deployment)
-
-		_, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: deploymentKey})
-		Expect(err).NotTo(HaveOccurred())
-
-		kubernetesDeployment := &appsv1.Deployment{}
-		Expect(apierrors.IsNotFound(reconciler.Get(ctx, deploymentKey, kubernetesDeployment))).To(BeTrue())
-
-		Expect(reconciler.Get(ctx, deploymentKey, deployment)).To(Succeed())
-		Expect(deployment.Status.Conditions).To(ContainElement(SatisfyAll(
-			HaveField("Type", "Ready"),
-			HaveField("Status", metav1.ConditionFalse),
-			HaveField("Reason", "UnsupportedVolumeSource"),
-		)))
 	})
 
 	It("preserves selector and external metadata on existing Kubernetes Deployments while applying desired replicas", func() {

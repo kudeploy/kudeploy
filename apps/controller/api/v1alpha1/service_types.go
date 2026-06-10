@@ -56,15 +56,11 @@ type ServiceSpec struct {
 	// +listType=atomic
 	Ports []ServicePort `json:"ports"`
 
-	// volumes describe Kubernetes volumes available to the Service Pod.
+	// volumes describe PersistentVolumeClaims mounted into the Service container.
 	// +optional
-	// +listType=atomic
-	Volumes []corev1.Volume `json:"volumes,omitempty"`
-
-	// volumeMounts describe where volumes are mounted into the Service container.
-	// +optional
-	// +listType=atomic
-	VolumeMounts []corev1.VolumeMount `json:"volumeMounts,omitempty"`
+	// +listType=map
+	// +listMapKey=name
+	Volumes []ServiceVolume `json:"volumes,omitempty"`
 
 	// env describes plain Kubernetes container environment variables.
 	// Secret values are managed through the Service env Secret maintained by the controller.
@@ -101,6 +97,37 @@ type ServicePort struct {
 	// targetPort is the container port. When omitted, port is used.
 	// +optional
 	TargetPort int32 `json:"targetPort,omitempty"`
+}
+
+// ServiceVolume describes one PersistentVolumeClaim mounted by a Kudeploy workload.
+type ServiceVolume struct {
+	// name is the Pod volume name and must be unique within the Service.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=63
+	// +kubebuilder:validation:Pattern=`^[a-z0-9]([-a-z0-9]*[a-z0-9])?$`
+	Name string `json:"name"`
+
+	// claimName is the PersistentVolumeClaim name in the same namespace.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=253
+	// +kubebuilder:validation:Pattern=`^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$`
+	ClaimName string `json:"claimName"`
+
+	// mountPath is the absolute path where the volume is mounted in the container.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:Pattern=`^/[^:]*$`
+	MountPath string `json:"mountPath"`
+
+	// subPath is an optional path within the volume to mount.
+	// +optional
+	SubPath string `json:"subPath,omitempty"`
+
+	// readOnly mounts the volume read-only when true.
+	// +optional
+	ReadOnly bool `json:"readOnly,omitempty"`
 }
 
 // ServiceStatus defines the observed state of Service.

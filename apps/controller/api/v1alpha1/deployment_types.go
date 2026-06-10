@@ -68,15 +68,11 @@ type DeploymentSpec struct {
 	// +listType=atomic
 	Ports []ServicePort `json:"ports"`
 
-	// volumes describe Kubernetes volumes available to the Deployment Pod.
+	// volumes describe PersistentVolumeClaims mounted into the Deployment container.
 	// +optional
-	// +listType=atomic
-	Volumes []corev1.Volume `json:"volumes,omitempty"`
-
-	// volumeMounts describe where volumes are mounted into the Deployment container.
-	// +optional
-	// +listType=atomic
-	VolumeMounts []corev1.VolumeMount `json:"volumeMounts,omitempty"`
+	// +listType=map
+	// +listMapKey=name
+	Volumes []ServiceVolume `json:"volumes,omitempty"`
 
 	// env describes plain Kubernetes container environment variables captured for this Deployment version.
 	// +optional

@@ -106,20 +106,10 @@ var _ = Describe("Service Controller", func() {
 				Ports: []kudeployv1alpha1.ServicePort{
 					{Port: 80, TargetPort: 8080},
 				},
-				Volumes: []corev1.Volume{
-					{
-						Name: "data",
-						VolumeSource: corev1.VolumeSource{
-							PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-								ClaimName: "kd-volume-data",
-								ReadOnly:  true,
-							},
-						},
-					},
-				},
-				VolumeMounts: []corev1.VolumeMount{
+				Volumes: []kudeployv1alpha1.ServiceVolume{
 					{
 						Name:      "data",
+						ClaimName: "kd-volume-data",
 						MountPath: "/data",
 						SubPath:   "app",
 						ReadOnly:  true,
@@ -222,17 +212,9 @@ var _ = Describe("Service Controller", func() {
 			},
 		}))
 		Expect(kudeployDeployment.Spec.Ports).To(ConsistOf(kudeployv1alpha1.ServicePort{Port: 80, TargetPort: 8080}))
-		Expect(kudeployDeployment.Spec.Volumes).To(ConsistOf(corev1.Volume{
-			Name: "data",
-			VolumeSource: corev1.VolumeSource{
-				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-					ClaimName: "kd-volume-data",
-					ReadOnly:  true,
-				},
-			},
-		}))
-		Expect(kudeployDeployment.Spec.VolumeMounts).To(ConsistOf(corev1.VolumeMount{
+		Expect(kudeployDeployment.Spec.Volumes).To(ConsistOf(kudeployv1alpha1.ServiceVolume{
 			Name:      "data",
+			ClaimName: "kd-volume-data",
 			MountPath: "/data",
 			SubPath:   "app",
 			ReadOnly:  true,
@@ -300,36 +282,6 @@ var _ = Describe("Service Controller", func() {
 			reconcile.Request{NamespacedName: serviceKey},
 			reconcile.Request{NamespacedName: types.NamespacedName{Name: "admin", Namespace: namespaceName}},
 		))
-	})
-
-	It("does not create a Kudeploy Deployment when the Service uses an unsupported volume source", func() {
-		service := newService()
-		service.Spec.Volumes = []corev1.Volume{
-			{
-				Name: "host",
-				VolumeSource: corev1.VolumeSource{
-					HostPath: &corev1.HostPathVolumeSource{Path: "/var/run"},
-				},
-			},
-		}
-		service.Spec.VolumeMounts = []corev1.VolumeMount{
-			{Name: "host", MountPath: "/host"},
-		}
-		reconciler := newReconciler(newNamespace(), service)
-
-		_, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: serviceKey})
-		Expect(err).NotTo(HaveOccurred())
-
-		kudeployDeployment := &kudeployv1alpha1.Deployment{}
-		Expect(apierrors.IsNotFound(reconciler.Get(ctx, types.NamespacedName{Name: firstDeploymentName, Namespace: namespaceName}, kudeployDeployment))).To(BeTrue())
-
-		Expect(reconciler.Get(ctx, serviceKey, service)).To(Succeed())
-		Expect(service.Status.ObservedGeneration).To(Equal(int64(1)))
-		Expect(service.Status.Conditions).To(ContainElement(SatisfyAll(
-			HaveField("Type", "Ready"),
-			HaveField("Status", metav1.ConditionFalse),
-			HaveField("Reason", "UnsupportedVolumeSource"),
-		)))
 	})
 
 	It("switches the stable Kubernetes Service selector after the latest Kudeploy Deployment is ready", func() {

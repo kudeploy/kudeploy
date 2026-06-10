@@ -85,10 +85,6 @@ func (r *DeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		}
 	}
 
-	if err := validatePVCVolumeSources(kudeployDeployment.Spec.Volumes); err != nil {
-		return r.markDeploymentUnsupportedVolume(ctx, kudeployDeployment, err)
-	}
-
 	if err := r.createOrUpdateDeploymentEnvSecret(ctx, kudeployDeployment); err != nil {
 		return ctrl.Result{}, err
 	}
@@ -232,17 +228,6 @@ func (r *DeploymentReconciler) updateDeploymentStatus(ctx context.Context, kudep
 	return ignoreConflict(r.Status().Patch(ctx, kudeployDeployment, client.MergeFrom(originalKudeployDeployment)))
 }
 
-func (r *DeploymentReconciler) markDeploymentUnsupportedVolume(ctx context.Context, kudeployDeployment *kudeployv1alpha1.Deployment, err error) (ctrl.Result, error) {
-	originalKudeployDeployment := kudeployDeployment.DeepCopy()
-	meta.SetStatusCondition(&kudeployDeployment.Status.Conditions, metav1.Condition{
-		Type:    deploymentReadyCondition,
-		Status:  metav1.ConditionFalse,
-		Reason:  unsupportedVolumeSourceReason,
-		Message: err.Error(),
-	})
-	return ctrl.Result{}, ignoreConflict(r.Status().Patch(ctx, kudeployDeployment, client.MergeFrom(originalKudeployDeployment)))
-}
-
 func ensureDeploymentMetadata(kudeployDeployment *kudeployv1alpha1.Deployment, workspaceID string) bool {
 	labels := deploymentManagedLabels(kudeployDeployment.Namespace, kudeployDeployment.Spec.ServiceName, kudeployDeployment.Name, workspaceID)
 	if routingState := kudeployDeployment.Labels[routingStateLabel]; routingState != "" {
@@ -295,13 +280,13 @@ func buildKubernetesDeployment(kudeployDeployment *kudeployv1alpha1.Deployment, 
 							Env:             kudeployDeployment.Spec.Env,
 							EnvFrom:         containerEnvFromFor(kudeployDeployment),
 							Ports:           containerPortsFor(kudeployDeployment.Spec.Ports),
-							VolumeMounts:    kudeployDeployment.Spec.VolumeMounts,
+							VolumeMounts:    containerVolumeMountsFor(kudeployDeployment.Spec.Volumes),
 							ReadinessProbe:  kudeployDeployment.Spec.ReadinessProbe,
 							LivenessProbe:   kudeployDeployment.Spec.LivenessProbe,
 							StartupProbe:    kudeployDeployment.Spec.StartupProbe,
 						},
 					},
-					Volumes:          kudeployDeployment.Spec.Volumes,
+					Volumes:          podVolumesFor(kudeployDeployment.Spec.Volumes),
 					ImagePullSecrets: imagePullSecretsFor(kudeployDeployment.Spec.ImageSecretRef),
 				},
 			},
@@ -340,6 +325,35 @@ func containerPortsFor(ports []kudeployv1alpha1.ServicePort) []corev1.ContainerP
 		})
 	}
 	return containerPorts
+}
+
+func podVolumesFor(volumes []kudeployv1alpha1.ServiceVolume) []corev1.Volume {
+	podVolumes := make([]corev1.Volume, 0, len(volumes))
+	for _, volume := range volumes {
+		podVolumes = append(podVolumes, corev1.Volume{
+			Name: volume.Name,
+			VolumeSource: corev1.VolumeSource{
+				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+					ClaimName: volume.ClaimName,
+					ReadOnly:  volume.ReadOnly,
+				},
+			},
+		})
+	}
+	return podVolumes
+}
+
+func containerVolumeMountsFor(volumes []kudeployv1alpha1.ServiceVolume) []corev1.VolumeMount {
+	volumeMounts := make([]corev1.VolumeMount, 0, len(volumes))
+	for _, volume := range volumes {
+		volumeMounts = append(volumeMounts, corev1.VolumeMount{
+			Name:      volume.Name,
+			MountPath: volume.MountPath,
+			SubPath:   volume.SubPath,
+			ReadOnly:  volume.ReadOnly,
+		})
+	}
+	return volumeMounts
 }
 
 func imagePullSecretsFor(secretRef *corev1.LocalObjectReference) []corev1.LocalObjectReference {

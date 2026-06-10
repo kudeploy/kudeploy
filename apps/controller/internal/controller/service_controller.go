@@ -89,10 +89,6 @@ func (r *ServiceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		}
 	}
 
-	if err := validatePVCVolumeSources(service.Spec.Volumes); err != nil {
-		return r.markServiceUnsupportedVolume(ctx, service, err)
-	}
-
 	envSecret, err := r.createOrUpdateServiceEnvSecret(ctx, service)
 	if err != nil {
 		return ctrl.Result{}, err
@@ -243,18 +239,6 @@ func (r *ServiceReconciler) reconcileServiceTraffic(ctx context.Context, service
 
 func (r *ServiceReconciler) patchServiceStatus(ctx context.Context, service, originalService *kudeployv1alpha1.Service) error {
 	return ignoreConflict(r.Status().Patch(ctx, service, client.MergeFrom(originalService)))
-}
-
-func (r *ServiceReconciler) markServiceUnsupportedVolume(ctx context.Context, service *kudeployv1alpha1.Service, err error) (ctrl.Result, error) {
-	originalService := service.DeepCopy()
-	service.Status.ObservedGeneration = service.Generation
-	meta.SetStatusCondition(&service.Status.Conditions, metav1.Condition{
-		Type:    serviceReadyCondition,
-		Status:  metav1.ConditionFalse,
-		Reason:  unsupportedVolumeSourceReason,
-		Message: err.Error(),
-	})
-	return ctrl.Result{}, r.patchServiceStatus(ctx, service, originalService)
 }
 
 func (r *ServiceReconciler) createOrUpdateRuntimeServiceAccount(ctx context.Context, service *kudeployv1alpha1.Service) error {
@@ -413,7 +397,6 @@ func buildKudeployDeployment(kudeployService *kudeployv1alpha1.Service, version 
 			Resources:          kudeployService.Spec.Resources,
 			Ports:              kudeployService.Spec.Ports,
 			Volumes:            kudeployService.Spec.Volumes,
-			VolumeMounts:       kudeployService.Spec.VolumeMounts,
 			Env:                kudeployService.Spec.Env,
 			EnvFrom:            kudeployService.Spec.EnvFrom,
 			ReadinessProbe:     kudeployService.Spec.ReadinessProbe,
