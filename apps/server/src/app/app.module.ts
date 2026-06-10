@@ -11,6 +11,7 @@ import { ProjectModule } from '@/app/project/project.module';
 import { ServiceModule } from '@/app/service/service.module';
 import { ServiceTerminalModule } from '@/app/service-terminal/service-terminal.module';
 import { UserModule } from '@/app/user/user.module';
+import { VolumeModule } from '@/app/volume';
 import { WorkspaceModule } from '@/app/workspace/workspace.module';
 import { WorkspaceMemberModule } from '@/app/workspace-member/workspace-member.module';
 import { WorkspaceMemberGroupModule } from '@/app/workspace-member-group/workspace-member-group.module';
@@ -32,6 +33,7 @@ import { CommonModule } from '@/common/common.module';
     ProjectModule,
     ServiceModule,
     DeploymentModule,
+    VolumeModule,
     ServiceTerminalModule,
   ],
   providers: [

@@ -55,6 +55,11 @@ export type Scalars = {
    */
   ServiceFilter: { input: any; output: any };
   /**
+   * A filter for Volume that accepts MongoDB query syntax.
+   * Supported fields: name, createdAt
+   */
+  VolumeFilter: { input: any; output: any };
+  /**
    * A filter for Workspace that accepts MongoDB query syntax.
    * Supported fields: name, created_at
    */
@@ -167,6 +172,12 @@ export type CreateServiceInput = {
   projectId: Scalars["ID"]["input"];
   replicas?: InputMaybe<Scalars["Int"]["input"]>;
   resources?: InputMaybe<ServiceResourcesInput>;
+};
+
+export type CreateVolumeInput = {
+  name: Scalars["String"]["input"];
+  projectId: Scalars["ID"]["input"];
+  size: Scalars["Int"]["input"];
 };
 
 export type CreateWorkspaceInput = {
@@ -345,6 +356,7 @@ export type Mutation = {
   createProject: Project;
   createService: Service;
   createServiceAccountWorkspaceMember: WorkspaceMember;
+  createVolume: Volume;
   createWorkspace: Workspace;
   createWorkspaceInvite: WorkspaceMember;
   createWorkspaceMemberGroup: WorkspaceMemberGroup;
@@ -352,6 +364,7 @@ export type Mutation = {
   deleteDomain: Domain;
   deleteProject: Project;
   deleteService: Service;
+  deleteVolume: Volume;
   deleteWorkspace: Workspace;
   deleteWorkspaceMemberGroup: WorkspaceMemberGroup;
   removeMembersFromWorkspaceMemberGroup: WorkspaceMemberGroup;
@@ -401,6 +414,10 @@ export type MutationCreateServiceAccountWorkspaceMemberArgs = {
   input: CreateServiceAccountWorkspaceMemberInput;
 };
 
+export type MutationCreateVolumeArgs = {
+  input: CreateVolumeInput;
+};
+
 export type MutationCreateWorkspaceArgs = {
   input: CreateWorkspaceInput;
 };
@@ -426,6 +443,11 @@ export type MutationDeleteProjectArgs = {
 };
 
 export type MutationDeleteServiceArgs = {
+  id: Scalars["ID"]["input"];
+  projectId: Scalars["ID"]["input"];
+};
+
+export type MutationDeleteVolumeArgs = {
   id: Scalars["ID"]["input"];
   projectId: Scalars["ID"]["input"];
 };
@@ -500,6 +522,17 @@ export type Project = {
   name: Scalars["String"]["output"];
   status: ProjectStatus;
   updatedAt: Scalars["DateTime"]["output"];
+  volumes: VolumeConnection;
+};
+
+export type ProjectVolumesArgs = {
+  after?: InputMaybe<Scalars["String"]["input"]>;
+  before?: InputMaybe<Scalars["String"]["input"]>;
+  filter?: InputMaybe<Scalars["VolumeFilter"]["input"]>;
+  first?: InputMaybe<Scalars["Int"]["input"]>;
+  last?: InputMaybe<Scalars["Int"]["input"]>;
+  orderBy?: InputMaybe<VolumeOrder>;
+  query?: InputMaybe<Scalars["String"]["input"]>;
 };
 
 export type ProjectConnection = {
@@ -558,6 +591,8 @@ export type Query = {
   projects: ProjectConnection;
   service?: Maybe<Service>;
   services: ServiceConnection;
+  volume?: Maybe<Volume>;
+  volumes: VolumeConnection;
   workspace?: Maybe<Workspace>;
   workspaceMember?: Maybe<WorkspaceMember>;
   workspaceMemberByToken?: Maybe<WorkspaceMember>;
@@ -642,6 +677,22 @@ export type QueryServicesArgs = {
   query?: InputMaybe<Scalars["String"]["input"]>;
 };
 
+export type QueryVolumeArgs = {
+  id: Scalars["ID"]["input"];
+  projectId: Scalars["ID"]["input"];
+};
+
+export type QueryVolumesArgs = {
+  after?: InputMaybe<Scalars["String"]["input"]>;
+  before?: InputMaybe<Scalars["String"]["input"]>;
+  filter?: InputMaybe<Scalars["VolumeFilter"]["input"]>;
+  first?: InputMaybe<Scalars["Int"]["input"]>;
+  last?: InputMaybe<Scalars["Int"]["input"]>;
+  orderBy?: InputMaybe<VolumeOrder>;
+  projectId: Scalars["ID"]["input"];
+  query?: InputMaybe<Scalars["String"]["input"]>;
+};
+
 export type QueryWorkspaceArgs = {
   id: Scalars["ID"]["input"];
 };
@@ -690,6 +741,7 @@ export type QueryWorkspacesArgs = {
 
 export type Service = {
   __typename?: "Service";
+  activeDeploymentName?: Maybe<Scalars["String"]["output"]>;
   args: Array<Scalars["String"]["output"]>;
   command: Array<Scalars["String"]["output"]>;
   createdAt: Scalars["DateTime"]["output"];
@@ -697,6 +749,7 @@ export type Service = {
   healthCheck?: Maybe<ServiceHealthCheck>;
   id: Scalars["ID"]["output"];
   image: Scalars["String"]["output"];
+  latestDeploymentName?: Maybe<Scalars["String"]["output"]>;
   logs: ServiceLogConnection;
   metrics: ServiceMetrics;
   name: Scalars["String"]["output"];
@@ -900,6 +953,57 @@ export type User = {
   name: Scalars["String"]["output"];
   updatedAt: Scalars["DateTime"]["output"];
 };
+
+export type Volume = {
+  __typename?: "Volume";
+  createdAt: Scalars["DateTime"]["output"];
+  id: Scalars["ID"]["output"];
+  name: Scalars["String"]["output"];
+  projectId: Scalars["ID"]["output"];
+  size: Scalars["Int"]["output"];
+  status: VolumeStatus;
+  updatedAt: Scalars["DateTime"]["output"];
+};
+
+export type VolumeConnection = {
+  __typename?: "VolumeConnection";
+  /** A list of edges. */
+  edges: Array<VolumeEdge>;
+  /** Information to aid in pagination. */
+  pageInfo: PageInfo;
+  /** Identifies the total count of items in the connection. */
+  totalCount: Scalars["Int"]["output"];
+};
+
+/** An auto-generated type which holds one Volume and a cursor during pagination. */
+export type VolumeEdge = {
+  __typename?: "VolumeEdge";
+  /** A cursor for use in pagination. */
+  cursor: Scalars["String"]["output"];
+  /** The item at the end of VolumeEdge. */
+  node: Volume;
+};
+
+/** Ordering options for volume connections */
+export type VolumeOrder = {
+  /** The ordering direction. */
+  direction: OrderDirection;
+  /** The field to order volumes by. */
+  field: VolumeOrderField;
+};
+
+/** Properties by which volume connections can be ordered. */
+export enum VolumeOrderField {
+  CREATED_AT = "CREATED_AT",
+  ID = "ID",
+}
+
+export enum VolumeStatus {
+  BOUND = "BOUND",
+  LOST = "LOST",
+  PENDING = "PENDING",
+  UNKNOWN = "UNKNOWN",
+}
 
 export type Workspace = {
   __typename?: "Workspace";
@@ -1845,6 +1949,71 @@ export type DeleteProjectFromProjectRouteMutationVariables = Exact<{
 export type DeleteProjectFromProjectRouteMutation = {
   __typename?: "Mutation";
   deleteProject: { __typename?: "Project"; id: string };
+};
+
+export type GetVolumesFromProjectVolumesRouteQueryVariables = Exact<{
+  projectId: Scalars["ID"]["input"];
+  after?: InputMaybe<Scalars["String"]["input"]>;
+  before?: InputMaybe<Scalars["String"]["input"]>;
+  first?: InputMaybe<Scalars["Int"]["input"]>;
+  last?: InputMaybe<Scalars["Int"]["input"]>;
+  filter?: InputMaybe<Scalars["VolumeFilter"]["input"]>;
+  orderBy?: InputMaybe<VolumeOrder>;
+  query?: InputMaybe<Scalars["String"]["input"]>;
+}>;
+
+export type GetVolumesFromProjectVolumesRouteQuery = {
+  __typename?: "Query";
+  project?: { __typename?: "Project"; id: string; name: string } | null;
+  volumes: {
+    __typename?: "VolumeConnection";
+    edges: Array<{
+      __typename?: "VolumeEdge";
+      node: {
+        __typename?: "Volume";
+        id: string;
+        projectId: string;
+        name: string;
+        size: number;
+        status: VolumeStatus;
+        createdAt: any;
+      };
+    }>;
+    pageInfo: {
+      __typename?: "PageInfo";
+      endCursor?: string | null;
+      hasNextPage: boolean;
+      hasPreviousPage: boolean;
+      startCursor?: string | null;
+    };
+  };
+};
+
+export type CreateVolumeFromProjectVolumesRouteMutationVariables = Exact<{
+  input: CreateVolumeInput;
+}>;
+
+export type CreateVolumeFromProjectVolumesRouteMutation = {
+  __typename?: "Mutation";
+  createVolume: {
+    __typename?: "Volume";
+    id: string;
+    projectId: string;
+    name: string;
+    size: number;
+    status: VolumeStatus;
+    createdAt: any;
+  };
+};
+
+export type DeleteVolumeFromProjectVolumesRouteMutationVariables = Exact<{
+  projectId: Scalars["ID"]["input"];
+  id: Scalars["ID"]["input"];
+}>;
+
+export type DeleteVolumeFromProjectVolumesRouteMutation = {
+  __typename?: "Mutation";
+  deleteVolume: { __typename?: "Volume"; id: string };
 };
 
 export type GetProjectFromProjectLayoutQueryVariables = Exact<{
@@ -5791,6 +5960,385 @@ export const DeleteProjectFromProjectRouteDocument = {
 } as unknown as DocumentNode<
   DeleteProjectFromProjectRouteMutation,
   DeleteProjectFromProjectRouteMutationVariables
+>;
+export const GetVolumesFromProjectVolumesRouteDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "getVolumesFromProjectVolumesRoute" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "projectId" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "after" },
+          },
+          type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "before" },
+          },
+          type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "first" },
+          },
+          type: { kind: "NamedType", name: { kind: "Name", value: "Int" } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "last" } },
+          type: { kind: "NamedType", name: { kind: "Name", value: "Int" } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "filter" },
+          },
+          type: {
+            kind: "NamedType",
+            name: { kind: "Name", value: "VolumeFilter" },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "orderBy" },
+          },
+          type: {
+            kind: "NamedType",
+            name: { kind: "Name", value: "VolumeOrder" },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "query" },
+          },
+          type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "project" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "id" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "projectId" },
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "name" } },
+              ],
+            },
+          },
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "volumes" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "projectId" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "projectId" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "after" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "after" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "before" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "before" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "first" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "first" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "last" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "last" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "filter" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "filter" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "orderBy" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "orderBy" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "query" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "query" },
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "edges" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "node" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "id" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "projectId" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "name" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "size" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "status" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "createdAt" },
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "pageInfo" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "endCursor" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "hasNextPage" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "hasPreviousPage" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "startCursor" },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  GetVolumesFromProjectVolumesRouteQuery,
+  GetVolumesFromProjectVolumesRouteQueryVariables
+>;
+export const CreateVolumeFromProjectVolumesRouteDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "mutation",
+      name: { kind: "Name", value: "createVolumeFromProjectVolumesRoute" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "input" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "CreateVolumeInput" },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "createVolume" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "input" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "input" },
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "projectId" } },
+                { kind: "Field", name: { kind: "Name", value: "name" } },
+                { kind: "Field", name: { kind: "Name", value: "size" } },
+                { kind: "Field", name: { kind: "Name", value: "status" } },
+                { kind: "Field", name: { kind: "Name", value: "createdAt" } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  CreateVolumeFromProjectVolumesRouteMutation,
+  CreateVolumeFromProjectVolumesRouteMutationVariables
+>;
+export const DeleteVolumeFromProjectVolumesRouteDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "mutation",
+      name: { kind: "Name", value: "deleteVolumeFromProjectVolumesRoute" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "projectId" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "deleteVolume" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "projectId" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "projectId" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "id" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "id" },
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  DeleteVolumeFromProjectVolumesRouteMutation,
+  DeleteVolumeFromProjectVolumesRouteMutationVariables
 >;
 export const GetProjectFromProjectLayoutDocument = {
   kind: "Document",

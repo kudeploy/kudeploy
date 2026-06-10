@@ -13,7 +13,58 @@
   },
   "tabs": {
     "services": "Services",
+    "volumes": "Volumes",
     "settings": "Settings"
+  },
+  "volumes": {
+    "title": "Volumes",
+    "description": "Volumes are Kubernetes PersistentVolumeClaims in this project's namespace.",
+    "create": {
+      "button": "Create volume",
+      "title": "Create volume",
+      "description": "Saving creates a PersistentVolumeClaim in the project namespace."
+    },
+    "form": {
+      "name": {
+        "label": "Name",
+        "placeholder": "data",
+        "required": "Name is required"
+      },
+      "size": {
+        "label": "Size (Gi)",
+        "placeholder": "10",
+        "required": "Enter a size greater than 0"
+      }
+    },
+    "filter": {
+      "search": {
+        "placeholder": "Search volumes"
+      },
+      "name": {
+        "label": "Name",
+        "placeholder": "Volume name"
+      }
+    },
+    "table": {
+      "created_at": "Created",
+      "name": "Name",
+      "size": "Size",
+      "status": "Status"
+    },
+    "delete": {
+      "title": "Delete volume",
+      "description": "Delete volume \"{{name}}\"? The backing PersistentVolumeClaim will be removed."
+    },
+    "status": {
+      "BOUND": "Bound",
+      "LOST": "Lost",
+      "PENDING": "Pending",
+      "UNKNOWN": "Unknown"
+    },
+    "toast": {
+      "created": "Volume created",
+      "deleted": "Volume deleted"
+    }
   },
   "settings": {
     "title": "Settings",

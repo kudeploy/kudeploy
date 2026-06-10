@@ -49,6 +49,9 @@ type Documents = {
   "\n  mutation deleteServiceFromServicesRoute($projectId: ID!, $id: ID!) {\n    deleteService(projectId: $projectId, id: $id) {\n      id\n    }\n  }\n": typeof types.DeleteServiceFromServicesRouteDocument;
   "\n  mutation updateProjectFromProjectRoute(\n    $id: ID!\n    $input: UpdateProjectInput!\n  ) {\n    updateProject(id: $id, input: $input) {\n      id\n      name\n      status\n      updatedAt\n    }\n  }\n": typeof types.UpdateProjectFromProjectRouteDocument;
   "\n  mutation deleteProjectFromProjectRoute($id: ID!) {\n    deleteProject(id: $id) {\n      id\n    }\n  }\n": typeof types.DeleteProjectFromProjectRouteDocument;
+  "\n  query getVolumesFromProjectVolumesRoute(\n    $projectId: ID!\n    $after: String\n    $before: String\n    $first: Int\n    $last: Int\n    $filter: VolumeFilter\n    $orderBy: VolumeOrder\n    $query: String\n  ) {\n    project(id: $projectId) {\n      id\n      name\n    }\n    volumes(\n      projectId: $projectId\n      after: $after\n      before: $before\n      first: $first\n      last: $last\n      filter: $filter\n      orderBy: $orderBy\n      query: $query\n    ) {\n      edges {\n        node {\n          id\n          projectId\n          name\n          size\n          status\n          createdAt\n        }\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n        hasPreviousPage\n        startCursor\n      }\n    }\n  }\n": typeof types.GetVolumesFromProjectVolumesRouteDocument;
+  "\n  mutation createVolumeFromProjectVolumesRoute($input: CreateVolumeInput!) {\n    createVolume(input: $input) {\n      id\n      projectId\n      name\n      size\n      status\n      createdAt\n    }\n  }\n": typeof types.CreateVolumeFromProjectVolumesRouteDocument;
+  "\n  mutation deleteVolumeFromProjectVolumesRoute($projectId: ID!, $id: ID!) {\n    deleteVolume(projectId: $projectId, id: $id) {\n      id\n    }\n  }\n": typeof types.DeleteVolumeFromProjectVolumesRouteDocument;
   "\n  query getProjectFromProjectLayout($id: ID!) {\n    project(id: $id) {\n      id\n      name\n      status\n      createdAt\n      updatedAt\n    }\n  }\n": typeof types.GetProjectFromProjectLayoutDocument;
   "\n  query getServiceDeploymentsFromServiceDeploymentsRoute(\n    $projectId: ID!\n    $serviceId: ID!\n    $first: Int\n    $orderBy: DeploymentOrder\n  ) {\n    deployments(\n      projectId: $projectId\n      serviceId: $serviceId\n      first: $first\n      orderBy: $orderBy\n    ) {\n      totalCount\n      edges {\n        node {\n          id\n          projectId\n          serviceId\n          version\n          image\n          replicas\n          status\n          active\n          latest\n          kubernetesDeploymentName\n          createdAt\n          updatedAt\n        }\n      }\n      pageInfo {\n        hasNextPage\n      }\n    }\n  }\n": typeof types.GetServiceDeploymentsFromServiceDeploymentsRouteDocument;
   "\n  mutation updateServiceEnvironmentFromServiceEnvironmentRoute(\n    $projectId: ID!\n    $id: ID!\n    $input: UpdateServiceInput!\n  ) {\n    updateService(projectId: $projectId, id: $id, input: $input) {\n      id\n      env {\n        key\n        value\n      }\n      updatedAt\n    }\n  }\n": typeof types.UpdateServiceEnvironmentFromServiceEnvironmentRouteDocument;
@@ -144,6 +147,12 @@ const documents: Documents = {
     types.UpdateProjectFromProjectRouteDocument,
   "\n  mutation deleteProjectFromProjectRoute($id: ID!) {\n    deleteProject(id: $id) {\n      id\n    }\n  }\n":
     types.DeleteProjectFromProjectRouteDocument,
+  "\n  query getVolumesFromProjectVolumesRoute(\n    $projectId: ID!\n    $after: String\n    $before: String\n    $first: Int\n    $last: Int\n    $filter: VolumeFilter\n    $orderBy: VolumeOrder\n    $query: String\n  ) {\n    project(id: $projectId) {\n      id\n      name\n    }\n    volumes(\n      projectId: $projectId\n      after: $after\n      before: $before\n      first: $first\n      last: $last\n      filter: $filter\n      orderBy: $orderBy\n      query: $query\n    ) {\n      edges {\n        node {\n          id\n          projectId\n          name\n          size\n          status\n          createdAt\n        }\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n        hasPreviousPage\n        startCursor\n      }\n    }\n  }\n":
+    types.GetVolumesFromProjectVolumesRouteDocument,
+  "\n  mutation createVolumeFromProjectVolumesRoute($input: CreateVolumeInput!) {\n    createVolume(input: $input) {\n      id\n      projectId\n      name\n      size\n      status\n      createdAt\n    }\n  }\n":
+    types.CreateVolumeFromProjectVolumesRouteDocument,
+  "\n  mutation deleteVolumeFromProjectVolumesRoute($projectId: ID!, $id: ID!) {\n    deleteVolume(projectId: $projectId, id: $id) {\n      id\n    }\n  }\n":
+    types.DeleteVolumeFromProjectVolumesRouteDocument,
   "\n  query getProjectFromProjectLayout($id: ID!) {\n    project(id: $id) {\n      id\n      name\n      status\n      createdAt\n      updatedAt\n    }\n  }\n":
     types.GetProjectFromProjectLayoutDocument,
   "\n  query getServiceDeploymentsFromServiceDeploymentsRoute(\n    $projectId: ID!\n    $serviceId: ID!\n    $first: Int\n    $orderBy: DeploymentOrder\n  ) {\n    deployments(\n      projectId: $projectId\n      serviceId: $serviceId\n      first: $first\n      orderBy: $orderBy\n    ) {\n      totalCount\n      edges {\n        node {\n          id\n          projectId\n          serviceId\n          version\n          image\n          replicas\n          status\n          active\n          latest\n          kubernetesDeploymentName\n          createdAt\n          updatedAt\n        }\n      }\n      pageInfo {\n        hasNextPage\n      }\n    }\n  }\n":
@@ -416,6 +425,24 @@ export function graphql(
 export function graphql(
   source: "\n  mutation deleteProjectFromProjectRoute($id: ID!) {\n    deleteProject(id: $id) {\n      id\n    }\n  }\n",
 ): (typeof documents)["\n  mutation deleteProjectFromProjectRoute($id: ID!) {\n    deleteProject(id: $id) {\n      id\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(
+  source: "\n  query getVolumesFromProjectVolumesRoute(\n    $projectId: ID!\n    $after: String\n    $before: String\n    $first: Int\n    $last: Int\n    $filter: VolumeFilter\n    $orderBy: VolumeOrder\n    $query: String\n  ) {\n    project(id: $projectId) {\n      id\n      name\n    }\n    volumes(\n      projectId: $projectId\n      after: $after\n      before: $before\n      first: $first\n      last: $last\n      filter: $filter\n      orderBy: $orderBy\n      query: $query\n    ) {\n      edges {\n        node {\n          id\n          projectId\n          name\n          size\n          status\n          createdAt\n        }\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n        hasPreviousPage\n        startCursor\n      }\n    }\n  }\n",
+): (typeof documents)["\n  query getVolumesFromProjectVolumesRoute(\n    $projectId: ID!\n    $after: String\n    $before: String\n    $first: Int\n    $last: Int\n    $filter: VolumeFilter\n    $orderBy: VolumeOrder\n    $query: String\n  ) {\n    project(id: $projectId) {\n      id\n      name\n    }\n    volumes(\n      projectId: $projectId\n      after: $after\n      before: $before\n      first: $first\n      last: $last\n      filter: $filter\n      orderBy: $orderBy\n      query: $query\n    ) {\n      edges {\n        node {\n          id\n          projectId\n          name\n          size\n          status\n          createdAt\n        }\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n        hasPreviousPage\n        startCursor\n      }\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(
+  source: "\n  mutation createVolumeFromProjectVolumesRoute($input: CreateVolumeInput!) {\n    createVolume(input: $input) {\n      id\n      projectId\n      name\n      size\n      status\n      createdAt\n    }\n  }\n",
+): (typeof documents)["\n  mutation createVolumeFromProjectVolumesRoute($input: CreateVolumeInput!) {\n    createVolume(input: $input) {\n      id\n      projectId\n      name\n      size\n      status\n      createdAt\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(
+  source: "\n  mutation deleteVolumeFromProjectVolumesRoute($projectId: ID!, $id: ID!) {\n    deleteVolume(projectId: $projectId, id: $id) {\n      id\n    }\n  }\n",
+): (typeof documents)["\n  mutation deleteVolumeFromProjectVolumesRoute($projectId: ID!, $id: ID!) {\n    deleteVolume(projectId: $projectId, id: $id) {\n      id\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
