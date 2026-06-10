@@ -429,8 +429,9 @@ function ServiceSettingsComponent() {
               {t("service:settings.general.description")}
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-5">
+          <CardContent className="grid gap-5 sm:grid-cols-3">
             <Input
+              className="sm:col-span-2"
               data-testid="service-name-input"
               label={t("service:form.name.label")}
               placeholder={t("service:form.name.placeholder")}
@@ -439,6 +440,7 @@ function ServiceSettingsComponent() {
             />
 
             <Input
+              className="sm:col-span-1"
               data-testid="service-replicas-input"
               label={t("service:form.replicas")}
               max={100}
@@ -560,6 +562,117 @@ function ServiceSettingsComponent() {
                   >
                     <Trash2 />
                   </Button>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <CardTitle>{t("service:volumes.title")}</CardTitle>
+                <CardDescription>
+                  {t("service:volumes.description")}
+                </CardDescription>
+              </div>
+              <Button
+                data-testid="service-add-volume-action"
+                disabled={volumeItems.length <= 1}
+                size="sm"
+                type="button"
+                variant="secondary"
+                onClick={() =>
+                  setVolumes((current) => [
+                    ...current,
+                    {
+                      volumeId: NONE_VOLUME_VALUE,
+                      mountPath: "",
+                      subPath: "",
+                      readOnly: false,
+                    },
+                  ])
+                }
+              >
+                <Plus />
+                {t("service:actions.add_volume")}
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {volumes.length === 0 ? (
+              <p className="text-muted-foreground text-sm">
+                {volumeItems.length <= 1
+                  ? t("service:volumes.unavailable")
+                  : t("service:volumes.empty")}
+              </p>
+            ) : (
+              volumes.map((volume, index) => (
+                <div className="rounded-md border p-3" key={index}>
+                  <div className="grid gap-3 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)_minmax(0,1fr)_auto_auto]">
+                    <div data-testid={`service-volume-select-${index}`}>
+                      <Select<string>
+                        items={volumeItems}
+                        label={t("service:form.volume.label")}
+                        placeholder={t(
+                          "service:form.volume.select_placeholder",
+                        )}
+                        value={volume.volumeId || NONE_VOLUME_VALUE}
+                        onValueChange={(volumeId) =>
+                          updateVolume(index, { volumeId })
+                        }
+                      />
+                    </div>
+                    <Input
+                      data-testid={`service-volume-mount-path-input-${index}`}
+                      label={t("service:form.volume.mount_path")}
+                      placeholder="/data"
+                      value={volume.mountPath}
+                      onChange={(event) =>
+                        updateVolume(index, { mountPath: event.target.value })
+                      }
+                    />
+                    <Input
+                      data-testid={`service-volume-sub-path-input-${index}`}
+                      label={t("service:form.volume.sub_path")}
+                      placeholder="uploads"
+                      value={volume.subPath}
+                      onChange={(event) =>
+                        updateVolume(index, { subPath: event.target.value })
+                      }
+                    />
+                    <div className="flex items-end pb-2">
+                      <label className="flex items-center gap-2 text-sm">
+                        <Switch
+                          aria-label={t("service:form.volume.read_only")}
+                          data-testid={`service-volume-read-only-input-${index}`}
+                          checked={volume.readOnly}
+                          onCheckedChange={(readOnly) =>
+                            updateVolume(index, { readOnly })
+                          }
+                        />
+                        {t("service:form.volume.read_only")}
+                      </label>
+                    </div>
+                    <div className="flex items-end">
+                      <Button
+                        aria-label={t("service:actions.remove_volume")}
+                        size="icon"
+                        type="button"
+                        variant="ghost"
+                        onClick={() =>
+                          setVolumes((current) =>
+                            current.filter(
+                              (_item, currentIndex) => currentIndex !== index,
+                            ),
+                          )
+                        }
+                      >
+                        <Trash2 />
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               ))
             )}
@@ -704,117 +817,6 @@ function ServiceSettingsComponent() {
               )}
             </CardContent>
           )}
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <CardTitle>{t("service:volumes.title")}</CardTitle>
-                <CardDescription>
-                  {t("service:volumes.description")}
-                </CardDescription>
-              </div>
-              <Button
-                data-testid="service-add-volume-action"
-                disabled={volumeItems.length <= 1}
-                size="sm"
-                type="button"
-                variant="secondary"
-                onClick={() =>
-                  setVolumes((current) => [
-                    ...current,
-                    {
-                      volumeId: NONE_VOLUME_VALUE,
-                      mountPath: "",
-                      subPath: "",
-                      readOnly: false,
-                    },
-                  ])
-                }
-              >
-                <Plus />
-                {t("service:actions.add_volume")}
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {volumes.length === 0 ? (
-              <p className="text-muted-foreground text-sm">
-                {volumeItems.length <= 1
-                  ? t("service:volumes.unavailable")
-                  : t("service:volumes.empty")}
-              </p>
-            ) : (
-              volumes.map((volume, index) => (
-                <div className="rounded-md border p-3" key={index}>
-                  <div className="grid gap-3 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)_minmax(0,1fr)_auto_auto]">
-                    <div data-testid={`service-volume-select-${index}`}>
-                      <Select<string>
-                        items={volumeItems}
-                        label={t("service:form.volume.label")}
-                        placeholder={t(
-                          "service:form.volume.select_placeholder",
-                        )}
-                        value={volume.volumeId || NONE_VOLUME_VALUE}
-                        onValueChange={(volumeId) =>
-                          updateVolume(index, { volumeId })
-                        }
-                      />
-                    </div>
-                    <Input
-                      data-testid={`service-volume-mount-path-input-${index}`}
-                      label={t("service:form.volume.mount_path")}
-                      placeholder="/data"
-                      value={volume.mountPath}
-                      onChange={(event) =>
-                        updateVolume(index, { mountPath: event.target.value })
-                      }
-                    />
-                    <Input
-                      data-testid={`service-volume-sub-path-input-${index}`}
-                      label={t("service:form.volume.sub_path")}
-                      placeholder="uploads"
-                      value={volume.subPath}
-                      onChange={(event) =>
-                        updateVolume(index, { subPath: event.target.value })
-                      }
-                    />
-                    <div className="flex items-end pb-2">
-                      <label className="flex items-center gap-2 text-sm">
-                        <Switch
-                          aria-label={t("service:form.volume.read_only")}
-                          data-testid={`service-volume-read-only-input-${index}`}
-                          checked={volume.readOnly}
-                          onCheckedChange={(readOnly) =>
-                            updateVolume(index, { readOnly })
-                          }
-                        />
-                        {t("service:form.volume.read_only")}
-                      </label>
-                    </div>
-                    <div className="flex items-end">
-                      <Button
-                        aria-label={t("service:actions.remove_volume")}
-                        size="icon"
-                        type="button"
-                        variant="ghost"
-                        onClick={() =>
-                          setVolumes((current) =>
-                            current.filter(
-                              (_item, currentIndex) => currentIndex !== index,
-                            ),
-                          )
-                        }
-                      >
-                        <Trash2 />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </CardContent>
         </Card>
 
         <Card>
