@@ -1,14 +1,14 @@
 {
   "title": "Projects",
-  "description": "Projects are backed by Kubernetes Project CRDs in the current cluster.",
+  "description": "Projects are backed by Kubernetes Namespaces in the current cluster.",
   "create": {
     "button": "Create project",
     "title": "Create project",
-    "description": "A Project CRD will be created immediately."
+    "description": "A Kubernetes Namespace will be created immediately."
   },
   "detail": {
     "title": "Project",
-    "description": "Editing saves directly to the Project CRD.",
+    "description": "Editing saves directly to the backing Namespace.",
     "services_action": "Services"
   },
   "tabs": {
@@ -71,7 +71,7 @@
     "description": "Manage the project name and deletion.",
     "update": {
       "title": "Project information",
-      "description": "Saving updates the Project CRD directly."
+      "description": "Saving updates the backing Namespace directly."
     },
     "danger_zone": {
       "title": "Danger zone",

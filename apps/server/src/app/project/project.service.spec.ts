@@ -1,11 +1,11 @@
 jest.mock('@kubernetes/client-node', () => ({
-  CustomObjectsApi: class CustomObjectsApi {},
+  CoreV1Api: class CoreV1Api {},
   PatchStrategy: {
     ServerSideApply: 'application/apply-patch+yaml',
   },
 }));
 
-import type { CustomObjectsApi } from '@kubernetes/client-node';
+import type { CoreV1Api } from '@kubernetes/client-node';
 
 import { Workspace } from '@/app/workspace/workspace.entity';
 import { KubernetesConnectionManager } from '@/lib/kubernetes-graphql-connection/kubernetes-connection.manager';
@@ -15,15 +15,16 @@ import { ProjectResource, ProjectService } from './project.service';
 import { ProjectStatus } from './project-status.enum';
 
 describe('ProjectService', () => {
-  it('creates a cluster-scoped Project CRD with workspace labels and display annotations', async () => {
-    const { service, customObjectsApi } = createService();
+  it('creates a Namespace with workspace labels and display annotations', async () => {
+    const { service, coreV1Api } = createService();
     const workspace = { id: 'workspace_1' } as Workspace;
 
-    customObjectsApi.patchClusterCustomObject.mockResolvedValue(
-      projectCrd({
+    coreV1Api.createNamespace.mockResolvedValue(
+      namespaceResource({
         name: 'project-123',
         workspaceId: 'workspace_1',
         displayName: 'Payments',
+        phase: 'Active',
       }),
     );
 
@@ -31,56 +32,50 @@ describe('ProjectService', () => {
       name: 'Payments',
     });
 
-    expect(customObjectsApi.patchClusterCustomObject).toHaveBeenCalledWith(
+    expect(coreV1Api.createNamespace).toHaveBeenCalledWith(
       expect.objectContaining({
-        group: 'kudeploy.com',
-        version: 'v1alpha1',
-        plural: 'projects',
-        name: expect.stringMatching(/^project-\d+$/),
         body: expect.objectContaining({
-          apiVersion: 'kudeploy.com/v1alpha1',
-          kind: 'Project',
+          apiVersion: 'v1',
+          kind: 'Namespace',
           metadata: expect.objectContaining({
             name: expect.stringMatching(/^project-\d+$/),
             labels: {
               'app.kubernetes.io/managed-by': 'kudeploy',
               'kudeploy.com/workspace-id': 'workspace_1',
+              'kudeploy.com/project': expect.stringMatching(/^project-\d+$/),
             },
             annotations: {
               'kudeploy.com/display-name': 'Payments',
             },
           }),
-          spec: {},
         }),
         fieldManager: 'kudeploy-server',
-        force: true,
-      }),
-      expect.objectContaining({
-        middleware: expect.any(Array),
       }),
     );
     expect(result).toMatchObject({
       id: 'project-123',
       name: 'Payments',
-      status: ProjectStatus.PENDING,
+      status: ProjectStatus.READY,
     });
   });
 
-  it('filters listed Project CRDs by current workspace label before returning a connection', async () => {
-    const { service, customObjectsApi, connectionManager } = createService();
+  it('filters listed Namespaces by current workspace label before returning a connection', async () => {
+    const { service, coreV1Api, connectionManager } = createService();
     const workspace = { id: 'workspace_1' } as Workspace;
-    const visibleProject = projectCrd({
+    const visibleProject = namespaceResource({
       name: 'project-visible',
       workspaceId: 'workspace_1',
       displayName: 'Visible',
+      phase: 'Active',
     });
-    const hiddenProject = projectCrd({
+    const hiddenProject = namespaceResource({
       name: 'project-hidden',
       workspaceId: 'workspace_2',
       displayName: 'Hidden',
+      phase: 'Active',
     });
 
-    customObjectsApi.listClusterCustomObject.mockResolvedValue({
+    coreV1Api.listNamespace.mockResolvedValue({
       items: [visibleProject, hiddenProject],
     });
     connectionManager.find.mockImplementation(
@@ -107,10 +102,7 @@ describe('ProjectService', () => {
 
     const result = await service.findProjects(workspace, { first: 20 });
 
-    expect(customObjectsApi.listClusterCustomObject).toHaveBeenCalledWith({
-      group: 'kudeploy.com',
-      version: 'v1alpha1',
-      plural: 'projects',
+    expect(coreV1Api.listNamespace).toHaveBeenCalledWith({
       labelSelector:
         'app.kubernetes.io/managed-by=kudeploy,kudeploy.com/workspace-id=workspace_1',
     });
@@ -129,98 +121,91 @@ describe('ProjectService', () => {
     expect(result.totalCount).toBe(1);
   });
 
-  it('maps Ready conditions to ProjectStatus values', () => {
+  it('maps Namespace phases to ProjectStatus values', () => {
     const { service } = createService();
 
     expect(
       service.toProject(
-        projectCrd({
-          readyStatus: 'True',
-          readyReason: 'NamespaceReady',
+        namespaceResource({
+          phase: 'Active',
         }),
       ).status,
     ).toBe(ProjectStatus.READY);
     expect(
       service.toProject(
-        projectCrd({
-          readyStatus: 'False',
-          readyReason: 'NamespaceConflict',
-        }),
-      ).status,
-    ).toBe(ProjectStatus.FAILED);
-    expect(
-      service.toProject(
-        projectCrd({
-          readyStatus: 'Unknown',
-          readyReason: 'Reconciling',
+        namespaceResource({
+          phase: 'Terminating',
         }),
       ).status,
     ).toBe(ProjectStatus.PROGRESSING);
-    expect(service.toProject(projectCrd()).status).toBe(ProjectStatus.PENDING);
+    expect(
+      service.toProject(
+        namespaceResource({
+          deletionTimestamp: '2026-06-01T00:01:00.000Z',
+        }),
+      ).status,
+    ).toBe(ProjectStatus.PROGRESSING);
+    expect(
+      service.toProject(namespaceResource({ phase: 'Unexpected' })).status,
+    ).toBe(ProjectStatus.UNKNOWN);
+    expect(service.toProject(namespaceResource()).status).toBe(
+      ProjectStatus.PENDING,
+    );
   });
 });
 
 function createService() {
-  const customObjectsApi = {
-    patchClusterCustomObject: jest.fn(),
-    listClusterCustomObject: jest.fn(),
-    getClusterCustomObject: jest.fn(),
-    deleteClusterCustomObject: jest.fn(),
+  const coreV1Api = {
+    createNamespace: jest.fn(),
+    listNamespace: jest.fn(),
+    readNamespace: jest.fn(),
+    patchNamespace: jest.fn(),
+    deleteNamespace: jest.fn(),
   };
   const connectionManager = {
     find: jest.fn(),
   };
   const service = new ProjectService(
-    customObjectsApi as unknown as CustomObjectsApi,
+    coreV1Api as unknown as CoreV1Api,
     connectionManager as unknown as KubernetesConnectionManager,
   );
 
-  return { service, customObjectsApi, connectionManager };
+  return { service, coreV1Api, connectionManager };
 }
 
-function projectCrd(
+function namespaceResource(
   options: {
     name?: string;
     workspaceId?: string;
     displayName?: string;
-    readyStatus?: 'True' | 'False' | 'Unknown';
-    readyReason?: string;
+    phase?: string;
+    deletionTimestamp?: string;
   } = {},
 ): ProjectResource {
   const {
     name = 'project-123',
     workspaceId = 'workspace_1',
     displayName = 'Payments',
-    readyStatus,
-    readyReason = 'NamespaceReady',
+    phase,
+    deletionTimestamp,
   } = options;
 
   return {
-    apiVersion: 'kudeploy.com/v1alpha1',
-    kind: 'Project',
+    apiVersion: 'v1',
+    kind: 'Namespace',
     metadata: {
       name,
       labels: {
         'app.kubernetes.io/managed-by': 'kudeploy',
         'kudeploy.com/workspace-id': workspaceId,
+        'kudeploy.com/project': name,
       },
       annotations: {
         'kudeploy.com/display-name': displayName,
       },
       creationTimestamp: '2026-06-01T00:00:00.000Z',
+      deletionTimestamp,
     },
-    spec: {},
-    status: readyStatus
-      ? {
-          conditions: [
-            {
-              type: 'Ready',
-              status: readyStatus,
-              reason: readyReason,
-              message: readyReason,
-            },
-          ],
-        }
-      : {},
+    status: phase ? { phase } : {},
   };
 }

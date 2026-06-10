@@ -47,7 +47,7 @@ const metricsServiceName = "kudeploy-controller-controller-manager-metrics-servi
 // metricsRoleBindingName is the name of the RBAC that will be created to allow get the metrics data
 const metricsRoleBindingName = "kudeploy-controller-metrics-binding"
 
-// serviceE2EProjectName is the Project used by the Kudeploy service E2E.
+// serviceE2EProjectName is the Namespace used by the Kudeploy service E2E.
 const serviceE2EProjectName = "kudeploy-e2e"
 
 // serviceE2EName is the Service used by the Kudeploy service E2E.
@@ -59,7 +59,7 @@ const serviceE2EFirstImage = "ghcr.io/kudeploy/whoami:latest"
 // serviceE2ESecondImage is the image used to trigger a second Service version.
 const serviceE2ESecondImage = "docker.io/traefik/whoami:v1.10.3"
 
-// buildRunE2EProjectName is the Project used by the BuildRun E2E.
+// buildRunE2EProjectName is the Namespace used by the BuildRun E2E.
 const buildRunE2EProjectName = "buildrun-e2e"
 
 // buildRunE2EName is the BuildRun used by the BuildRun E2E.
@@ -291,29 +291,24 @@ var _ = Describe("Manager", Ordered, func() {
 			Eventually(verifyMetricsAvailable, 2*time.Minute).Should(Succeed())
 		})
 
-		It("should reconcile Project and Service rolling updates", func() {
-			By("cleaning up any stale Project from previous interrupted runs")
-			cmd := exec.Command("kubectl", "delete", "project", serviceE2EProjectName, "--ignore-not-found")
+		It("should reconcile Namespace and Service rolling updates", func() {
+			By("cleaning up any stale Namespace from previous interrupted runs")
+			cmd := exec.Command("kubectl", "delete", "namespace", serviceE2EProjectName, "--ignore-not-found")
 			_, _ = utils.Run(cmd)
 
 			defer func() {
-				By("cleaning up the Kudeploy E2E Project")
-				cmd := exec.Command("kubectl", "delete", "project", serviceE2EProjectName, "--ignore-not-found")
+				By("cleaning up the Kudeploy E2E Namespace")
+				cmd := exec.Command("kubectl", "delete", "namespace", serviceE2EProjectName, "--ignore-not-found")
 				_, _ = utils.Run(cmd)
 			}()
 
-			By("creating a Kudeploy Project")
-			applyManifest("kudeploy-project", fmt.Sprintf(`apiVersion: kudeploy.com/v1alpha1
-kind: Project
-metadata:
-  name: %s
-spec: {}
-`, serviceE2EProjectName))
+			By("creating a Kudeploy Namespace")
+			applyManifest("kudeploy-namespace", namespaceManifest(serviceE2EProjectName))
 
-			By("waiting for the Project namespace to be ready")
+			By("waiting for the Kudeploy Namespace labels to be visible")
 			waitForJSONPath(
-				"project", serviceE2EProjectName, "",
-				"{.status.namespaceName}", serviceE2EProjectName,
+				"namespace", serviceE2EProjectName, "",
+				"{.metadata.labels.kudeploy\\.com/project}", serviceE2EProjectName,
 				2*time.Minute,
 			)
 			cmd = exec.Command("kubectl", "get", "namespace", serviceE2EProjectName,
@@ -401,28 +396,23 @@ data:
 		})
 
 		It("should create Tekton resources for BuildRun", func() {
-			By("cleaning up any stale BuildRun Project from previous interrupted runs")
-			cmd := exec.Command("kubectl", "delete", "project", buildRunE2EProjectName, "--ignore-not-found")
+			By("cleaning up any stale BuildRun Namespace from previous interrupted runs")
+			cmd := exec.Command("kubectl", "delete", "namespace", buildRunE2EProjectName, "--ignore-not-found")
 			_, _ = utils.Run(cmd)
 
 			defer func() {
-				By("cleaning up the BuildRun E2E Project")
-				cmd := exec.Command("kubectl", "delete", "project", buildRunE2EProjectName, "--ignore-not-found")
+				By("cleaning up the BuildRun E2E Namespace")
+				cmd := exec.Command("kubectl", "delete", "namespace", buildRunE2EProjectName, "--ignore-not-found")
 				_, _ = utils.Run(cmd)
 			}()
 
-			By("creating a Kudeploy Project for BuildRun")
-			applyManifest("buildrun-project", fmt.Sprintf(`apiVersion: kudeploy.com/v1alpha1
-kind: Project
-metadata:
-  name: %s
-spec: {}
-`, buildRunE2EProjectName))
+			By("creating a Kudeploy Namespace for BuildRun")
+			applyManifest("buildrun-namespace", namespaceManifest(buildRunE2EProjectName))
 
-			By("waiting for the BuildRun namespace to be ready")
+			By("waiting for the BuildRun namespace labels to be visible")
 			waitForJSONPath(
-				"project", buildRunE2EProjectName, "",
-				"{.status.namespaceName}", buildRunE2EProjectName,
+				"namespace", buildRunE2EProjectName, "",
+				"{.metadata.labels.kudeploy\\.com/project}", buildRunE2EProjectName,
 				2*time.Minute,
 			)
 
@@ -526,6 +516,18 @@ func applyManifest(name, manifest string) {
 	cmd := exec.Command("kubectl", "apply", "-f", manifestFile)
 	_, err := utils.Run(cmd)
 	Expect(err).NotTo(HaveOccurred())
+}
+
+func namespaceManifest(name string) string {
+	return fmt.Sprintf(`apiVersion: v1
+kind: Namespace
+metadata:
+  name: %s
+  labels:
+    app.kubernetes.io/managed-by: kudeploy
+    kudeploy.com/project: %s
+    kudeploy.com/workspace-id: e2e
+`, name, name)
 }
 
 func serviceManifest(image string) string {

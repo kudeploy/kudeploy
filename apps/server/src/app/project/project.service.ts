@@ -1,4 +1,4 @@
-import { CustomObjectsApi } from '@kubernetes/client-node';
+import { CoreV1Api, type V1Namespace } from '@kubernetes/client-node';
 import { NotFoundException } from '@nestjs/common';
 import { Injectable } from '@nestjs/common';
 import { Sonyflake } from 'sonyflake-js';
@@ -18,11 +18,11 @@ export const KUDEPLOY_API_VERSION = 'kudeploy.com/v1alpha1';
 export const KUDEPLOY_API_GROUP = 'kudeploy.com';
 export const KUDEPLOY_API_VERSION_NAME = 'v1alpha1';
 export const KUDEPLOY_FIELD_MANAGER = 'kudeploy-server';
-export const PROJECTS_PLURAL = 'projects';
 export const MANAGED_BY_LABEL = 'app.kubernetes.io/managed-by';
 export const MANAGED_BY_LABEL_VALUE = 'kudeploy';
 export const WORKSPACE_ID_LABEL = 'kudeploy.com/workspace-id';
 export const DISPLAY_NAME_ANNOTATION = 'kudeploy.com/display-name';
+export const PROJECT_LABEL = 'kudeploy.com/project';
 
 export interface KudeployCondition {
   type?: string;
@@ -31,9 +31,9 @@ export interface KudeployCondition {
   message?: string;
 }
 
-export interface ProjectResource {
-  apiVersion: typeof KUDEPLOY_API_VERSION;
-  kind: 'Project';
+export interface ProjectResource extends Omit<V1Namespace, 'metadata'> {
+  apiVersion?: 'v1';
+  kind?: 'Namespace';
   metadata: {
     name: string;
     labels?: Record<string, string>;
@@ -41,16 +41,15 @@ export interface ProjectResource {
     creationTimestamp?: string;
     deletionTimestamp?: string;
   };
-  spec: Record<string, never>;
   status?: {
-    conditions?: KudeployCondition[];
+    phase?: string;
   };
 }
 
 @Injectable()
 export class ProjectService {
   constructor(
-    private readonly customObjectsApi: CustomObjectsApi,
+    private readonly coreV1Api: CoreV1Api,
     private readonly connectionManager: KubernetesConnectionManager,
   ) {}
 
@@ -58,10 +57,7 @@ export class ProjectService {
     workspace: Workspace,
     args: ProjectConnectionArgs,
   ): Promise<ProjectConnection> {
-    const list = (await this.customObjectsApi.listClusterCustomObject({
-      group: KUDEPLOY_API_GROUP,
-      version: KUDEPLOY_API_VERSION_NAME,
-      plural: PROJECTS_PLURAL,
+    const list = (await this.coreV1Api.listNamespace({
       labelSelector: this.workspaceLabelSelector(workspace),
     })) as { items?: ProjectResource[] };
 
@@ -76,10 +72,7 @@ export class ProjectService {
 
   async findProject(workspace: Workspace, id: string): Promise<Project | null> {
     try {
-      const resource = (await this.customObjectsApi.getClusterCustomObject({
-        group: KUDEPLOY_API_GROUP,
-        version: KUDEPLOY_API_VERSION_NAME,
-        plural: PROJECTS_PLURAL,
+      const resource = (await this.coreV1Api.readNamespace({
         name: id,
       })) as ProjectResource;
 
@@ -101,18 +94,10 @@ export class ProjectService {
     input: { name: string },
   ): Promise<Project> {
     const name = `project-${Sonyflake.next()}`;
-    const resource = (await this.customObjectsApi.patchClusterCustomObject(
-      {
-        group: KUDEPLOY_API_GROUP,
-        version: KUDEPLOY_API_VERSION_NAME,
-        plural: PROJECTS_PLURAL,
-        name,
-        body: this.buildProjectResource(workspace, name, input),
-        fieldManager: KUDEPLOY_FIELD_MANAGER,
-        force: true,
-      },
-      SERVER_SIDE_APPLY_OPTIONS,
-    )) as ProjectResource;
+    const resource = (await this.coreV1Api.createNamespace({
+      body: this.buildProjectResource(workspace, name, input),
+      fieldManager: KUDEPLOY_FIELD_MANAGER,
+    })) as ProjectResource;
 
     return this.toProject(resource);
   }
@@ -127,11 +112,8 @@ export class ProjectService {
       throw new NotFoundException('Project not found');
     }
 
-    const resource = (await this.customObjectsApi.patchClusterCustomObject(
+    const resource = (await this.coreV1Api.patchNamespace(
       {
-        group: KUDEPLOY_API_GROUP,
-        version: KUDEPLOY_API_VERSION_NAME,
-        plural: PROJECTS_PLURAL,
         name: id,
         body: this.buildProjectResource(workspace, id, {
           name: input.name ?? existing.name,
@@ -146,22 +128,15 @@ export class ProjectService {
   }
 
   async deleteProject(workspace: Workspace, id: string): Promise<Project> {
-    const existingResource =
-      (await this.customObjectsApi.getClusterCustomObject({
-        group: KUDEPLOY_API_GROUP,
-        version: KUDEPLOY_API_VERSION_NAME,
-        plural: PROJECTS_PLURAL,
-        name: id,
-      })) as ProjectResource;
+    const existingResource = (await this.coreV1Api.readNamespace({
+      name: id,
+    })) as ProjectResource;
 
     if (!this.belongsToWorkspace(existingResource, workspace)) {
       throw new NotFoundException('Project not found');
     }
 
-    await this.customObjectsApi.deleteClusterCustomObject({
-      group: KUDEPLOY_API_GROUP,
-      version: KUDEPLOY_API_VERSION_NAME,
-      plural: PROJECTS_PLURAL,
+    await this.coreV1Api.deleteNamespace({
       name: id,
     });
 
@@ -186,46 +161,39 @@ export class ProjectService {
     workspace: Workspace,
     name: string,
     input: { name: string },
-  ): ProjectResource {
+  ): V1Namespace {
     return {
-      apiVersion: KUDEPLOY_API_VERSION,
-      kind: 'Project',
+      apiVersion: 'v1',
+      kind: 'Namespace',
       metadata: {
         name,
         labels: {
           [MANAGED_BY_LABEL]: MANAGED_BY_LABEL_VALUE,
           [WORKSPACE_ID_LABEL]: workspace.id,
+          [PROJECT_LABEL]: name,
         },
         annotations: {
           [DISPLAY_NAME_ANNOTATION]: input.name,
         },
       },
-      spec: {},
     };
   }
 
   private toProjectStatus(resource: ProjectResource): ProjectStatus {
-    const readyCondition = resource.status?.conditions?.find(
-      (condition) => condition.type === 'Ready',
-    );
-
-    if (!readyCondition) {
-      return ProjectStatus.PENDING;
-    }
-
-    if (readyCondition.status === 'True') {
-      return ProjectStatus.READY;
-    }
-
-    if (readyCondition.status === 'False') {
-      return ProjectStatus.FAILED;
-    }
-
-    if (readyCondition.status === 'Unknown') {
+    if (resource.metadata.deletionTimestamp) {
       return ProjectStatus.PROGRESSING;
     }
 
-    return ProjectStatus.UNKNOWN;
+    switch (resource.status?.phase) {
+      case 'Active':
+        return ProjectStatus.READY;
+      case 'Terminating':
+        return ProjectStatus.PROGRESSING;
+      case undefined:
+        return ProjectStatus.PENDING;
+      default:
+        return ProjectStatus.UNKNOWN;
+    }
   }
 
   private belongsToWorkspace(
@@ -234,7 +202,8 @@ export class ProjectService {
   ): boolean {
     return (
       resource.metadata.labels?.[MANAGED_BY_LABEL] === MANAGED_BY_LABEL_VALUE &&
-      resource.metadata.labels?.[WORKSPACE_ID_LABEL] === workspace.id
+      resource.metadata.labels?.[WORKSPACE_ID_LABEL] === workspace.id &&
+      resource.metadata.labels?.[PROJECT_LABEL] === resource.metadata.name
     );
   }
 

@@ -93,12 +93,14 @@ var _ = Describe("BuildRun Controller", func() {
 		}
 	}
 
-	newProject := func() *kudeployv1alpha1.Project {
-		return &kudeployv1alpha1.Project{
+	newNamespace := func() *corev1.Namespace {
+		return &corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: namespaceName,
 				Labels: map[string]string{
-					"kudeploy.com/workspace-id": workspaceID,
+					projectLabel:     namespaceName,
+					workspaceIDLabel: workspaceID,
+					managedByLabel:   managedByLabelValue,
 				},
 			},
 		}
@@ -119,7 +121,7 @@ var _ = Describe("BuildRun Controller", func() {
 			"kudeploy.com/workspace-id": "workspace-stale",
 		}
 		reconciler := newReconciler(
-			newProject(),
+			newNamespace(),
 			buildRun,
 			newSecret("git-credentials"),
 			newSecret("image-credentials"),
@@ -182,13 +184,13 @@ var _ = Describe("BuildRun Controller", func() {
 		)))
 	})
 
-	It("enqueues BuildRuns when Project metadata changes", func() {
+	It("enqueues BuildRuns when Namespace labels change", func() {
 		buildRun := newBuildRun()
 		otherBuildRun := newBuildRun()
 		otherBuildRun.Name = "admin-latest"
 		reconciler := newReconciler(buildRun, otherBuildRun)
 
-		requests := reconciler.buildRunsForProject(ctx, newProject())
+		requests := reconciler.buildRunsForNamespace(ctx, newNamespace())
 
 		Expect(requests).To(ConsistOf(
 			reconcile.Request{NamespacedName: buildRunKey},
@@ -239,7 +241,7 @@ var _ = Describe("BuildRun Controller", func() {
 		pipelineRun := buildPipelineRun(buildRun)
 		pipelineRun.Labels["external.example.com/team"] = "platform"
 		reconciler := newReconciler(
-			newProject(),
+			newNamespace(),
 			buildRun,
 			newSecret("git-credentials"),
 			newSecret("image-credentials"),

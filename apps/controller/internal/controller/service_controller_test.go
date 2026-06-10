@@ -134,12 +134,14 @@ var _ = Describe("Service Controller", func() {
 		}
 	}
 
-	newProject := func() *kudeployv1alpha1.Project {
-		return &kudeployv1alpha1.Project{
+	newNamespace := func() *corev1.Namespace {
+		return &corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: namespaceName,
 				Labels: map[string]string{
-					"kudeploy.com/workspace-id": workspaceID,
+					projectLabel:     namespaceName,
+					workspaceIDLabel: workspaceID,
+					managedByLabel:   managedByLabelValue,
 				},
 			},
 		}
@@ -169,7 +171,7 @@ var _ = Describe("Service Controller", func() {
 		service.Labels = map[string]string{
 			"kudeploy.com/workspace-id": "workspace-stale",
 		}
-		reconciler := newReconciler(newProject(), service)
+		reconciler := newReconciler(newNamespace(), service)
 
 		_, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: serviceKey})
 		Expect(err).NotTo(HaveOccurred())
@@ -252,13 +254,13 @@ var _ = Describe("Service Controller", func() {
 		)))
 	})
 
-	It("enqueues Services when Project labels change", func() {
+	It("enqueues Services when Namespace labels change", func() {
 		service := newService()
 		otherService := newService()
 		otherService.Name = "admin"
 		reconciler := newReconciler(service, otherService)
 
-		requests := reconciler.servicesForProject(ctx, newProject())
+		requests := reconciler.servicesForNamespace(ctx, newNamespace())
 
 		Expect(requests).To(ConsistOf(
 			reconcile.Request{NamespacedName: serviceKey},

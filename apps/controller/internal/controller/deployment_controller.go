@@ -48,8 +48,8 @@ type DeploymentReconciler struct {
 // +kubebuilder:rbac:groups=kudeploy.com,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=kudeploy.com,resources=deployments/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=kudeploy.com,resources=deployments/finalizers,verbs=update
-// +kubebuilder:rbac:groups=kudeploy.com,resources=projects,verbs=get;list;watch
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update;patch
 
 // Reconcile moves a Kudeploy Deployment toward one matching Kubernetes Deployment.
@@ -69,7 +69,7 @@ func (r *DeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, err
 	}
 
-	workspaceID, err := projectWorkspaceID(ctx, r.Client, kudeployDeployment.Namespace, kudeployDeployment.Labels)
+	workspaceID, err := namespaceWorkspaceID(ctx, r.Client, kudeployDeployment.Namespace, kudeployDeployment.Labels)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -375,14 +375,14 @@ func ptrIntOrString(value intstr.IntOrString) *intstr.IntOrString {
 func (r *DeploymentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&kudeployv1alpha1.Deployment{}).
-		Watches(&kudeployv1alpha1.Project{}, handler.EnqueueRequestsFromMapFunc(r.deploymentsForProject)).
+		Watches(&corev1.Namespace{}, handler.EnqueueRequestsFromMapFunc(r.deploymentsForNamespace)).
 		Owns(&appsv1.Deployment{}).
 		Owns(&corev1.Secret{}).
 		Named("deployment").
 		Complete(r)
 }
 
-func (r *DeploymentReconciler) deploymentsForProject(ctx context.Context, object client.Object) []reconcile.Request {
+func (r *DeploymentReconciler) deploymentsForNamespace(ctx context.Context, object client.Object) []reconcile.Request {
 	if object == nil || object.GetName() == "" {
 		return nil
 	}

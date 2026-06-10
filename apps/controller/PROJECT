@@ -11,13 +11,6 @@ repo: github.com/kudeploy/kudeploy-controller
 resources:
 - api:
     crdVersion: v1
-  controller: true
-  domain: kudeploy.com
-  kind: Project
-  path: github.com/kudeploy/kudeploy-controller/api/v1alpha1
-  version: v1alpha1
-- api:
-    crdVersion: v1
     namespaced: true
   controller: true
   domain: kudeploy.com

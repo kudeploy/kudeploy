@@ -2,7 +2,7 @@ import { Field, ID, ObjectType } from '@nest-boot/graphql';
 
 import { ProjectStatus } from './project-status.enum';
 
-@ObjectType('Project')
+@ObjectType()
 export class Project {
   @Field(() => ID)
   id!: string;

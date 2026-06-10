@@ -19,21 +19,20 @@ package controller
 import (
 	"context"
 
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	kudeployv1alpha1 "github.com/kudeploy/kudeploy-controller/api/v1alpha1"
 )
 
-func projectWorkspaceID(ctx context.Context, reader client.Reader, projectName string, fallbackLabels map[string]string) (string, error) {
-	project := &kudeployv1alpha1.Project{}
-	if err := reader.Get(ctx, client.ObjectKey{Name: projectName}, project); err != nil {
+func namespaceWorkspaceID(ctx context.Context, reader client.Reader, namespaceName string, fallbackLabels map[string]string) (string, error) {
+	namespace := &corev1.Namespace{}
+	if err := reader.Get(ctx, client.ObjectKey{Name: namespaceName}, namespace); err != nil {
 		if apierrors.IsNotFound(err) {
 			return workspaceIDFromLabels(fallbackLabels), nil
 		}
 		return "", err
 	}
-	return workspaceIDFromLabels(project.Labels), nil
+	return workspaceIDFromLabels(namespace.Labels), nil
 }
 
 func workspaceIDFromLabels(labels map[string]string) string {
