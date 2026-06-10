@@ -140,6 +140,25 @@ var _ = Describe("Deployment Controller", func() {
 				Ports: []kudeployv1alpha1.ServicePort{
 					{Port: 80, TargetPort: 8080},
 				},
+				Volumes: []corev1.Volume{
+					{
+						Name: "data",
+						VolumeSource: corev1.VolumeSource{
+							PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+								ClaimName: "kd-volume-data",
+								ReadOnly:  true,
+							},
+						},
+					},
+				},
+				VolumeMounts: []corev1.VolumeMount{
+					{
+						Name:      "data",
+						MountPath: "/data",
+						SubPath:   "app",
+						ReadOnly:  true,
+					},
+				},
 				ReadinessProbe: &corev1.Probe{
 					ProbeHandler: corev1.ProbeHandler{
 						HTTPGet: &corev1.HTTPGetAction{
@@ -224,6 +243,21 @@ var _ = Describe("Deployment Controller", func() {
 			},
 		))
 		Expect(kubernetesDeployment.Spec.Template.Spec.Containers[0].Ports).To(ConsistOf(corev1.ContainerPort{ContainerPort: 8080}))
+		Expect(kubernetesDeployment.Spec.Template.Spec.Volumes).To(ConsistOf(corev1.Volume{
+			Name: "data",
+			VolumeSource: corev1.VolumeSource{
+				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+					ClaimName: "kd-volume-data",
+					ReadOnly:  true,
+				},
+			},
+		}))
+		Expect(kubernetesDeployment.Spec.Template.Spec.Containers[0].VolumeMounts).To(ConsistOf(corev1.VolumeMount{
+			Name:      "data",
+			MountPath: "/data",
+			SubPath:   "app",
+			ReadOnly:  true,
+		}))
 		Expect(kubernetesDeployment.Spec.Template.Spec.Containers[0].ReadinessProbe.HTTPGet.Path).To(Equal("/ready"))
 		Expect(kubernetesDeployment.Spec.Template.Spec.Containers[0].LivenessProbe.HTTPGet.Path).To(Equal("/live"))
 		Expect(kubernetesDeployment.Spec.Template.Spec.Containers[0].StartupProbe.HTTPGet.Path).To(Equal("/startup"))

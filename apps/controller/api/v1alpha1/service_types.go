@@ -56,6 +56,16 @@ type ServiceSpec struct {
 	// +listType=atomic
 	Ports []ServicePort `json:"ports"`
 
+	// volumes describe Kubernetes volumes available to the Service Pod.
+	// +optional
+	// +listType=atomic
+	Volumes []corev1.Volume `json:"volumes,omitempty"`
+
+	// volumeMounts describe where volumes are mounted into the Service container.
+	// +optional
+	// +listType=atomic
+	VolumeMounts []corev1.VolumeMount `json:"volumeMounts,omitempty"`
+
 	// env describes plain Kubernetes container environment variables.
 	// Secret values are managed through the Service env Secret maintained by the controller.
 	// +optional

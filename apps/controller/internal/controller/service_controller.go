@@ -396,6 +396,8 @@ func buildKudeployDeployment(kudeployService *kudeployv1alpha1.Service, version 
 			Args:               kudeployService.Spec.Args,
 			Resources:          kudeployService.Spec.Resources,
 			Ports:              kudeployService.Spec.Ports,
+			Volumes:            kudeployService.Spec.Volumes,
+			VolumeMounts:       kudeployService.Spec.VolumeMounts,
 			Env:                kudeployService.Spec.Env,
 			EnvFrom:            kudeployService.Spec.EnvFrom,
 			ReadinessProbe:     kudeployService.Spec.ReadinessProbe,
