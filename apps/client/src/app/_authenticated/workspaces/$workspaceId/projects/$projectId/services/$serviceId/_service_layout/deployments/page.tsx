@@ -1,11 +1,15 @@
 import { useMemo } from "react";
-import type { ReactNode } from "react";
 import { useQuery } from "@apollo/client/react";
 import { createFileRoute } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { ArrowRight, GitBranch, Layers3 } from "lucide-react";
 import { t } from "i18next";
+import type { ReactNode } from "react";
 
+import type {
+  DeploymentStatus,
+  GetServiceDeploymentsFromServiceDeploymentsRouteQuery,
+} from "@/gql/graphql";
 import { Badge } from "@/components/fabric-ui/badge";
 import { Page } from "@/components/fabric-ui/page";
 import { Link } from "@/components/link";
@@ -17,10 +21,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { graphql } from "@/gql";
-import type {
-  DeploymentStatus,
-  GetServiceDeploymentsFromServiceDeploymentsRouteQuery,
-} from "@/gql/graphql";
 import { DeploymentOrderField } from "@/gql/graphql";
 import { OrderDirection } from "@/lib/connection-search";
 

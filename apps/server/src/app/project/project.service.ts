@@ -26,7 +26,7 @@ export const DISPLAY_NAME_ANNOTATION = 'kudeploy.com/display-name';
 
 export interface KudeployCondition {
   type?: string;
-  status?: 'True' | 'False' | 'Unknown' | string;
+  status?: string;
   reason?: string;
   message?: string;
 }

@@ -1,3 +1,4 @@
+import { t } from "i18next";
 import {
   Empty,
   EmptyContent,
@@ -7,7 +8,6 @@ import {
 } from "@/components/ui/empty";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/components/link";
-import { t } from "i18next";
 
 export const NotFoundPage = () => {
   return (

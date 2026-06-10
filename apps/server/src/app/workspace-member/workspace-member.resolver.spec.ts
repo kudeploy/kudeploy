@@ -56,7 +56,7 @@ describe('WorkspaceMemberResolver', () => {
     const { resolver } = createResolver();
 
     await expect(
-      resolver.workspaceMembers({} as never, undefined, undefined),
+      resolver.workspaceMembers({}, undefined, undefined),
     ).rejects.toBeInstanceOf(ForbiddenException);
   });
 
@@ -358,7 +358,7 @@ describe('WorkspaceMemberResolver', () => {
     const updated = {
       ...member,
       name: 'Alice',
-    } as WorkspaceMember;
+    };
     const { resolver, workspaceMemberService } = createResolver({
       workspaceMemberService: {
         findOneOrFail: jest.fn(async () => member),

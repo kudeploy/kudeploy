@@ -37,7 +37,7 @@ describe('WorkspaceMemberGroupService', () => {
     const { service, em, logger } = createService();
     const workspace = { id: 'workspace_1' } as Workspace;
     const group = { id: 'group_1', name: 'Admins', workspace };
-    jest.spyOn(service, 'findOne').mockResolvedValue(null as never);
+    jest.spyOn(service, 'findOne').mockResolvedValue(null);
     em.create.mockReturnValue(group);
 
     await expect(
@@ -63,7 +63,7 @@ describe('WorkspaceMemberGroupService', () => {
 
   it('rejects group creation when requested members are outside the workspace', async () => {
     const { service, em, logger } = createService();
-    jest.spyOn(service, 'findOne').mockResolvedValue(null as never);
+    jest.spyOn(service, 'findOne').mockResolvedValue(null);
     em.create.mockReturnValue({ id: 'group_1' });
     em.find.mockResolvedValue([{ id: 'member_1' }]);
 
@@ -87,7 +87,7 @@ describe('WorkspaceMemberGroupService', () => {
     const { service, em, logger } = createService();
     const workspace = { id: 'workspace_1' } as Workspace;
     const member = { id: 'member_1' } as WorkspaceMember;
-    jest.spyOn(service, 'findOne').mockResolvedValue(null as never);
+    jest.spyOn(service, 'findOne').mockResolvedValue(null);
     em.create.mockImplementation(
       (entity: unknown, data: Record<string, unknown>) => ({
         entity,
@@ -155,10 +155,8 @@ describe('WorkspaceMemberGroupService', () => {
         loadOrFail: jest.fn(async () => ({ id: 'workspace_1' })),
       },
     } as unknown as WorkspaceMemberGroup;
-    jest.spyOn(service, 'findOne').mockResolvedValue(null as never);
-    const updateSpy = jest
-      .spyOn(service, 'update')
-      .mockResolvedValue(group as never);
+    jest.spyOn(service, 'findOne').mockResolvedValue(null);
+    const updateSpy = jest.spyOn(service, 'update').mockResolvedValue(group);
 
     await expect(
       service.updateWorkspaceMemberGroup(group, { name: 'Operators' }),
@@ -176,7 +174,7 @@ describe('WorkspaceMemberGroupService', () => {
       workspace,
     } as unknown as WorkspaceMemberGroup;
     const member = { id: 'member_1' } as WorkspaceMember;
-    jest.spyOn(service, 'findOneOrFail').mockResolvedValue(group as never);
+    jest.spyOn(service, 'findOneOrFail').mockResolvedValue(group);
     workspaceMemberService.findOneOrFail.mockResolvedValue(member);
 
     await expect(service.addMembers('group_1', ['member_1'])).resolves.toBe(
@@ -204,7 +202,7 @@ describe('WorkspaceMemberGroupService', () => {
     const { service, em, workspaceMemberService } = createService();
     const group = { id: 'group_1' } as WorkspaceMemberGroup;
     const member = { id: 'member_1' } as WorkspaceMember;
-    jest.spyOn(service, 'findOneOrFail').mockResolvedValue(group as never);
+    jest.spyOn(service, 'findOneOrFail').mockResolvedValue(group);
     workspaceMemberService.findOneOrFail.mockResolvedValue(member);
 
     await expect(service.removeMembers('group_1', ['member_1'])).resolves.toBe(

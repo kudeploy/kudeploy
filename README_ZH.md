@@ -108,6 +108,7 @@ cp apps/server/.env.example apps/server/.env
 APP_URL=http://localhost:3000
 DATABASE_URL=postgresql://postgres:secret@localhost:5432/kudeploy
 PROMETHEUS_URL=http://vmsingle-vmks-victoria-metrics-k8s-stack.monitoring.svc.cluster.local:8428
+VICTORIA_LOGS_URL=http://vlsingle-victoria-logs-single.logging.svc.cluster.local:9428
 ```
 
 客户端开发环境默认读取 `apps/client/.env.development`，其中 `API_URL`

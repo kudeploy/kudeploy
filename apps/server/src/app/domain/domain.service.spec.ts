@@ -3,8 +3,8 @@ import { BadRequestException } from '@nestjs/common';
 import { Workspace } from '@/app/workspace/workspace.entity';
 
 import { Domain } from './domain.entity';
-import { DomainStatus } from './domain-status.enum';
 import { DomainService } from './domain.service';
+import { DomainStatus } from './domain-status.enum';
 
 jest.mock('crypto', () => ({
   ...jest.requireActual('crypto'),
@@ -154,7 +154,7 @@ describe('DomainService', () => {
 });
 
 function createService(options?: {
-  existingDomains?: Array<Domain | null>;
+  existingDomains?: (Domain | null)[];
   now?: Date;
   txtError?: Error;
   txtRecords?: string[][];

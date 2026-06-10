@@ -11,6 +11,10 @@ import {
 import { Can, PermissionAction } from '@nest-boot/permission';
 
 import {
+  KubernetesLogsService,
+  ServiceLogConnection,
+} from '@/app/kubernetes-logs';
+import {
   KubernetesMetricsService,
   ServiceMetrics,
 } from '@/app/kubernetes-metrics';
@@ -30,6 +34,7 @@ import { ServiceService } from './service.service';
 export class ServiceResolver {
   constructor(
     private readonly serviceService: ServiceService,
+    private readonly kubernetesLogsService: KubernetesLogsService,
     private readonly kubernetesMetricsService: KubernetesMetricsService,
   ) {}
 
@@ -86,6 +91,33 @@ export class ServiceResolver {
     @Args({ name: 'id', type: () => ID }) id: string,
   ): Promise<Service> {
     return await this.serviceService.deleteService(workspace, projectId, id);
+  }
+
+  @Can(PermissionAction.READ, Service)
+  @ResolveField(() => ServiceLogConnection)
+  async logs(
+    @CurrentWorkspace() workspace: Workspace,
+    @Parent() service: Service,
+    @Args({ name: 'first', type: () => Int, nullable: true })
+    first?: number | null,
+    @Args({ name: 'after', type: () => String, nullable: true })
+    after?: string | null,
+    @Args({ name: 'last', type: () => Int, nullable: true })
+    last?: number | null,
+    @Args({ name: 'before', type: () => String, nullable: true })
+    before?: string | null,
+  ): Promise<ServiceLogConnection> {
+    return await this.kubernetesLogsService.getServiceLogs(
+      workspace,
+      service.projectId,
+      service.id,
+      {
+        after,
+        before,
+        first,
+        last,
+      },
+    );
   }
 
   @Can(PermissionAction.READ, Service)

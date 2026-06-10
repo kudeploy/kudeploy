@@ -39,7 +39,7 @@ describe('SearchableProperty', () => {
     expect(() => {
       SearchableProperty({
         properties: [],
-      })({} as object, 'searchableName');
+      })({}, 'searchableName');
     }).toThrow('properties must have at least one property');
   });
 
@@ -101,7 +101,7 @@ describe('SearchableProperty', () => {
 
     SearchableProperty<{ name: string }>({
       properties: ['name'],
-    })({} as object, key);
+    })({}, key);
 
     expect(Property).not.toHaveBeenCalled();
   });

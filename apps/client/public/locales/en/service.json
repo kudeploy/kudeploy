@@ -105,6 +105,21 @@
       "disconnected": "Disconnected"
     }
   },
+  "logs": {
+    "loading": "Loading logs",
+    "loading_older": "Loading older logs",
+    "updated": "Updated {{time}} with {{count}} lines",
+    "unavailable": "Logs data source unavailable",
+    "error": "Logs failed to load",
+    "empty": "No logs yet",
+    "refresh": "Refresh logs",
+    "columns": {
+      "time": "Time",
+      "deployment": "Deployment",
+      "level": "Level",
+      "message": "Message"
+    }
+  },
   "metrics": {
     "description": "Observe recent resource usage, limits, and network throughput.",
     "range": "Time range",

@@ -39,8 +39,8 @@ export type ServiceFormValue = {
   args: string;
   resources: ServiceResourcesFormValue;
   healthCheck: ServiceHealthCheckFormValue;
-  ports: ServicePortFormValue[];
-  env: ServiceEnvFormValue[];
+  ports: Array<ServicePortFormValue>;
+  env: Array<ServiceEnvFormValue>;
 };
 
 export function ServiceForm({
@@ -435,7 +435,7 @@ export function initialServiceFormValue(): ServiceFormValue {
   };
 }
 
-export function linesToValue(value?: readonly string[] | null) {
+export function linesToValue(value?: ReadonlyArray<string> | null) {
   return value?.join("\n") ?? "";
 }
 

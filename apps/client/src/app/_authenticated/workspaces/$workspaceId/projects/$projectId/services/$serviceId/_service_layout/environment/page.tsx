@@ -50,7 +50,7 @@ function ServiceEnvironmentComponent() {
   const router = useRouter();
   const { projectId, serviceId } = Route.useParams();
   const { service } = Route.useRouteContext();
-  const [env, setEnv] = useState<EnvValue[]>(service.env.map(copyEnv));
+  const [env, setEnv] = useState<Array<EnvValue>>(service.env.map(copyEnv));
 
   const [updateService, { loading }] = useMutation(
     UPDATE_SERVICE_ENVIRONMENT_FROM_SERVICE_ENVIRONMENT_ROUTE,

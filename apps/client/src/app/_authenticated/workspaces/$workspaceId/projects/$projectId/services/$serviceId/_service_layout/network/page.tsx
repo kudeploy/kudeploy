@@ -64,7 +64,9 @@ function ServiceNetworkComponent() {
   const router = useRouter();
   const { projectId, serviceId } = Route.useParams();
   const { service } = Route.useRouteContext();
-  const [ports, setPorts] = useState<PortValue[]>(toPortValues(service.ports));
+  const [ports, setPorts] = useState<Array<PortValue>>(
+    toPortValues(service.ports),
+  );
   const [healthCheck, setHealthCheck] = useState<HealthCheckValue>(
     toHealthCheckValue(service.healthCheck),
   );
@@ -288,8 +290,8 @@ function ServiceNetworkComponent() {
 }
 
 function toPortValues(
-  ports: readonly { port: number; targetPort?: number | null }[],
-): PortValue[] {
+  ports: ReadonlyArray<{ port: number; targetPort?: number | null }>,
+): Array<PortValue> {
   return ports.map((port) => ({
     port: port.port,
     targetPort: port.targetPort ?? "",

@@ -36,7 +36,7 @@ describe('wait for migrations script', () => {
     };
 
     await waitForMigrations({
-      createOrm: async () => orm as never,
+      createOrm: async () => orm,
       intervalMs: 1000,
       logger: silentLogger,
       now: () => elapsedMs,

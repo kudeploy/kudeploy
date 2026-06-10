@@ -28,6 +28,7 @@ export type PageActionProps = {
 export type PageProps = ComponentProps<typeof PageComponent> & {
   title: ReactNode;
   description?: ReactNode;
+  fullWidth?: boolean;
   primaryAction?: PageActionProps;
   secondaryActions?: Array<PageActionProps>;
 };
@@ -36,12 +37,14 @@ export const Page: FC<PageProps> = ({
   children,
   title,
   description,
+  fullWidth,
   primaryAction,
   secondaryActions,
+  variant,
   ...props
 }) => {
   return (
-    <PageComponent {...props}>
+    <PageComponent variant={fullWidth ? "full" : variant} {...props}>
       <PageHeader>
         <PageTitle>{title}</PageTitle>
         {description && <PageDescription>{description}</PageDescription>}

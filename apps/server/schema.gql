@@ -633,6 +633,7 @@ type Service {
   healthCheck: ServiceHealthCheck
   id: ID!
   image: String!
+  logs(after: String, before: String, first: Int, last: Int): ServiceLogConnection!
   metrics(rangeSeconds: Int, stepSeconds: Int): ServiceMetrics!
   name: String!
   ports: [ServicePort!]!
@@ -696,6 +697,28 @@ input ServiceHealthCheckInput {
 enum ServiceHealthCheckType {
   HTTP
   TCP
+}
+
+type ServiceLog {
+  containerName: String
+  deploymentName: String
+  id: ID!
+  level: String
+  message: String!
+  namespace: String
+  podName: String
+  timestamp: DateTime!
+}
+
+type ServiceLogConnection {
+  available: Boolean!
+  edges: [ServiceLogEdge!]!
+  pageInfo: PageInfo!
+}
+
+type ServiceLogEdge {
+  cursor: String!
+  node: ServiceLog!
 }
 
 type ServiceMetrics {

@@ -1,4 +1,5 @@
 import { Field, InputType, Int } from '@nest-boot/graphql';
+import { Type } from 'class-transformer';
 import {
   IsArray,
   IsInt,
@@ -7,7 +8,6 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
-import { Type } from 'class-transformer';
 
 import { ServiceEnvVarInput } from './service-env-var.input';
 import { ServiceHealthCheckInput } from './service-health-check.input';

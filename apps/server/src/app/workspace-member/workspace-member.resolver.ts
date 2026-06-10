@@ -358,7 +358,7 @@ export class WorkspaceMemberResolver {
   @Can(PermissionAction.READ, User)
   @ResolveField(() => User, { nullable: true })
   async user(@Parent() workspaceMember: WorkspaceMember): Promise<User | null> {
-    if (!workspaceMember.user || !workspaceMember.user.id) {
+    if (!workspaceMember.user?.id) {
       return null;
     }
 
@@ -376,7 +376,7 @@ export class WorkspaceMemberResolver {
   async invitedBy(
     @Parent() workspaceMember: WorkspaceMember,
   ): Promise<User | null> {
-    if (!workspaceMember.invitedBy || !workspaceMember.invitedBy.id) {
+    if (!workspaceMember.invitedBy?.id) {
       return null;
     }
 

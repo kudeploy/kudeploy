@@ -1,13 +1,13 @@
 import { useMemo, useState } from "react";
-import type { ReactNode } from "react";
 import { useQuery } from "@apollo/client/react";
 import { createFileRoute } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { Activity, Cpu, MemoryStick, Network } from "lucide-react";
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 import { t } from "i18next";
+import type { ReactNode } from "react";
 
-import { Page } from "@/components/fabric-ui/page";
+import type { ChartConfig } from "@/components/ui/chart";
 import {
   Card,
   CardAction,
@@ -17,7 +17,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
-import type { ChartConfig } from "@/components/ui/chart";
+import { Page } from "@/components/fabric-ui/page";
 import {
   Select,
   SelectContent,
@@ -289,7 +289,7 @@ function ResourceMetricCard({
   title,
   usage,
 }: {
-  data: ChartPoint[];
+  data: Array<ChartPoint>;
   empty: string;
   formatter: (value: number) => string;
   icon: ReactNode;
@@ -362,7 +362,7 @@ function NetworkMetricCard({
   receive,
   transmit,
 }: {
-  data: ChartPoint[];
+  data: Array<ChartPoint>;
   loading: boolean;
   receive: number | null;
   transmit: number | null;
@@ -439,7 +439,7 @@ function MetricLineChart({
   series,
 }: {
   config: ChartConfig;
-  data: ChartPoint[];
+  data: Array<ChartPoint>;
   empty: string;
   formatter: (value: number) => string;
   loading: boolean;
@@ -569,9 +569,9 @@ function MetricTooltip({
 }
 
 function toResourceChartData(
-  points: readonly MetricPoint[],
+  points: ReadonlyArray<MetricPoint>,
   limit: number | null,
-): ChartPoint[] {
+): Array<ChartPoint> {
   return points.map((point) => ({
     timestamp: toTimestamp(point.timestamp),
     usage: point.value,
@@ -580,11 +580,11 @@ function toResourceChartData(
 }
 
 function mergeChartSeries(
-  left: readonly MetricPoint[],
-  right: readonly MetricPoint[],
+  left: ReadonlyArray<MetricPoint>,
+  right: ReadonlyArray<MetricPoint>,
   leftKey: "receive",
   rightKey: "transmit",
-): ChartPoint[] {
+): Array<ChartPoint> {
   const values = new Map<string, ChartPoint>();
 
   for (const point of left) {
@@ -608,7 +608,7 @@ function mergeChartSeries(
   );
 }
 
-function lastValue(points?: readonly MetricPoint[] | null): number | null {
+function lastValue(points?: ReadonlyArray<MetricPoint> | null): number | null {
   return points?.at(-1)?.value ?? null;
 }
 

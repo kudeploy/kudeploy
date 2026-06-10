@@ -105,6 +105,21 @@
       "disconnected": "未连接"
     }
   },
+  "logs": {
+    "loading": "正在加载日志",
+    "loading_older": "正在加载更早日志",
+    "updated": "最近更新 {{time}}，共 {{count}} 行",
+    "unavailable": "日志数据源不可用",
+    "error": "日志加载失败",
+    "empty": "暂无日志",
+    "refresh": "刷新日志",
+    "columns": {
+      "time": "时间",
+      "deployment": "部署",
+      "level": "级别",
+      "message": "消息"
+    }
+  },
   "metrics": {
     "description": "观察服务最近的资源用量、限制和网络吞吐。",
     "range": "时间范围",

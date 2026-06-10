@@ -1,8 +1,8 @@
-import type { ReactNode } from "react";
 import { t } from "i18next";
+import type { ReactNode } from "react";
 
-import { Badge } from "@/components/fabric-ui/badge";
 import type { DeploymentStatus } from "@/gql/graphql";
+import { Badge } from "@/components/fabric-ui/badge";
 
 const statusColors = {
   FAILED: "red",
@@ -56,7 +56,7 @@ export function DeploymentStatusBadge({
   );
 }
 
-export function DeploymentValueList({ values }: { values: string[] }) {
+export function DeploymentValueList({ values }: { values: Array<string> }) {
   if (!values.length) {
     return <>{t("service:deployments.not_configured")}</>;
   }
@@ -72,7 +72,7 @@ export function DeploymentValueList({ values }: { values: string[] }) {
   );
 }
 
-export function formatCommand(values: readonly string[]) {
+export function formatCommand(values: ReadonlyArray<string>) {
   return values.length
     ? values.join(" ")
     : t("service:deployments.not_configured");

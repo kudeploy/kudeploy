@@ -115,6 +115,30 @@ describe('KubernetesMetricsService', () => {
     expect(prometheusClient.queryRange).not.toHaveBeenCalled();
   });
 
+  it('returns an unavailable empty result when Prometheus config is missing', async () => {
+    const { service, coreV1Api, prometheusClient } = createService();
+
+    prometheusClient.isConfigured.mockImplementation(() => {
+      throw new Error('PROMETHEUS_URL is not configured');
+    });
+    coreV1Api.listNamespacedPod.mockResolvedValue({ items: [] });
+
+    await expect(
+      service.getServiceMetrics(
+        { id: 'workspace_1' } as Workspace,
+        'project-1',
+        'service-1',
+      ),
+    ).resolves.toMatchObject({
+      available: false,
+      cpuUsageMillicores: [],
+      memoryUsageBytes: [],
+      networkReceiveBytesPerSecond: [],
+      networkTransmitBytesPerSecond: [],
+    });
+    expect(prometheusClient.queryRange).not.toHaveBeenCalled();
+  });
+
   it('allows seven day service metric ranges with coarse steps', async () => {
     const { service, coreV1Api, prometheusClient } = createService();
 
@@ -197,12 +221,12 @@ function createService() {
 function pod(
   options: {
     name?: string;
-    containers?: Array<{
+    containers?: {
       limits?: {
         cpu?: string;
         memory?: string;
       };
-    }>;
+    }[];
   } = {},
 ): V1Pod {
   return {
@@ -217,5 +241,5 @@ function pod(
         },
       })),
     },
-  } as V1Pod;
+  };
 }

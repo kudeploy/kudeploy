@@ -1,13 +1,11 @@
-import { Injectable } from '@nestjs/common';
-import { get } from 'lodash';
-
 import { Cursor } from '@nest-boot/graphql-connection/dist/cursor';
 import { OrderDirection } from '@nest-boot/graphql-connection/dist/enums/order-direction.enum';
 import { GRAPHQL_CONNECTION_METADATA } from '@nest-boot/graphql-connection/dist/graphql-connection.constants';
-import type { ConnectionMetadata } from '@nest-boot/graphql-connection/dist/interfaces/connection-metadata.interface';
-import type { ConnectionArgsInterface } from '@nest-boot/graphql-connection/dist/interfaces/connection-args.interface';
 import type { ConnectionInterface } from '@nest-boot/graphql-connection/dist/interfaces/connection.interface';
+import type { ConnectionArgsInterface } from '@nest-boot/graphql-connection/dist/interfaces/connection-args.interface';
+import type { ConnectionMetadata } from '@nest-boot/graphql-connection/dist/interfaces/connection-metadata.interface';
 import type { ConnectionClass } from '@nest-boot/graphql-connection/dist/types/connection-class.type';
+import { Injectable } from '@nestjs/common';
 
 export interface KubernetesConnectionFindOptions<Entity extends object> {
   items: Entity[];
@@ -15,7 +13,7 @@ export interface KubernetesConnectionFindOptions<Entity extends object> {
 
 @Injectable()
 export class KubernetesConnectionManager {
-  async find<Entity extends { id?: string }>(
+  find<Entity extends { id?: string }>(
     connectionClass: ConnectionClass<Entity>,
     args: ConnectionArgsInterface<Entity>,
     options: KubernetesConnectionFindOptions<Entity>,
@@ -29,19 +27,20 @@ export class KubernetesConnectionManager {
       args,
     );
 
-    const edges = pageItems.map((node) => ({
-      node,
-      cursor: new Cursor({
-        id: node.id,
-        ...(args.orderBy
-          ? {
-              value: get(node, args.orderBy.field),
-            }
-          : {}),
-      }).toString(),
-    }));
+    const edges = pageItems.map((node) => {
+      const cursorInput: { id?: string; value?: unknown } = { id: node.id };
 
-    return {
+      if (args.orderBy) {
+        cursorInput.value = getValueByPath(node, args.orderBy.field);
+      }
+
+      return {
+        node,
+        cursor: new Cursor(cursorInput).toString(),
+      };
+    });
+
+    return Promise.resolve({
       totalCount: filteredItems.length,
       edges,
       pageInfo: {
@@ -50,7 +49,7 @@ export class KubernetesConnectionManager {
         hasNextPage,
         hasPreviousPage,
       },
-    };
+    });
   }
 
   private getMetadata<Entity extends object>(
@@ -93,7 +92,7 @@ export class KubernetesConnectionManager {
 
     return items.filter((item) =>
       searchableFields.some((field) =>
-        String(get(item, field) ?? '')
+        searchableValueToString(getValueByPath(item, field))
           .toLowerCase()
           .includes(query),
       ),
@@ -124,7 +123,7 @@ export class KubernetesConnectionManager {
         return value.some((child) => this.matchesFilter(item, child));
       }
 
-      return this.matchesFieldFilter(get(item, key), value);
+      return this.matchesFieldFilter(getValueByPath(item, key), value);
     });
   }
 
@@ -165,8 +164,10 @@ export class KubernetesConnectionManager {
 
     return [...items].sort((left, right) => {
       const fieldComparison =
-        this.compareValues(get(left, orderField), get(right, orderField)) *
-        directionFactor;
+        this.compareValues(
+          getValueByPath(left, orderField),
+          getValueByPath(right, orderField),
+        ) * directionFactor;
 
       if (fieldComparison !== 0 || orderField === 'id') {
         return fieldComparison;
@@ -213,10 +214,7 @@ export class KubernetesConnectionManager {
     };
   }
 
-  private cursorIndex<Entity extends { id?: string }>(
-    items: Entity[],
-    cursorValue?: string,
-  ): number {
+  private cursorIndex(items: { id?: string }[], cursorValue?: string): number {
     if (!cursorValue) {
       return -1;
     }
@@ -245,5 +243,35 @@ export class KubernetesConnectionManager {
       return 1;
     }
     return 0;
+  }
+}
+
+function getValueByPath(item: unknown, path: string): unknown {
+  return path.split('.').reduce<unknown>((current, part) => {
+    if (current && typeof current === 'object' && part in current) {
+      return (current as Record<string, unknown>)[part];
+    }
+
+    return undefined;
+  }, item);
+}
+
+function searchableValueToString(value: unknown): string {
+  if (value == null) {
+    return '';
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  switch (typeof value) {
+    case 'bigint':
+    case 'boolean':
+    case 'number':
+    case 'string':
+      return String(value);
+    default:
+      return '';
   }
 }

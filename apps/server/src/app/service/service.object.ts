@@ -86,8 +86,10 @@ export class Service {
   @Field(() => ServiceStatus)
   status!: ServiceStatus;
 
+  @Field(() => String, { nullable: true })
   activeDeploymentName?: string | null;
 
+  @Field(() => String, { nullable: true })
   latestDeploymentName?: string | null;
 
   @Field(() => Date)
