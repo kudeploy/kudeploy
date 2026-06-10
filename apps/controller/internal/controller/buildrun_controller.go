@@ -291,7 +291,7 @@ func ensureBuildRunMetadata(buildRun *kudeployv1alpha1.BuildRun, workspaceID str
 		buildRun.Labels[managedByLabel] = managedByLabelValue
 		changed = true
 	}
-	if syncWorkspaceIDLabel(buildRun.Labels, workspaceID) {
+	if syncWorkspaceLabel(buildRun.Labels, workspaceID) {
 		changed = true
 	}
 	if controllerutil.AddFinalizer(buildRun, buildRunFinalizer) {
@@ -367,11 +367,11 @@ func buildPipelineRun(buildRun *kudeployv1alpha1.BuildRun) *tektonv1.PipelineRun
 }
 
 func buildRunManagedLabels(buildRun *kudeployv1alpha1.BuildRun) map[string]string {
-	return addWorkspaceIDLabel(map[string]string{
+	return addWorkspaceLabel(map[string]string{
 		projectLabel:   buildRun.Namespace,
 		buildRunLabel:  buildRun.Name,
 		managedByLabel: managedByLabelValue,
-	}, workspaceIDFromLabels(buildRun.Labels))
+	}, workspaceFromLabels(buildRun.Labels))
 }
 
 func buildPipelineRunParams(buildRun *kudeployv1alpha1.BuildRun) tektonv1.Params {

@@ -14,7 +14,7 @@ import {
   KudeployCondition,
   MANAGED_BY_LABEL,
   MANAGED_BY_LABEL_VALUE,
-  WORKSPACE_ID_LABEL,
+  WORKSPACE_LABEL,
 } from '@/app/project/project.service';
 import { PROJECT_LABEL, ServiceService } from '@/app/service/service.service';
 import { Workspace } from '@/app/workspace/workspace.entity';
@@ -255,7 +255,7 @@ export class DeploymentService {
   ) {
     return [
       `${MANAGED_BY_LABEL}=${MANAGED_BY_LABEL_VALUE}`,
-      `${WORKSPACE_ID_LABEL}=${workspace.id}`,
+      `${WORKSPACE_LABEL}=${workspace.id}`,
       `${PROJECT_LABEL}=${projectId}`,
       `${SERVICE_LABEL}=${serviceId}`,
     ].join(',');
@@ -272,7 +272,7 @@ export class DeploymentService {
     return (
       resource.metadata.namespace === projectId &&
       labels[MANAGED_BY_LABEL] === MANAGED_BY_LABEL_VALUE &&
-      labels[WORKSPACE_ID_LABEL] === workspace.id &&
+      labels[WORKSPACE_LABEL] === workspace.id &&
       labels[PROJECT_LABEL] === projectId &&
       labels[SERVICE_LABEL] === serviceId
     );

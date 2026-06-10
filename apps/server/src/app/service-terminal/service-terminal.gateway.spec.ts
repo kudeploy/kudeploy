@@ -90,7 +90,7 @@ describe('ServiceTerminalGateway', () => {
     expect(coreV1Api.listNamespacedPod).toHaveBeenCalledWith({
       namespace: 'kd-project-1',
       labelSelector:
-        'app.kubernetes.io/managed-by=kudeploy,kudeploy.com/workspace-id=workspace_1,kudeploy.com/project=kd-project-1,kudeploy.com/service=kd-service-1',
+        'app.kubernetes.io/managed-by=kudeploy,kudeploy.com/workspace=workspace_1,kudeploy.com/project=kd-project-1,kudeploy.com/service=kd-service-1',
     });
     expect(exec.exec).toHaveBeenCalledWith(
       'kd-project-1',

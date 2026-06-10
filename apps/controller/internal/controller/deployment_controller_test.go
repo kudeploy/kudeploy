@@ -60,9 +60,9 @@ var _ = Describe("Deployment Controller", func() {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: namespaceName,
 				Labels: map[string]string{
-					projectLabel:     namespaceName,
-					workspaceIDLabel: workspaceID,
-					managedByLabel:   managedByLabelValue,
+					projectLabel:   namespaceName,
+					workspaceLabel: workspaceID,
+					managedByLabel: managedByLabelValue,
 				},
 			},
 		}
@@ -179,7 +179,7 @@ var _ = Describe("Deployment Controller", func() {
 	It("creates one matching Kubernetes Deployment for the Kudeploy Deployment", func() {
 		deployment := newDeployment()
 		deployment.Labels = map[string]string{
-			"kudeploy.com/workspace-id": "workspace-stale",
+			"kudeploy.com/workspace": "workspace-stale",
 		}
 		reconciler := newReconciler(deployment)
 
@@ -191,7 +191,7 @@ var _ = Describe("Deployment Controller", func() {
 		Expect(kubernetesDeployment.Labels).To(HaveKeyWithValue("kudeploy.com/project", namespaceName))
 		Expect(kubernetesDeployment.Labels).To(HaveKeyWithValue("kudeploy.com/service", serviceName))
 		Expect(kubernetesDeployment.Labels).To(HaveKeyWithValue("kudeploy.com/deployment", deploymentName))
-		Expect(kubernetesDeployment.Labels).To(HaveKeyWithValue("kudeploy.com/workspace-id", workspaceID))
+		Expect(kubernetesDeployment.Labels).To(HaveKeyWithValue("kudeploy.com/workspace", workspaceID))
 		Expect(kubernetesDeployment.Labels).To(HaveKeyWithValue("app.kubernetes.io/managed-by", "kudeploy"))
 		Expect(kubernetesDeployment.Spec.Replicas).To(Equal(ptrInt32(0)))
 		Expect(kubernetesDeployment.Spec.RevisionHistoryLimit).To(Equal(ptrInt32(0)))
@@ -203,7 +203,7 @@ var _ = Describe("Deployment Controller", func() {
 		Expect(kubernetesDeployment.Spec.Template.Labels).To(HaveKeyWithValue("kudeploy.com/project", namespaceName))
 		Expect(kubernetesDeployment.Spec.Template.Labels).To(HaveKeyWithValue("kudeploy.com/service", serviceName))
 		Expect(kubernetesDeployment.Spec.Template.Labels).To(HaveKeyWithValue("kudeploy.com/deployment", deploymentName))
-		Expect(kubernetesDeployment.Spec.Template.Labels).To(HaveKeyWithValue("kudeploy.com/workspace-id", workspaceID))
+		Expect(kubernetesDeployment.Spec.Template.Labels).To(HaveKeyWithValue("kudeploy.com/workspace", workspaceID))
 		Expect(kubernetesDeployment.Spec.Template.Labels).To(HaveKeyWithValue("app.kubernetes.io/managed-by", "kudeploy"))
 		Expect(kubernetesDeployment.Spec.Template.Spec.Containers).To(HaveLen(1))
 		Expect(kubernetesDeployment.Spec.Template.Spec.ServiceAccountName).To(Equal("service-whoami"))
@@ -258,7 +258,7 @@ var _ = Describe("Deployment Controller", func() {
 		Expect(envSecret.Labels).To(HaveKeyWithValue("kudeploy.com/project", namespaceName))
 		Expect(envSecret.Labels).To(HaveKeyWithValue("kudeploy.com/service", serviceName))
 		Expect(envSecret.Labels).To(HaveKeyWithValue("kudeploy.com/deployment", deploymentName))
-		Expect(envSecret.Labels).To(HaveKeyWithValue("kudeploy.com/workspace-id", workspaceID))
+		Expect(envSecret.Labels).To(HaveKeyWithValue("kudeploy.com/workspace", workspaceID))
 		Expect(envSecret.Labels).To(HaveKeyWithValue("app.kubernetes.io/managed-by", "kudeploy"))
 		Expect(envSecret.OwnerReferences).To(HaveLen(1))
 		Expect(envSecret.OwnerReferences[0].Name).To(Equal(deploymentName))
@@ -267,7 +267,7 @@ var _ = Describe("Deployment Controller", func() {
 		Expect(deployment.Labels).To(HaveKeyWithValue("kudeploy.com/project", namespaceName))
 		Expect(deployment.Labels).To(HaveKeyWithValue("kudeploy.com/service", serviceName))
 		Expect(deployment.Labels).To(HaveKeyWithValue("kudeploy.com/deployment", deploymentName))
-		Expect(deployment.Labels).To(HaveKeyWithValue("kudeploy.com/workspace-id", workspaceID))
+		Expect(deployment.Labels).To(HaveKeyWithValue("kudeploy.com/workspace", workspaceID))
 		Expect(deployment.Labels).To(HaveKeyWithValue("app.kubernetes.io/managed-by", "kudeploy"))
 		Expect(deployment.Status.KubernetesDeploymentName).To(Equal(deploymentName))
 		Expect(deployment.Status.Conditions).To(ContainElement(SatisfyAll(
@@ -282,7 +282,7 @@ var _ = Describe("Deployment Controller", func() {
 		namespace.Labels = nil
 		deployment := newDeployment()
 		deployment.Labels = map[string]string{
-			"kudeploy.com/workspace-id":   "workspace-stale",
+			"kudeploy.com/workspace":      "workspace-stale",
 			"external.example.com/team":   "platform",
 			"external.example.com/region": "east",
 		}
@@ -292,17 +292,17 @@ var _ = Describe("Deployment Controller", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(reconciler.Get(ctx, deploymentKey, deployment)).To(Succeed())
-		Expect(deployment.Labels).NotTo(HaveKey("kudeploy.com/workspace-id"))
+		Expect(deployment.Labels).NotTo(HaveKey("kudeploy.com/workspace"))
 		Expect(deployment.Labels).To(HaveKeyWithValue("external.example.com/team", "platform"))
 
 		kubernetesDeployment := &appsv1.Deployment{}
 		Expect(reconciler.Get(ctx, deploymentKey, kubernetesDeployment)).To(Succeed())
-		Expect(kubernetesDeployment.Labels).NotTo(HaveKey("kudeploy.com/workspace-id"))
-		Expect(kubernetesDeployment.Spec.Template.Labels).NotTo(HaveKey("kudeploy.com/workspace-id"))
+		Expect(kubernetesDeployment.Labels).NotTo(HaveKey("kudeploy.com/workspace"))
+		Expect(kubernetesDeployment.Spec.Template.Labels).NotTo(HaveKey("kudeploy.com/workspace"))
 
 		envSecret := &corev1.Secret{}
 		Expect(reconciler.Get(ctx, types.NamespacedName{Name: "whoami-00001-env", Namespace: namespaceName}, envSecret)).To(Succeed())
-		Expect(envSecret.Labels).NotTo(HaveKey("kudeploy.com/workspace-id"))
+		Expect(envSecret.Labels).NotTo(HaveKey("kudeploy.com/workspace"))
 	})
 
 	It("enqueues Deployments when Namespace labels change", func() {

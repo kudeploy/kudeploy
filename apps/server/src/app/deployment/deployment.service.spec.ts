@@ -74,7 +74,7 @@ describe('DeploymentService', () => {
       namespace: 'kd-project-1',
       plural: 'deployments',
       labelSelector:
-        'app.kubernetes.io/managed-by=kudeploy,kudeploy.com/workspace-id=workspace_1,kudeploy.com/project=kd-project-1,kudeploy.com/service=kd-service-1',
+        'app.kubernetes.io/managed-by=kudeploy,kudeploy.com/workspace=workspace_1,kudeploy.com/project=kd-project-1,kudeploy.com/service=kd-service-1',
     });
     expect(connectionManager.find).toHaveBeenCalledWith(
       DeploymentConnection,
@@ -225,7 +225,7 @@ function deploymentCrd(
         'kudeploy.com/deployment': name,
         'kudeploy.com/project': projectId,
         'kudeploy.com/service': serviceId,
-        'kudeploy.com/workspace-id': 'workspace_1',
+        'kudeploy.com/workspace': 'workspace_1',
       },
       name,
       namespace: projectId,

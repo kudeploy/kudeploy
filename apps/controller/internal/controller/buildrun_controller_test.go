@@ -98,9 +98,9 @@ var _ = Describe("BuildRun Controller", func() {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: namespaceName,
 				Labels: map[string]string{
-					projectLabel:     namespaceName,
-					workspaceIDLabel: workspaceID,
-					managedByLabel:   managedByLabelValue,
+					projectLabel:   namespaceName,
+					workspaceLabel: workspaceID,
+					managedByLabel: managedByLabelValue,
 				},
 			},
 		}
@@ -118,7 +118,7 @@ var _ = Describe("BuildRun Controller", func() {
 	It("creates a dedicated ServiceAccount and deterministic PipelineRun", func() {
 		buildRun := newBuildRun()
 		buildRun.Labels = map[string]string{
-			"kudeploy.com/workspace-id": "workspace-stale",
+			"kudeploy.com/workspace": "workspace-stale",
 		}
 		reconciler := newReconciler(
 			newNamespace(),
@@ -134,7 +134,7 @@ var _ = Describe("BuildRun Controller", func() {
 		Expect(reconciler.Get(ctx, types.NamespacedName{Name: "buildrun-" + buildRunName, Namespace: namespaceName}, serviceAccount)).To(Succeed())
 		Expect(serviceAccount.Labels).To(HaveKeyWithValue("kudeploy.com/project", namespaceName))
 		Expect(serviceAccount.Labels).To(HaveKeyWithValue("kudeploy.com/buildrun", buildRunName))
-		Expect(serviceAccount.Labels).To(HaveKeyWithValue("kudeploy.com/workspace-id", workspaceID))
+		Expect(serviceAccount.Labels).To(HaveKeyWithValue("kudeploy.com/workspace", workspaceID))
 		Expect(serviceAccount.Labels).To(HaveKeyWithValue("app.kubernetes.io/managed-by", "kudeploy"))
 		Expect(serviceAccount.Secrets).To(ConsistOf(
 			corev1.ObjectReference{Name: "git-credentials"},
@@ -150,7 +150,7 @@ var _ = Describe("BuildRun Controller", func() {
 		Expect(reconciler.Get(ctx, buildRunKey, pipelineRun)).To(Succeed())
 		Expect(pipelineRun.Labels).To(HaveKeyWithValue("kudeploy.com/project", namespaceName))
 		Expect(pipelineRun.Labels).To(HaveKeyWithValue("kudeploy.com/buildrun", buildRunName))
-		Expect(pipelineRun.Labels).To(HaveKeyWithValue("kudeploy.com/workspace-id", workspaceID))
+		Expect(pipelineRun.Labels).To(HaveKeyWithValue("kudeploy.com/workspace", workspaceID))
 		Expect(pipelineRun.Labels).To(HaveKeyWithValue("app.kubernetes.io/managed-by", "kudeploy"))
 		Expect(pipelineRun.Spec.PipelineRef.Resolver).To(Equal(tektonv1.ResolverName("http")))
 		Expect(pipelineRun.Spec.PipelineRef.Params).To(ConsistOf(
@@ -173,7 +173,7 @@ var _ = Describe("BuildRun Controller", func() {
 
 		Expect(reconciler.Get(ctx, buildRunKey, buildRun)).To(Succeed())
 		Expect(buildRun.Labels).To(HaveKeyWithValue("kudeploy.com/project", namespaceName))
-		Expect(buildRun.Labels).To(HaveKeyWithValue("kudeploy.com/workspace-id", workspaceID))
+		Expect(buildRun.Labels).To(HaveKeyWithValue("kudeploy.com/workspace", workspaceID))
 		Expect(buildRun.Labels).To(HaveKeyWithValue("app.kubernetes.io/managed-by", "kudeploy"))
 		Expect(buildRun.Status.PipelineRunName).To(Equal(buildRunName))
 		Expect(buildRun.Status.ServiceAccountName).To(Equal("buildrun-" + buildRunName))
@@ -236,7 +236,7 @@ var _ = Describe("BuildRun Controller", func() {
 	It("repairs managed labels on an existing PipelineRun", func() {
 		buildRun := newBuildRun()
 		buildRun.Labels = map[string]string{
-			"kudeploy.com/workspace-id": "workspace-stale",
+			"kudeploy.com/workspace": "workspace-stale",
 		}
 		pipelineRun := buildPipelineRun(buildRun)
 		pipelineRun.Labels["external.example.com/team"] = "platform"
@@ -253,7 +253,7 @@ var _ = Describe("BuildRun Controller", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(reconciler.Get(ctx, buildRunKey, pipelineRun)).To(Succeed())
-		Expect(pipelineRun.Labels).To(HaveKeyWithValue("kudeploy.com/workspace-id", workspaceID))
+		Expect(pipelineRun.Labels).To(HaveKeyWithValue("kudeploy.com/workspace", workspaceID))
 		Expect(pipelineRun.Labels).To(HaveKeyWithValue("external.example.com/team", "platform"))
 	})
 
