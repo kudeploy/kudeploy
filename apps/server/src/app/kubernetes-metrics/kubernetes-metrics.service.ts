@@ -95,7 +95,10 @@ export class KubernetesMetricsService {
 
     const end = options.now ?? new Date();
     const start = new Date(end.getTime() - rangeSeconds * 1000);
-    const podMatcher = buildPodNameRegexMatcher(projectId, podNames);
+    const podMatcher = buildPodNameRegexMatcher(
+      toKubernetesProjectName(projectId),
+      podNames,
+    );
     const queryOptions = { start, end, stepSeconds };
 
     try {

@@ -66,7 +66,7 @@ describe('KubernetesMetricsService', () => {
         'app.kubernetes.io/managed-by=kudeploy,kudeploy.com/workspace-id=workspace_1,kudeploy.com/project=kd-project-1,kudeploy.com/service=kd-service-1,kudeploy.com/deployment=kd-service-1-00002',
     });
     expect(prometheusClient.queryRange).toHaveBeenCalledWith(
-      expect.stringContaining('container_cpu_usage_seconds_total'),
+      expect.stringContaining('namespace="kd-project-1"'),
       {
         start: new Date('2026-06-08T07:00:00.000Z'),
         end: now,
