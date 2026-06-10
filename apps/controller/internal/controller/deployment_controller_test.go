@@ -41,7 +41,7 @@ var _ = Describe("Deployment Controller", func() {
 		namespaceName  = "whoami"
 		serviceName    = "whoami"
 		deploymentName = "whoami-00001"
-		workspaceID    = "workspace-main"
+		workspaceID    = "kd-workspace-main"
 	)
 
 	ctx := context.Background()
@@ -179,7 +179,7 @@ var _ = Describe("Deployment Controller", func() {
 	It("creates one matching Kubernetes Deployment for the Kudeploy Deployment", func() {
 		deployment := newDeployment()
 		deployment.Labels = map[string]string{
-			"kudeploy.com/workspace": "workspace-stale",
+			"kudeploy.com/workspace": "kd-workspace-stale",
 		}
 		reconciler := newReconciler(deployment)
 
@@ -282,7 +282,7 @@ var _ = Describe("Deployment Controller", func() {
 		namespace.Labels = nil
 		deployment := newDeployment()
 		deployment.Labels = map[string]string{
-			"kudeploy.com/workspace":      "workspace-stale",
+			"kudeploy.com/workspace":      "kd-workspace-stale",
 			"external.example.com/team":   "platform",
 			"external.example.com/region": "east",
 		}

@@ -1,7 +1,12 @@
+export const KUBERNETES_WORKSPACE_NAME_PREFIX = 'kd-workspace-';
 export const KUBERNETES_PROJECT_NAME_PREFIX = 'kd-project-';
 export const KUBERNETES_REGISTRY_CREDENTIAL_NAME_PREFIX = 'kd-regcred-';
 export const KUBERNETES_SERVICE_NAME_PREFIX = 'kd-service-';
 export const KUBERNETES_VOLUME_NAME_PREFIX = 'kd-volume-';
+
+export function toKubernetesWorkspaceName(id: string): string {
+  return `${KUBERNETES_WORKSPACE_NAME_PREFIX}${id}`;
+}
 
 export function toKubernetesProjectName(id: string): string {
   return `${KUBERNETES_PROJECT_NAME_PREFIX}${id}`;

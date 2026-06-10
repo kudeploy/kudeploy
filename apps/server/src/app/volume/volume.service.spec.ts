@@ -28,7 +28,7 @@ describe('VolumeService', () => {
       volumePvc({
         name: 'kd-volume-123',
         namespace: 'kd-project-123',
-        workspaceId: 'workspace_1',
+        workspaceId: 'kd-workspace-workspace_1',
         displayName: 'Database',
         storage: '10Gi',
       }),
@@ -53,7 +53,7 @@ describe('VolumeService', () => {
             namespace: 'kd-project-123',
             labels: {
               'app.kubernetes.io/managed-by': 'kudeploy',
-              'kudeploy.com/workspace': 'workspace_1',
+              'kudeploy.com/workspace': 'kd-workspace-workspace_1',
               'kudeploy.com/project': 'kd-project-123',
             },
             annotations: {
@@ -119,13 +119,13 @@ describe('VolumeService', () => {
     const visibleVolume = volumePvc({
       name: 'kd-volume-visible',
       namespace: 'kd-project-123',
-      workspaceId: 'workspace_1',
+      workspaceId: 'kd-workspace-workspace_1',
       displayName: 'Visible',
     });
     const hiddenVolume = volumePvc({
       name: 'kd-volume-hidden',
       namespace: 'kd-project-123',
-      workspaceId: 'workspace_2',
+      workspaceId: 'kd-workspace-workspace_2',
       displayName: 'Hidden',
     });
 
@@ -165,7 +165,7 @@ describe('VolumeService', () => {
     expect(coreV1Api.listNamespacedPersistentVolumeClaim).toHaveBeenCalledWith({
       namespace: 'kd-project-123',
       labelSelector:
-        'app.kubernetes.io/managed-by=kudeploy,kudeploy.com/workspace=workspace_1,kudeploy.com/project=kd-project-123',
+        'app.kubernetes.io/managed-by=kudeploy,kudeploy.com/workspace=kd-workspace-workspace_1,kudeploy.com/project=kd-project-123',
     });
     expect(connectionManager.find).toHaveBeenCalledWith(
       VolumeConnection,
@@ -215,7 +215,7 @@ describe('VolumeService', () => {
       volumePvc({
         name: 'kd-volume-123',
         namespace: 'kd-project-123',
-        workspaceId: 'workspace_2',
+        workspaceId: 'kd-workspace-workspace_2',
       }),
     );
 
@@ -294,7 +294,7 @@ function volumePvc(
   const {
     name = 'kd-volume-123',
     namespace = 'kd-project-123',
-    workspaceId = 'workspace_1',
+    workspaceId = 'kd-workspace-workspace_1',
     displayName = 'Database',
     storage = '10Gi',
     accessModes = ['ReadWriteOnce'],

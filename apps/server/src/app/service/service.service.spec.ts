@@ -29,7 +29,7 @@ describe('ServiceService', () => {
       serviceCrd({
         name: 'kd-service-123',
         namespace: 'kd-project-123',
-        workspaceId: 'workspace_1',
+        workspaceId: 'kd-workspace-workspace_1',
         displayName: 'API',
         image: 'ghcr.io/kudeploy/whoami:latest',
       }),
@@ -72,7 +72,7 @@ describe('ServiceService', () => {
             namespace: 'kd-project-123',
             labels: {
               'app.kubernetes.io/managed-by': 'kudeploy',
-              'kudeploy.com/workspace': 'workspace_1',
+              'kudeploy.com/workspace': 'kd-workspace-workspace_1',
               'kudeploy.com/project': 'kd-project-123',
             },
             annotations: {
@@ -173,7 +173,7 @@ describe('ServiceService', () => {
       serviceCrd({
         name: 'kd-service-123',
         namespace: 'kd-project-123',
-        workspaceId: 'workspace_1',
+        workspaceId: 'kd-workspace-workspace_1',
         displayName: 'API',
         replicas: 1,
       }),
@@ -382,13 +382,13 @@ describe('ServiceService', () => {
     const visibleService = serviceCrd({
       name: 'kd-service-visible',
       namespace: 'kd-project-123',
-      workspaceId: 'workspace_1',
+      workspaceId: 'kd-workspace-workspace_1',
       displayName: 'Visible',
     });
     const hiddenService = serviceCrd({
       name: 'kd-service-hidden',
       namespace: 'kd-project-123',
-      workspaceId: 'workspace_2',
+      workspaceId: 'kd-workspace-workspace_2',
       displayName: 'Hidden',
     });
 
@@ -431,7 +431,7 @@ describe('ServiceService', () => {
       namespace: 'kd-project-123',
       plural: 'services',
       labelSelector:
-        'app.kubernetes.io/managed-by=kudeploy,kudeploy.com/workspace=workspace_1,kudeploy.com/project=kd-project-123',
+        'app.kubernetes.io/managed-by=kudeploy,kudeploy.com/workspace=kd-workspace-workspace_1,kudeploy.com/project=kd-project-123',
     });
     expect(connectionManager.find).toHaveBeenCalledWith(
       ServiceConnection,
@@ -562,7 +562,7 @@ function serviceCrd(
   const {
     name = 'kd-service-123',
     namespace = 'kd-project-123',
-    workspaceId = 'workspace_1',
+    workspaceId = 'kd-workspace-workspace_1',
     displayName = 'API',
     image = 'nginx:latest',
     activeDeploymentName,

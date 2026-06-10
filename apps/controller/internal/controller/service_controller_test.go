@@ -43,7 +43,7 @@ var _ = Describe("Service Controller", func() {
 		firstDeploymentName  = "whoami-00001"
 		secondDeploymentName = "whoami-00002"
 		externalTeam         = "platform"
-		workspaceID          = "workspace-main"
+		workspaceID          = "kd-workspace-main"
 	)
 
 	ctx := context.Background()
@@ -179,7 +179,7 @@ var _ = Describe("Service Controller", func() {
 	It("creates the first versioned Kudeploy Deployment and a stable Kubernetes Service", func() {
 		service := newService()
 		service.Labels = map[string]string{
-			"kudeploy.com/workspace": "workspace-stale",
+			"kudeploy.com/workspace": "kd-workspace-stale",
 		}
 		reconciler := newReconciler(newNamespace(), service)
 

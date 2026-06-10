@@ -22,7 +22,7 @@ describe('ProjectService', () => {
     coreV1Api.createNamespace.mockResolvedValue(
       namespaceResource({
         name: 'kd-project-123',
-        workspaceId: 'workspace_1',
+        workspaceId: 'kd-workspace-workspace_1',
         displayName: 'Payments',
         phase: 'Active',
       }),
@@ -41,7 +41,7 @@ describe('ProjectService', () => {
             name: expect.stringMatching(/^kd-project-\d+$/),
             labels: {
               'app.kubernetes.io/managed-by': 'kudeploy',
-              'kudeploy.com/workspace': 'workspace_1',
+              'kudeploy.com/workspace': 'kd-workspace-workspace_1',
               'kudeploy.com/project': expect.stringMatching(/^kd-project-\d+$/),
             },
             annotations: {
@@ -66,7 +66,7 @@ describe('ProjectService', () => {
     coreV1Api.readNamespace.mockResolvedValue(
       namespaceResource({
         name: 'kd-project-123',
-        workspaceId: 'workspace_1',
+        workspaceId: 'kd-workspace-workspace_1',
       }),
     );
 
@@ -86,13 +86,13 @@ describe('ProjectService', () => {
     const workspace = { id: 'workspace_1' } as Workspace;
     const visibleProject = namespaceResource({
       name: 'kd-project-visible',
-      workspaceId: 'workspace_1',
+      workspaceId: 'kd-workspace-workspace_1',
       displayName: 'Visible',
       phase: 'Active',
     });
     const hiddenProject = namespaceResource({
       name: 'kd-project-hidden',
-      workspaceId: 'workspace_2',
+      workspaceId: 'kd-workspace-workspace_2',
       displayName: 'Hidden',
       phase: 'Active',
     });
@@ -126,7 +126,7 @@ describe('ProjectService', () => {
 
     expect(coreV1Api.listNamespace).toHaveBeenCalledWith({
       labelSelector:
-        'app.kubernetes.io/managed-by=kudeploy,kudeploy.com/workspace=workspace_1',
+        'app.kubernetes.io/managed-by=kudeploy,kudeploy.com/workspace=kd-workspace-workspace_1',
     });
     expect(connectionManager.find).toHaveBeenCalledWith(
       ProjectConnection,
@@ -206,7 +206,7 @@ function namespaceResource(
 ): ProjectResource {
   const {
     name = 'kd-project-123',
-    workspaceId = 'workspace_1',
+    workspaceId = 'kd-workspace-workspace_1',
     displayName = 'Payments',
     phase,
     deletionTimestamp,

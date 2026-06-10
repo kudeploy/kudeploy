@@ -6,6 +6,7 @@ import {
   toGraphqlServiceId,
   toKubernetesProjectName,
   toKubernetesServiceName,
+  toKubernetesWorkspaceName,
 } from '@/app/kubernetes/resource-names';
 import {
   KUDEPLOY_API_GROUP,
@@ -255,7 +256,7 @@ export class DeploymentService {
   ) {
     return [
       `${MANAGED_BY_LABEL}=${MANAGED_BY_LABEL_VALUE}`,
-      `${WORKSPACE_LABEL}=${workspace.id}`,
+      `${WORKSPACE_LABEL}=${toKubernetesWorkspaceName(workspace.id)}`,
       `${PROJECT_LABEL}=${projectId}`,
       `${SERVICE_LABEL}=${serviceId}`,
     ].join(',');
@@ -272,7 +273,7 @@ export class DeploymentService {
     return (
       resource.metadata.namespace === projectId &&
       labels[MANAGED_BY_LABEL] === MANAGED_BY_LABEL_VALUE &&
-      labels[WORKSPACE_LABEL] === workspace.id &&
+      labels[WORKSPACE_LABEL] === toKubernetesWorkspaceName(workspace.id) &&
       labels[PROJECT_LABEL] === projectId &&
       labels[SERVICE_LABEL] === serviceId
     );
