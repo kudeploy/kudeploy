@@ -493,6 +493,42 @@ describe('ServiceService', () => {
     ]);
   });
 
+  it('clears Service CRD volume mounts when updating with null volumes', async () => {
+    const { service, customObjectsApi, projectService, volumeService } =
+      createService();
+    const workspace = { id: 'workspace_1' } as Workspace;
+
+    projectService.findProject.mockResolvedValue({
+      id: '123',
+      name: 'Payments',
+    });
+    customObjectsApi.getNamespacedCustomObject.mockResolvedValue(
+      serviceCrd({
+        volumes: [{ name: 'kd-volume-data', mountPath: '/data' }],
+      }),
+    );
+    customObjectsApi.patchNamespacedCustomObject.mockResolvedValue(
+      serviceCrd({ volumes: [] }),
+    );
+
+    const result = await service.updateService(workspace, '123', '123', {
+      volumes: null,
+    });
+
+    expect(volumeService.findVolume).not.toHaveBeenCalled();
+    expect(customObjectsApi.patchNamespacedCustomObject).toHaveBeenCalledWith(
+      expect.objectContaining({
+        body: expect.objectContaining({
+          spec: expect.objectContaining({
+            volumes: [],
+          }),
+        }),
+      }),
+      expect.any(Object),
+    );
+    expect(result.volumes).toEqual([]);
+  });
+
   it('clears imageSecretRef when updating a Service CRD with a null registry credential', async () => {
     const {
       service,
@@ -667,6 +703,25 @@ describe('ServiceService', () => {
       activeDeploymentName: 'kd-service-123-00002',
       latestDeploymentName: 'kd-service-123-00003',
     });
+  });
+
+  it('keeps non-prefixed Service volume names readable', () => {
+    const { service } = createService();
+
+    expect(
+      service.toService(
+        serviceCrd({
+          volumes: [{ name: 'data', mountPath: '/data' }],
+        }),
+      ).volumes,
+    ).toEqual([
+      {
+        volumeId: 'data',
+        mountPath: '/data',
+        subPath: null,
+        readOnly: false,
+      },
+    ]);
   });
 });
 

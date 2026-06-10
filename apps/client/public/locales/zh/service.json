@@ -217,7 +217,8 @@
       "sub_path": "卷路径",
       "read_only": "只读",
       "required": "请选择卷",
-      "mount_path_required": "请输入挂载路径"
+      "mount_path_required": "请输入挂载路径",
+      "replicas_limited": "卷挂载要求副本数为 0 或 1"
     }
   },
   "filter": {

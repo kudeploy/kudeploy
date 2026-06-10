@@ -304,6 +304,8 @@ function ServiceSettingsComponent() {
         readOnly: volume.readOnly,
       };
     });
+    const effectiveReplicas =
+      replicas === "" ? (service.replicas ?? 1) : replicas;
 
     if (!trimmedName) {
       toast.error(t("service:form.name.required"));
@@ -336,6 +338,11 @@ function ServiceSettingsComponent() {
 
     if (volumeInput.some((volume) => !volume.mountPath)) {
       toast.error(t("service:form.volume.mount_path_required"));
+      return;
+    }
+
+    if (volumeInput.length > 0 && effectiveReplicas > 1) {
+      toast.error(t("service:form.volume.replicas_limited"));
       return;
     }
 

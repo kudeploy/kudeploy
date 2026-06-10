@@ -84,5 +84,5 @@ export class CreateServiceInput {
   @ValidateNested({ each: true })
   @Type(() => ServiceVolumeInput)
   @Field(() => [ServiceVolumeInput], { nullable: true })
-  volumes?: ServiceVolumeInput[];
+  volumes?: ServiceVolumeInput[] | null;
 }

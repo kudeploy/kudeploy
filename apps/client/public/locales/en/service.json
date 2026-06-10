@@ -219,7 +219,8 @@
       "sub_path": "Volume path",
       "read_only": "Read-only",
       "required": "Select a volume",
-      "mount_path_required": "Mount path is required"
+      "mount_path_required": "Mount path is required",
+      "replicas_limited": "Volume mounts require replicas to be 0 or 1"
     }
   },
   "filter": {

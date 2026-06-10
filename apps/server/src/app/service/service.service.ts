@@ -6,6 +6,7 @@ import { SERVER_SIDE_APPLY_OPTIONS } from '@/app/kubernetes';
 import {
   hasKubernetesRegistryCredentialNamePrefix,
   hasKubernetesServiceNamePrefix,
+  hasKubernetesVolumeNamePrefix,
   toGraphqlProjectId,
   toGraphqlRegistryCredentialId,
   toGraphqlServiceId,
@@ -137,12 +138,14 @@ interface ServiceResourceInput {
     key: string;
     value: string;
   }[];
-  volumes?: {
-    volumeId: string;
-    mountPath: string;
-    subPath?: string | null;
-    readOnly?: boolean | null;
-  }[];
+  volumes?:
+    | {
+        volumeId: string;
+        mountPath: string;
+        subPath?: string | null;
+        readOnly?: boolean | null;
+      }[]
+    | null;
 }
 
 @Injectable()
@@ -275,7 +278,7 @@ export class ServiceService {
     await this.ensureVolumes(workspace, projectId, input.volumes);
 
     const volumes =
-      input.volumes === undefined ? existing.volumes : input.volumes;
+      input.volumes === undefined ? existing.volumes : (input.volumes ?? []);
 
     const resource = (await this.customObjectsApi.patchNamespacedCustomObject(
       {
@@ -389,7 +392,7 @@ export class ServiceService {
       resources: this.toServiceResources(resource.spec.resources),
       healthCheck: this.toServiceHealthCheck(resource.spec.readinessProbe),
       volumes: (resource.spec.volumes ?? []).map((volume) => ({
-        volumeId: toGraphqlVolumeId(volume.name),
+        volumeId: this.toVolumeId(volume.name),
         mountPath: volume.mountPath,
         subPath: volume.subPath ?? null,
         readOnly: volume.readOnly ?? false,
@@ -512,7 +515,7 @@ export class ServiceService {
         })),
         ...(input.volumes !== undefined
           ? {
-              volumes: input.volumes.map((volume) => ({
+              volumes: (input.volumes ?? []).map((volume) => ({
                 name: toKubernetesVolumeName(volume.volumeId),
                 mountPath: volume.mountPath,
                 ...(this.nonEmpty(volume.subPath)
@@ -697,6 +700,10 @@ export class ServiceService {
     }
 
     return toGraphqlRegistryCredentialId(name);
+  }
+
+  private toVolumeId(name: string): string {
+    return hasKubernetesVolumeNamePrefix(name) ? toGraphqlVolumeId(name) : name;
   }
 
   private toServiceInputPorts(

@@ -233,6 +233,13 @@ test.describe("workspace Projects and Services", () => {
     await page.getByTestId("service-volume-mount-path-input-0").fill("/data");
     await page.getByTestId("service-volume-sub-path-input-0").fill("/");
     await page.getByTestId("service-volume-read-only-input-0").click();
+    await page.getByTestId("service-replicas-input").fill("2");
+    await page.getByTestId("service-save-action").click();
+    await expect(page.getByText("卷挂载要求副本数为 0 或 1")).toBeVisible();
+    expect(graphqlMock.serviceUpdateRequests.length).toBe(
+      updateRequestsBeforeSettingsSave,
+    );
+    await page.getByTestId("service-replicas-input").fill("1");
     await page.getByTestId("service-resources-enabled").click();
     await expect(page.getByTestId("service-cpu-request-input")).toHaveCount(0);
     await page.getByTestId("service-save-action").click();
@@ -242,6 +249,7 @@ test.describe("workspace Projects and Services", () => {
     expect(graphqlMock.serviceUpdateRequests.at(-1)?.input).toMatchObject({
       name: "API Edited",
       image: "ghcr.io/kudeploy/api:v2",
+      replicas: 1,
       env: [{ key: "NODE_ENV", value: "production" }],
       ports: [{ port: 80, targetPort: 8081 }],
       resources: null,
