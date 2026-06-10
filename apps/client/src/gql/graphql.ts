@@ -50,6 +50,11 @@ export type Scalars = {
    */
   ProjectFilter: { input: any; output: any };
   /**
+   * A filter for RegistryCredential that accepts MongoDB query syntax.
+   * Supported fields: name, registry, createdAt
+   */
+  RegistryCredentialFilter: { input: any; output: any };
+  /**
    * A filter for Service that accepts MongoDB query syntax.
    * Supported fields: name, createdAt
    */
@@ -155,6 +160,14 @@ export type CreateProjectInput = {
   name: Scalars["String"]["input"];
 };
 
+export type CreateRegistryCredentialInput = {
+  name: Scalars["String"]["input"];
+  password: Scalars["String"]["input"];
+  projectId: Scalars["ID"]["input"];
+  registry: Scalars["String"]["input"];
+  username: Scalars["String"]["input"];
+};
+
 export type CreateServiceAccountWorkspaceMemberInput = {
   name: Scalars["String"]["input"];
   permissions?: InputMaybe<Array<WorkspacePermission>>;
@@ -170,6 +183,7 @@ export type CreateServiceInput = {
   name: Scalars["String"]["input"];
   ports: Array<ServicePortInput>;
   projectId: Scalars["ID"]["input"];
+  registryCredentialId?: InputMaybe<Scalars["ID"]["input"]>;
   replicas?: InputMaybe<Scalars["Int"]["input"]>;
   resources?: InputMaybe<ServiceResourcesInput>;
 };
@@ -354,6 +368,7 @@ export type Mutation = {
   createApiKey: CreateApiKeyResult;
   createDomain: Domain;
   createProject: Project;
+  createRegistryCredential: RegistryCredential;
   createService: Service;
   createServiceAccountWorkspaceMember: WorkspaceMember;
   createVolume: Volume;
@@ -363,6 +378,7 @@ export type Mutation = {
   deleteApiKey: ApiKey;
   deleteDomain: Domain;
   deleteProject: Project;
+  deleteRegistryCredential: RegistryCredential;
   deleteService: Service;
   deleteVolume: Volume;
   deleteWorkspace: Workspace;
@@ -373,6 +389,7 @@ export type Mutation = {
   removeWorkspaceMember: WorkspaceMember;
   updateApiKey: ApiKey;
   updateProject: Project;
+  updateRegistryCredential: RegistryCredential;
   updateService: Service;
   updateWorkspace: Workspace;
   updateWorkspaceMember?: Maybe<WorkspaceMember>;
@@ -404,6 +421,10 @@ export type MutationCreateDomainArgs = {
 
 export type MutationCreateProjectArgs = {
   input: CreateProjectInput;
+};
+
+export type MutationCreateRegistryCredentialArgs = {
+  input: CreateRegistryCredentialInput;
 };
 
 export type MutationCreateServiceArgs = {
@@ -442,6 +463,11 @@ export type MutationDeleteProjectArgs = {
   id: Scalars["ID"]["input"];
 };
 
+export type MutationDeleteRegistryCredentialArgs = {
+  id: Scalars["ID"]["input"];
+  projectId: Scalars["ID"]["input"];
+};
+
 export type MutationDeleteServiceArgs = {
   id: Scalars["ID"]["input"];
   projectId: Scalars["ID"]["input"];
@@ -473,6 +499,12 @@ export type MutationUpdateApiKeyArgs = {
 export type MutationUpdateProjectArgs = {
   id: Scalars["ID"]["input"];
   input: UpdateProjectInput;
+};
+
+export type MutationUpdateRegistryCredentialArgs = {
+  id: Scalars["ID"]["input"];
+  input: UpdateRegistryCredentialInput;
+  projectId: Scalars["ID"]["input"];
 };
 
 export type MutationUpdateServiceArgs = {
@@ -520,9 +552,20 @@ export type Project = {
   createdAt: Scalars["DateTime"]["output"];
   id: Scalars["ID"]["output"];
   name: Scalars["String"]["output"];
+  registryCredentials: RegistryCredentialConnection;
   status: ProjectStatus;
   updatedAt: Scalars["DateTime"]["output"];
   volumes: VolumeConnection;
+};
+
+export type ProjectRegistryCredentialsArgs = {
+  after?: InputMaybe<Scalars["String"]["input"]>;
+  before?: InputMaybe<Scalars["String"]["input"]>;
+  filter?: InputMaybe<Scalars["RegistryCredentialFilter"]["input"]>;
+  first?: InputMaybe<Scalars["Int"]["input"]>;
+  last?: InputMaybe<Scalars["Int"]["input"]>;
+  orderBy?: InputMaybe<RegistryCredentialOrder>;
+  query?: InputMaybe<Scalars["String"]["input"]>;
 };
 
 export type ProjectVolumesArgs = {
@@ -589,6 +632,8 @@ export type Query = {
   domains: DomainConnection;
   project?: Maybe<Project>;
   projects: ProjectConnection;
+  registryCredential?: Maybe<RegistryCredential>;
+  registryCredentials: RegistryCredentialConnection;
   service?: Maybe<Service>;
   services: ServiceConnection;
   volume?: Maybe<Volume>;
@@ -658,6 +703,22 @@ export type QueryProjectsArgs = {
   first?: InputMaybe<Scalars["Int"]["input"]>;
   last?: InputMaybe<Scalars["Int"]["input"]>;
   orderBy?: InputMaybe<ProjectOrder>;
+  query?: InputMaybe<Scalars["String"]["input"]>;
+};
+
+export type QueryRegistryCredentialArgs = {
+  id: Scalars["ID"]["input"];
+  projectId: Scalars["ID"]["input"];
+};
+
+export type QueryRegistryCredentialsArgs = {
+  after?: InputMaybe<Scalars["String"]["input"]>;
+  before?: InputMaybe<Scalars["String"]["input"]>;
+  filter?: InputMaybe<Scalars["RegistryCredentialFilter"]["input"]>;
+  first?: InputMaybe<Scalars["Int"]["input"]>;
+  last?: InputMaybe<Scalars["Int"]["input"]>;
+  orderBy?: InputMaybe<RegistryCredentialOrder>;
+  projectId: Scalars["ID"]["input"];
   query?: InputMaybe<Scalars["String"]["input"]>;
 };
 
@@ -739,6 +800,50 @@ export type QueryWorkspacesArgs = {
   query?: InputMaybe<Scalars["String"]["input"]>;
 };
 
+export type RegistryCredential = {
+  __typename?: "RegistryCredential";
+  createdAt: Scalars["DateTime"]["output"];
+  id: Scalars["ID"]["output"];
+  name: Scalars["String"]["output"];
+  projectId: Scalars["ID"]["output"];
+  registry: Scalars["String"]["output"];
+  updatedAt: Scalars["DateTime"]["output"];
+  username: Scalars["String"]["output"];
+};
+
+export type RegistryCredentialConnection = {
+  __typename?: "RegistryCredentialConnection";
+  /** A list of edges. */
+  edges: Array<RegistryCredentialEdge>;
+  /** Information to aid in pagination. */
+  pageInfo: PageInfo;
+  /** Identifies the total count of items in the connection. */
+  totalCount: Scalars["Int"]["output"];
+};
+
+/** An auto-generated type which holds one RegistryCredential and a cursor during pagination. */
+export type RegistryCredentialEdge = {
+  __typename?: "RegistryCredentialEdge";
+  /** A cursor for use in pagination. */
+  cursor: Scalars["String"]["output"];
+  /** The item at the end of RegistryCredentialEdge. */
+  node: RegistryCredential;
+};
+
+/** Ordering options for registrycredential connections */
+export type RegistryCredentialOrder = {
+  /** The ordering direction. */
+  direction: OrderDirection;
+  /** The field to order registrycredentials by. */
+  field: RegistryCredentialOrderField;
+};
+
+/** Properties by which registrycredential connections can be ordered. */
+export enum RegistryCredentialOrderField {
+  CREATED_AT = "CREATED_AT",
+  ID = "ID",
+}
+
 export type Service = {
   __typename?: "Service";
   activeDeploymentName?: Maybe<Scalars["String"]["output"]>;
@@ -755,6 +860,7 @@ export type Service = {
   name: Scalars["String"]["output"];
   ports: Array<ServicePort>;
   projectId: Scalars["ID"]["output"];
+  registryCredentialId?: Maybe<Scalars["ID"]["output"]>;
   replicas?: Maybe<Scalars["Int"]["output"]>;
   resources?: Maybe<ServiceResources>;
   status: ServiceStatus;
@@ -915,6 +1021,13 @@ export type UpdateProjectInput = {
   name?: InputMaybe<Scalars["String"]["input"]>;
 };
 
+export type UpdateRegistryCredentialInput = {
+  name?: InputMaybe<Scalars["String"]["input"]>;
+  password?: InputMaybe<Scalars["String"]["input"]>;
+  registry?: InputMaybe<Scalars["String"]["input"]>;
+  username?: InputMaybe<Scalars["String"]["input"]>;
+};
+
 export type UpdateServiceInput = {
   args?: InputMaybe<Array<Scalars["String"]["input"]>>;
   command?: InputMaybe<Array<Scalars["String"]["input"]>>;
@@ -923,6 +1036,7 @@ export type UpdateServiceInput = {
   image?: InputMaybe<Scalars["String"]["input"]>;
   name?: InputMaybe<Scalars["String"]["input"]>;
   ports?: InputMaybe<Array<ServicePortInput>>;
+  registryCredentialId?: InputMaybe<Scalars["ID"]["input"]>;
   replicas?: InputMaybe<Scalars["Int"]["input"]>;
   resources?: InputMaybe<ServiceResourcesInput>;
 };
@@ -1828,6 +1942,100 @@ export type UpdateWorkspaceMemberStatusFromMembersRouteMutation = {
   } | null;
 };
 
+export type GetRegistryCredentialsFromProjectRegistryCredentialsRouteQueryVariables =
+  Exact<{
+    projectId: Scalars["ID"]["input"];
+    after?: InputMaybe<Scalars["String"]["input"]>;
+    before?: InputMaybe<Scalars["String"]["input"]>;
+    first?: InputMaybe<Scalars["Int"]["input"]>;
+    last?: InputMaybe<Scalars["Int"]["input"]>;
+    filter?: InputMaybe<Scalars["RegistryCredentialFilter"]["input"]>;
+    orderBy?: InputMaybe<RegistryCredentialOrder>;
+    query?: InputMaybe<Scalars["String"]["input"]>;
+  }>;
+
+export type GetRegistryCredentialsFromProjectRegistryCredentialsRouteQuery = {
+  __typename?: "Query";
+  project?: { __typename?: "Project"; id: string; name: string } | null;
+  registryCredentials: {
+    __typename?: "RegistryCredentialConnection";
+    edges: Array<{
+      __typename?: "RegistryCredentialEdge";
+      node: {
+        __typename?: "RegistryCredential";
+        id: string;
+        projectId: string;
+        name: string;
+        registry: string;
+        username: string;
+        createdAt: any;
+        updatedAt: any;
+      };
+    }>;
+    pageInfo: {
+      __typename?: "PageInfo";
+      endCursor?: string | null;
+      hasNextPage: boolean;
+      hasPreviousPage: boolean;
+      startCursor?: string | null;
+    };
+  };
+};
+
+export type CreateRegistryCredentialFromProjectRegistryCredentialsRouteMutationVariables =
+  Exact<{
+    input: CreateRegistryCredentialInput;
+  }>;
+
+export type CreateRegistryCredentialFromProjectRegistryCredentialsRouteMutation =
+  {
+    __typename?: "Mutation";
+    createRegistryCredential: {
+      __typename?: "RegistryCredential";
+      id: string;
+      projectId: string;
+      name: string;
+      registry: string;
+      username: string;
+      createdAt: any;
+      updatedAt: any;
+    };
+  };
+
+export type UpdateRegistryCredentialFromProjectRegistryCredentialsRouteMutationVariables =
+  Exact<{
+    projectId: Scalars["ID"]["input"];
+    id: Scalars["ID"]["input"];
+    input: UpdateRegistryCredentialInput;
+  }>;
+
+export type UpdateRegistryCredentialFromProjectRegistryCredentialsRouteMutation =
+  {
+    __typename?: "Mutation";
+    updateRegistryCredential: {
+      __typename?: "RegistryCredential";
+      id: string;
+      projectId: string;
+      name: string;
+      registry: string;
+      username: string;
+      createdAt: any;
+      updatedAt: any;
+    };
+  };
+
+export type DeleteRegistryCredentialFromProjectRegistryCredentialsRouteMutationVariables =
+  Exact<{
+    projectId: Scalars["ID"]["input"];
+    id: Scalars["ID"]["input"];
+  }>;
+
+export type DeleteRegistryCredentialFromProjectRegistryCredentialsRouteMutation =
+  {
+    __typename?: "Mutation";
+    deleteRegistryCredential: { __typename?: "RegistryCredential"; id: string };
+  };
+
 export type GetServicesFromServicesRouteQueryVariables = Exact<{
   projectId: Scalars["ID"]["input"];
   after?: InputMaybe<Scalars["String"]["input"]>;
@@ -1842,6 +2050,18 @@ export type GetServicesFromServicesRouteQueryVariables = Exact<{
 export type GetServicesFromServicesRouteQuery = {
   __typename?: "Query";
   project?: { __typename?: "Project"; id: string; name: string } | null;
+  registryCredentials: {
+    __typename?: "RegistryCredentialConnection";
+    edges: Array<{
+      __typename?: "RegistryCredentialEdge";
+      node: {
+        __typename?: "RegistryCredential";
+        id: string;
+        name: string;
+        registry: string;
+      };
+    }>;
+  };
   services: {
     __typename?: "ServiceConnection";
     edges: Array<{
@@ -1852,6 +2072,7 @@ export type GetServicesFromServicesRouteQuery = {
         projectId: string;
         name: string;
         image: string;
+        registryCredentialId?: string | null;
         replicas?: number | null;
         status: ServiceStatus;
         createdAt: any;
@@ -1889,6 +2110,7 @@ export type CreateServiceFromServicesRouteMutation = {
     projectId: string;
     name: string;
     image: string;
+    registryCredentialId?: string | null;
     replicas?: number | null;
     command: Array<string>;
     args: Array<string>;
@@ -2230,6 +2452,26 @@ export type DeleteServiceFromServiceSettingsRouteMutation = {
   deleteService: { __typename?: "Service"; id: string };
 };
 
+export type GetRegistryCredentialsFromServiceSourceRouteQueryVariables = Exact<{
+  projectId: Scalars["ID"]["input"];
+}>;
+
+export type GetRegistryCredentialsFromServiceSourceRouteQuery = {
+  __typename?: "Query";
+  registryCredentials: {
+    __typename?: "RegistryCredentialConnection";
+    edges: Array<{
+      __typename?: "RegistryCredentialEdge";
+      node: {
+        __typename?: "RegistryCredential";
+        id: string;
+        name: string;
+        registry: string;
+      };
+    }>;
+  };
+};
+
 export type UpdateServiceSourceFromServiceSourceRouteMutationVariables = Exact<{
   projectId: Scalars["ID"]["input"];
   id: Scalars["ID"]["input"];
@@ -2242,6 +2484,7 @@ export type UpdateServiceSourceFromServiceSourceRouteMutation = {
     __typename?: "Service";
     id: string;
     image: string;
+    registryCredentialId?: string | null;
     command: Array<string>;
     args: Array<string>;
     updatedAt: any;
@@ -2311,6 +2554,7 @@ export type GetServiceFromServiceLayoutQuery = {
     projectId: string;
     name: string;
     image: string;
+    registryCredentialId?: string | null;
     replicas?: number | null;
     command: Array<string>;
     args: Array<string>;
@@ -5358,6 +5602,513 @@ export const UpdateWorkspaceMemberStatusFromMembersRouteDocument = {
   UpdateWorkspaceMemberStatusFromMembersRouteMutation,
   UpdateWorkspaceMemberStatusFromMembersRouteMutationVariables
 >;
+export const GetRegistryCredentialsFromProjectRegistryCredentialsRouteDocument =
+  {
+    kind: "Document",
+    definitions: [
+      {
+        kind: "OperationDefinition",
+        operation: "query",
+        name: {
+          kind: "Name",
+          value: "getRegistryCredentialsFromProjectRegistryCredentialsRoute",
+        },
+        variableDefinitions: [
+          {
+            kind: "VariableDefinition",
+            variable: {
+              kind: "Variable",
+              name: { kind: "Name", value: "projectId" },
+            },
+            type: {
+              kind: "NonNullType",
+              type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+            },
+          },
+          {
+            kind: "VariableDefinition",
+            variable: {
+              kind: "Variable",
+              name: { kind: "Name", value: "after" },
+            },
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "String" },
+            },
+          },
+          {
+            kind: "VariableDefinition",
+            variable: {
+              kind: "Variable",
+              name: { kind: "Name", value: "before" },
+            },
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "String" },
+            },
+          },
+          {
+            kind: "VariableDefinition",
+            variable: {
+              kind: "Variable",
+              name: { kind: "Name", value: "first" },
+            },
+            type: { kind: "NamedType", name: { kind: "Name", value: "Int" } },
+          },
+          {
+            kind: "VariableDefinition",
+            variable: {
+              kind: "Variable",
+              name: { kind: "Name", value: "last" },
+            },
+            type: { kind: "NamedType", name: { kind: "Name", value: "Int" } },
+          },
+          {
+            kind: "VariableDefinition",
+            variable: {
+              kind: "Variable",
+              name: { kind: "Name", value: "filter" },
+            },
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "RegistryCredentialFilter" },
+            },
+          },
+          {
+            kind: "VariableDefinition",
+            variable: {
+              kind: "Variable",
+              name: { kind: "Name", value: "orderBy" },
+            },
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "RegistryCredentialOrder" },
+            },
+          },
+          {
+            kind: "VariableDefinition",
+            variable: {
+              kind: "Variable",
+              name: { kind: "Name", value: "query" },
+            },
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "String" },
+            },
+          },
+        ],
+        selectionSet: {
+          kind: "SelectionSet",
+          selections: [
+            {
+              kind: "Field",
+              name: { kind: "Name", value: "project" },
+              arguments: [
+                {
+                  kind: "Argument",
+                  name: { kind: "Name", value: "id" },
+                  value: {
+                    kind: "Variable",
+                    name: { kind: "Name", value: "projectId" },
+                  },
+                },
+              ],
+              selectionSet: {
+                kind: "SelectionSet",
+                selections: [
+                  { kind: "Field", name: { kind: "Name", value: "id" } },
+                  { kind: "Field", name: { kind: "Name", value: "name" } },
+                ],
+              },
+            },
+            {
+              kind: "Field",
+              name: { kind: "Name", value: "registryCredentials" },
+              arguments: [
+                {
+                  kind: "Argument",
+                  name: { kind: "Name", value: "projectId" },
+                  value: {
+                    kind: "Variable",
+                    name: { kind: "Name", value: "projectId" },
+                  },
+                },
+                {
+                  kind: "Argument",
+                  name: { kind: "Name", value: "after" },
+                  value: {
+                    kind: "Variable",
+                    name: { kind: "Name", value: "after" },
+                  },
+                },
+                {
+                  kind: "Argument",
+                  name: { kind: "Name", value: "before" },
+                  value: {
+                    kind: "Variable",
+                    name: { kind: "Name", value: "before" },
+                  },
+                },
+                {
+                  kind: "Argument",
+                  name: { kind: "Name", value: "first" },
+                  value: {
+                    kind: "Variable",
+                    name: { kind: "Name", value: "first" },
+                  },
+                },
+                {
+                  kind: "Argument",
+                  name: { kind: "Name", value: "last" },
+                  value: {
+                    kind: "Variable",
+                    name: { kind: "Name", value: "last" },
+                  },
+                },
+                {
+                  kind: "Argument",
+                  name: { kind: "Name", value: "filter" },
+                  value: {
+                    kind: "Variable",
+                    name: { kind: "Name", value: "filter" },
+                  },
+                },
+                {
+                  kind: "Argument",
+                  name: { kind: "Name", value: "orderBy" },
+                  value: {
+                    kind: "Variable",
+                    name: { kind: "Name", value: "orderBy" },
+                  },
+                },
+                {
+                  kind: "Argument",
+                  name: { kind: "Name", value: "query" },
+                  value: {
+                    kind: "Variable",
+                    name: { kind: "Name", value: "query" },
+                  },
+                },
+              ],
+              selectionSet: {
+                kind: "SelectionSet",
+                selections: [
+                  {
+                    kind: "Field",
+                    name: { kind: "Name", value: "edges" },
+                    selectionSet: {
+                      kind: "SelectionSet",
+                      selections: [
+                        {
+                          kind: "Field",
+                          name: { kind: "Name", value: "node" },
+                          selectionSet: {
+                            kind: "SelectionSet",
+                            selections: [
+                              {
+                                kind: "Field",
+                                name: { kind: "Name", value: "id" },
+                              },
+                              {
+                                kind: "Field",
+                                name: { kind: "Name", value: "projectId" },
+                              },
+                              {
+                                kind: "Field",
+                                name: { kind: "Name", value: "name" },
+                              },
+                              {
+                                kind: "Field",
+                                name: { kind: "Name", value: "registry" },
+                              },
+                              {
+                                kind: "Field",
+                                name: { kind: "Name", value: "username" },
+                              },
+                              {
+                                kind: "Field",
+                                name: { kind: "Name", value: "createdAt" },
+                              },
+                              {
+                                kind: "Field",
+                                name: { kind: "Name", value: "updatedAt" },
+                              },
+                            ],
+                          },
+                        },
+                      ],
+                    },
+                  },
+                  {
+                    kind: "Field",
+                    name: { kind: "Name", value: "pageInfo" },
+                    selectionSet: {
+                      kind: "SelectionSet",
+                      selections: [
+                        {
+                          kind: "Field",
+                          name: { kind: "Name", value: "endCursor" },
+                        },
+                        {
+                          kind: "Field",
+                          name: { kind: "Name", value: "hasNextPage" },
+                        },
+                        {
+                          kind: "Field",
+                          name: { kind: "Name", value: "hasPreviousPage" },
+                        },
+                        {
+                          kind: "Field",
+                          name: { kind: "Name", value: "startCursor" },
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      },
+    ],
+  } as unknown as DocumentNode<
+    GetRegistryCredentialsFromProjectRegistryCredentialsRouteQuery,
+    GetRegistryCredentialsFromProjectRegistryCredentialsRouteQueryVariables
+  >;
+export const CreateRegistryCredentialFromProjectRegistryCredentialsRouteDocument =
+  {
+    kind: "Document",
+    definitions: [
+      {
+        kind: "OperationDefinition",
+        operation: "mutation",
+        name: {
+          kind: "Name",
+          value: "createRegistryCredentialFromProjectRegistryCredentialsRoute",
+        },
+        variableDefinitions: [
+          {
+            kind: "VariableDefinition",
+            variable: {
+              kind: "Variable",
+              name: { kind: "Name", value: "input" },
+            },
+            type: {
+              kind: "NonNullType",
+              type: {
+                kind: "NamedType",
+                name: { kind: "Name", value: "CreateRegistryCredentialInput" },
+              },
+            },
+          },
+        ],
+        selectionSet: {
+          kind: "SelectionSet",
+          selections: [
+            {
+              kind: "Field",
+              name: { kind: "Name", value: "createRegistryCredential" },
+              arguments: [
+                {
+                  kind: "Argument",
+                  name: { kind: "Name", value: "input" },
+                  value: {
+                    kind: "Variable",
+                    name: { kind: "Name", value: "input" },
+                  },
+                },
+              ],
+              selectionSet: {
+                kind: "SelectionSet",
+                selections: [
+                  { kind: "Field", name: { kind: "Name", value: "id" } },
+                  { kind: "Field", name: { kind: "Name", value: "projectId" } },
+                  { kind: "Field", name: { kind: "Name", value: "name" } },
+                  { kind: "Field", name: { kind: "Name", value: "registry" } },
+                  { kind: "Field", name: { kind: "Name", value: "username" } },
+                  { kind: "Field", name: { kind: "Name", value: "createdAt" } },
+                  { kind: "Field", name: { kind: "Name", value: "updatedAt" } },
+                ],
+              },
+            },
+          ],
+        },
+      },
+    ],
+  } as unknown as DocumentNode<
+    CreateRegistryCredentialFromProjectRegistryCredentialsRouteMutation,
+    CreateRegistryCredentialFromProjectRegistryCredentialsRouteMutationVariables
+  >;
+export const UpdateRegistryCredentialFromProjectRegistryCredentialsRouteDocument =
+  {
+    kind: "Document",
+    definitions: [
+      {
+        kind: "OperationDefinition",
+        operation: "mutation",
+        name: {
+          kind: "Name",
+          value: "updateRegistryCredentialFromProjectRegistryCredentialsRoute",
+        },
+        variableDefinitions: [
+          {
+            kind: "VariableDefinition",
+            variable: {
+              kind: "Variable",
+              name: { kind: "Name", value: "projectId" },
+            },
+            type: {
+              kind: "NonNullType",
+              type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+            },
+          },
+          {
+            kind: "VariableDefinition",
+            variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
+            type: {
+              kind: "NonNullType",
+              type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+            },
+          },
+          {
+            kind: "VariableDefinition",
+            variable: {
+              kind: "Variable",
+              name: { kind: "Name", value: "input" },
+            },
+            type: {
+              kind: "NonNullType",
+              type: {
+                kind: "NamedType",
+                name: { kind: "Name", value: "UpdateRegistryCredentialInput" },
+              },
+            },
+          },
+        ],
+        selectionSet: {
+          kind: "SelectionSet",
+          selections: [
+            {
+              kind: "Field",
+              name: { kind: "Name", value: "updateRegistryCredential" },
+              arguments: [
+                {
+                  kind: "Argument",
+                  name: { kind: "Name", value: "projectId" },
+                  value: {
+                    kind: "Variable",
+                    name: { kind: "Name", value: "projectId" },
+                  },
+                },
+                {
+                  kind: "Argument",
+                  name: { kind: "Name", value: "id" },
+                  value: {
+                    kind: "Variable",
+                    name: { kind: "Name", value: "id" },
+                  },
+                },
+                {
+                  kind: "Argument",
+                  name: { kind: "Name", value: "input" },
+                  value: {
+                    kind: "Variable",
+                    name: { kind: "Name", value: "input" },
+                  },
+                },
+              ],
+              selectionSet: {
+                kind: "SelectionSet",
+                selections: [
+                  { kind: "Field", name: { kind: "Name", value: "id" } },
+                  { kind: "Field", name: { kind: "Name", value: "projectId" } },
+                  { kind: "Field", name: { kind: "Name", value: "name" } },
+                  { kind: "Field", name: { kind: "Name", value: "registry" } },
+                  { kind: "Field", name: { kind: "Name", value: "username" } },
+                  { kind: "Field", name: { kind: "Name", value: "createdAt" } },
+                  { kind: "Field", name: { kind: "Name", value: "updatedAt" } },
+                ],
+              },
+            },
+          ],
+        },
+      },
+    ],
+  } as unknown as DocumentNode<
+    UpdateRegistryCredentialFromProjectRegistryCredentialsRouteMutation,
+    UpdateRegistryCredentialFromProjectRegistryCredentialsRouteMutationVariables
+  >;
+export const DeleteRegistryCredentialFromProjectRegistryCredentialsRouteDocument =
+  {
+    kind: "Document",
+    definitions: [
+      {
+        kind: "OperationDefinition",
+        operation: "mutation",
+        name: {
+          kind: "Name",
+          value: "deleteRegistryCredentialFromProjectRegistryCredentialsRoute",
+        },
+        variableDefinitions: [
+          {
+            kind: "VariableDefinition",
+            variable: {
+              kind: "Variable",
+              name: { kind: "Name", value: "projectId" },
+            },
+            type: {
+              kind: "NonNullType",
+              type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+            },
+          },
+          {
+            kind: "VariableDefinition",
+            variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
+            type: {
+              kind: "NonNullType",
+              type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+            },
+          },
+        ],
+        selectionSet: {
+          kind: "SelectionSet",
+          selections: [
+            {
+              kind: "Field",
+              name: { kind: "Name", value: "deleteRegistryCredential" },
+              arguments: [
+                {
+                  kind: "Argument",
+                  name: { kind: "Name", value: "projectId" },
+                  value: {
+                    kind: "Variable",
+                    name: { kind: "Name", value: "projectId" },
+                  },
+                },
+                {
+                  kind: "Argument",
+                  name: { kind: "Name", value: "id" },
+                  value: {
+                    kind: "Variable",
+                    name: { kind: "Name", value: "id" },
+                  },
+                },
+              ],
+              selectionSet: {
+                kind: "SelectionSet",
+                selections: [
+                  { kind: "Field", name: { kind: "Name", value: "id" } },
+                ],
+              },
+            },
+          ],
+        },
+      },
+    ],
+  } as unknown as DocumentNode<
+    DeleteRegistryCredentialFromProjectRegistryCredentialsRouteMutation,
+    DeleteRegistryCredentialFromProjectRegistryCredentialsRouteMutationVariables
+  >;
 export const GetServicesFromServicesRouteDocument = {
   kind: "Document",
   definitions: [
@@ -5463,6 +6214,60 @@ export const GetServicesFromServicesRouteDocument = {
           },
           {
             kind: "Field",
+            name: { kind: "Name", value: "registryCredentials" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "projectId" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "projectId" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "first" },
+                value: { kind: "IntValue", value: "20" },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "edges" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "node" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "id" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "name" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "registry" },
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+          {
+            kind: "Field",
             name: { kind: "Name", value: "services" },
             arguments: [
               {
@@ -5560,6 +6365,13 @@ export const GetServicesFromServicesRouteDocument = {
                             {
                               kind: "Field",
                               name: { kind: "Name", value: "image" },
+                            },
+                            {
+                              kind: "Field",
+                              name: {
+                                kind: "Name",
+                                value: "registryCredentialId",
+                              },
                             },
                             {
                               kind: "Field",
@@ -5695,6 +6507,10 @@ export const CreateServiceFromServicesRouteDocument = {
                 { kind: "Field", name: { kind: "Name", value: "projectId" } },
                 { kind: "Field", name: { kind: "Name", value: "name" } },
                 { kind: "Field", name: { kind: "Name", value: "image" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "registryCredentialId" },
+                },
                 { kind: "Field", name: { kind: "Name", value: "replicas" } },
                 { kind: "Field", name: { kind: "Name", value: "command" } },
                 { kind: "Field", name: { kind: "Name", value: "args" } },
@@ -7413,6 +8229,94 @@ export const DeleteServiceFromServiceSettingsRouteDocument = {
   DeleteServiceFromServiceSettingsRouteMutation,
   DeleteServiceFromServiceSettingsRouteMutationVariables
 >;
+export const GetRegistryCredentialsFromServiceSourceRouteDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: {
+        kind: "Name",
+        value: "getRegistryCredentialsFromServiceSourceRoute",
+      },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "projectId" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "registryCredentials" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "projectId" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "projectId" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "first" },
+                value: { kind: "IntValue", value: "20" },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "edges" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "node" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "id" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "name" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "registry" },
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  GetRegistryCredentialsFromServiceSourceRouteQuery,
+  GetRegistryCredentialsFromServiceSourceRouteQueryVariables
+>;
 export const UpdateServiceSourceFromServiceSourceRouteDocument = {
   kind: "Document",
   definitions: [
@@ -7495,6 +8399,10 @@ export const UpdateServiceSourceFromServiceSourceRouteDocument = {
               selections: [
                 { kind: "Field", name: { kind: "Name", value: "id" } },
                 { kind: "Field", name: { kind: "Name", value: "image" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "registryCredentialId" },
+                },
                 { kind: "Field", name: { kind: "Name", value: "command" } },
                 { kind: "Field", name: { kind: "Name", value: "args" } },
                 { kind: "Field", name: { kind: "Name", value: "updatedAt" } },
@@ -7720,6 +8628,10 @@ export const GetServiceFromServiceLayoutDocument = {
                 { kind: "Field", name: { kind: "Name", value: "projectId" } },
                 { kind: "Field", name: { kind: "Name", value: "name" } },
                 { kind: "Field", name: { kind: "Name", value: "image" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "registryCredentialId" },
+                },
                 { kind: "Field", name: { kind: "Name", value: "replicas" } },
                 { kind: "Field", name: { kind: "Name", value: "command" } },
                 { kind: "Field", name: { kind: "Name", value: "args" } },

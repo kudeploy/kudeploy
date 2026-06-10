@@ -46,6 +46,7 @@
     "loading": "正在加载部署版本",
     "error": "部署版本加载失败",
     "summary": "共 {{count}} 个部署版本",
+    "summary_other": "共 {{count}} 个部署版本",
     "active": "当前",
     "latest": "最新",
     "version": "v{{version}}",
@@ -109,6 +110,7 @@
     "loading": "正在加载日志",
     "loading_older": "正在加载更早日志",
     "updated": "最近更新 {{time}}，共 {{count}} 行",
+    "updated_other": "最近更新 {{time}}，共 {{count}} 行",
     "unavailable": "日志数据源不可用",
     "error": "日志加载失败",
     "empty": "暂无日志",
@@ -173,6 +175,10 @@
       "placeholder": "ghcr.io/acme/api:latest",
       "required": "请输入镜像"
     },
+    "registry_credential": {
+      "label": "镜像凭证",
+      "none": "不使用凭证"
+    },
     "key": "键",
     "name": {
       "label": "名称",
@@ -217,6 +223,7 @@
     "image": "镜像",
     "name": "名称",
     "ports": "端口",
+    "registry_credential": "镜像凭证",
     "replicas": "副本数",
     "status": "状态"
   },

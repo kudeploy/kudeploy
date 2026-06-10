@@ -39,6 +39,7 @@ import { Route as AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdServicesSer
 import { Route as AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdProject_layoutVolumesPageRouteImport } from './app/_authenticated/workspaces/$workspaceId/projects/$projectId/_project_layout/volumes/page'
 import { Route as AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdProject_layoutSettingsPageRouteImport } from './app/_authenticated/workspaces/$workspaceId/projects/$projectId/_project_layout/settings/page'
 import { Route as AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdProject_layoutServicesPageRouteImport } from './app/_authenticated/workspaces/$workspaceId/projects/$projectId/_project_layout/services/page'
+import { Route as AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdProject_layoutRegistryCredentialsPageRouteImport } from './app/_authenticated/workspaces/$workspaceId/projects/$projectId/_project_layout/registry-credentials/page'
 import { Route as AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdServicesServiceIdDeploymentsLayoutRouteImport } from './app/_authenticated/workspaces/$workspaceId/projects/$projectId/services/$serviceId/deployments/layout'
 import { Route as AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdServicesServiceIdService_layoutLayoutRouteImport } from './app/_authenticated/workspaces/$workspaceId/projects/$projectId/services/$serviceId/_service_layout/layout'
 import { Route as AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdServicesServiceIdService_layoutPageRouteImport } from './app/_authenticated/workspaces/$workspaceId/projects/$projectId/services/$serviceId/_service_layout/page'
@@ -251,6 +252,15 @@ const AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdProject_layoutServicesP
         AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdProject_layoutLayoutRoute,
     } as any,
   )
+const AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdProject_layoutRegistryCredentialsPageRoute =
+  AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdProject_layoutRegistryCredentialsPageRouteImport.update(
+    {
+      id: '/registry-credentials/',
+      path: '/registry-credentials/',
+      getParentRoute: () =>
+        AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdProject_layoutLayoutRoute,
+    } as any,
+  )
 const AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdServicesServiceIdDeploymentsLayoutRoute =
   AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdServicesServiceIdDeploymentsLayoutRouteImport.update(
     {
@@ -404,6 +414,7 @@ export interface FileRoutesByFullPath {
   '/workspaces/$workspaceId/projects/$projectId/': typeof AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdPageRoute
   '/workspaces/$workspaceId/projects/$projectId/services/$serviceId': typeof AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdServicesServiceIdLayoutRouteWithChildren
   '/workspaces/$workspaceId/projects/$projectId/services/$serviceId/deployments': typeof AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdServicesServiceIdDeploymentsLayoutRouteWithChildren
+  '/workspaces/$workspaceId/projects/$projectId/registry-credentials/': typeof AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdProject_layoutRegistryCredentialsPageRoute
   '/workspaces/$workspaceId/projects/$projectId/services/': typeof AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdProject_layoutServicesPageRoute
   '/workspaces/$workspaceId/projects/$projectId/settings/': typeof AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdProject_layoutSettingsPageRoute
   '/workspaces/$workspaceId/projects/$projectId/volumes/': typeof AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdProject_layoutVolumesPageRoute
@@ -441,6 +452,7 @@ export interface FileRoutesByTo {
   '/workspaces/$workspaceId/members/$memberId': typeof AuthenticatedWorkspacesWorkspaceIdMembersMemberIdPageRoute
   '/workspaces/$workspaceId/projects/$projectId/services/$serviceId': typeof AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdServicesServiceIdService_layoutPageRoute
   '/workspaces/$workspaceId/projects/$projectId/services/$serviceId/deployments': typeof AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdServicesServiceIdService_layoutDeploymentsPageRoute
+  '/workspaces/$workspaceId/projects/$projectId/registry-credentials': typeof AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdProject_layoutRegistryCredentialsPageRoute
   '/workspaces/$workspaceId/projects/$projectId/settings': typeof AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdProject_layoutSettingsPageRoute
   '/workspaces/$workspaceId/projects/$projectId/volumes': typeof AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdProject_layoutVolumesPageRoute
   '/workspaces/$workspaceId/projects/$projectId/services/$serviceId/environment': typeof AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdServicesServiceIdService_layoutEnvironmentPageRoute
@@ -484,6 +496,7 @@ export interface FileRoutesById {
   '/_authenticated/workspaces/$workspaceId/projects/$projectId/services/$serviceId': typeof AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdServicesServiceIdLayoutRouteWithChildren
   '/_authenticated/workspaces/$workspaceId/projects/$projectId/services/$serviceId/_service_layout': typeof AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdServicesServiceIdService_layoutLayoutRouteWithChildren
   '/_authenticated/workspaces/$workspaceId/projects/$projectId/services/$serviceId/deployments': typeof AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdServicesServiceIdDeploymentsLayoutRouteWithChildren
+  '/_authenticated/workspaces/$workspaceId/projects/$projectId/_project_layout/registry-credentials/': typeof AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdProject_layoutRegistryCredentialsPageRoute
   '/_authenticated/workspaces/$workspaceId/projects/$projectId/_project_layout/services/': typeof AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdProject_layoutServicesPageRoute
   '/_authenticated/workspaces/$workspaceId/projects/$projectId/_project_layout/settings/': typeof AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdProject_layoutSettingsPageRoute
   '/_authenticated/workspaces/$workspaceId/projects/$projectId/_project_layout/volumes/': typeof AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdProject_layoutVolumesPageRoute
@@ -529,6 +542,7 @@ export interface FileRouteTypes {
     | '/workspaces/$workspaceId/projects/$projectId/'
     | '/workspaces/$workspaceId/projects/$projectId/services/$serviceId'
     | '/workspaces/$workspaceId/projects/$projectId/services/$serviceId/deployments'
+    | '/workspaces/$workspaceId/projects/$projectId/registry-credentials/'
     | '/workspaces/$workspaceId/projects/$projectId/services/'
     | '/workspaces/$workspaceId/projects/$projectId/settings/'
     | '/workspaces/$workspaceId/projects/$projectId/volumes/'
@@ -566,6 +580,7 @@ export interface FileRouteTypes {
     | '/workspaces/$workspaceId/members/$memberId'
     | '/workspaces/$workspaceId/projects/$projectId/services/$serviceId'
     | '/workspaces/$workspaceId/projects/$projectId/services/$serviceId/deployments'
+    | '/workspaces/$workspaceId/projects/$projectId/registry-credentials'
     | '/workspaces/$workspaceId/projects/$projectId/settings'
     | '/workspaces/$workspaceId/projects/$projectId/volumes'
     | '/workspaces/$workspaceId/projects/$projectId/services/$serviceId/environment'
@@ -608,6 +623,7 @@ export interface FileRouteTypes {
     | '/_authenticated/workspaces/$workspaceId/projects/$projectId/services/$serviceId'
     | '/_authenticated/workspaces/$workspaceId/projects/$projectId/services/$serviceId/_service_layout'
     | '/_authenticated/workspaces/$workspaceId/projects/$projectId/services/$serviceId/deployments'
+    | '/_authenticated/workspaces/$workspaceId/projects/$projectId/_project_layout/registry-credentials/'
     | '/_authenticated/workspaces/$workspaceId/projects/$projectId/_project_layout/services/'
     | '/_authenticated/workspaces/$workspaceId/projects/$projectId/_project_layout/settings/'
     | '/_authenticated/workspaces/$workspaceId/projects/$projectId/_project_layout/volumes/'
@@ -843,6 +859,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdProject_layoutServicesPageRouteImport
       parentRoute: typeof AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdProject_layoutLayoutRoute
     }
+    '/_authenticated/workspaces/$workspaceId/projects/$projectId/_project_layout/registry-credentials/': {
+      id: '/_authenticated/workspaces/$workspaceId/projects/$projectId/_project_layout/registry-credentials/'
+      path: '/registry-credentials'
+      fullPath: '/workspaces/$workspaceId/projects/$projectId/registry-credentials/'
+      preLoaderRoute: typeof AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdProject_layoutRegistryCredentialsPageRouteImport
+      parentRoute: typeof AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdProject_layoutLayoutRoute
+    }
     '/_authenticated/workspaces/$workspaceId/projects/$projectId/services/$serviceId/deployments': {
       id: '/_authenticated/workspaces/$workspaceId/projects/$projectId/services/$serviceId/deployments'
       path: '/deployments'
@@ -999,6 +1022,7 @@ const AuthenticatedWorkspacesWorkspaceIdMembersLayoutRouteWithChildren =
   )
 
 interface AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdProject_layoutLayoutRouteChildren {
+  AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdProject_layoutRegistryCredentialsPageRoute: typeof AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdProject_layoutRegistryCredentialsPageRoute
   AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdProject_layoutServicesPageRoute: typeof AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdProject_layoutServicesPageRoute
   AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdProject_layoutSettingsPageRoute: typeof AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdProject_layoutSettingsPageRoute
   AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdProject_layoutVolumesPageRoute: typeof AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdProject_layoutVolumesPageRoute
@@ -1006,6 +1030,8 @@ interface AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdProject_layoutLayou
 
 const AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdProject_layoutLayoutRouteChildren: AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdProject_layoutLayoutRouteChildren =
   {
+    AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdProject_layoutRegistryCredentialsPageRoute:
+      AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdProject_layoutRegistryCredentialsPageRoute,
     AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdProject_layoutServicesPageRoute:
       AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdProject_layoutServicesPageRoute,
     AuthenticatedWorkspacesWorkspaceIdProjectsProjectIdProject_layoutSettingsPageRoute:

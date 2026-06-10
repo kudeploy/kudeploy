@@ -28,6 +28,11 @@ export class CreateServiceInput {
   @Field(() => String)
   image!: string;
 
+  @IsString()
+  @IsOptional()
+  @Field(() => ID, { nullable: true })
+  registryCredentialId?: string | null;
+
   @IsInt()
   @IsOptional()
   @Min(0)

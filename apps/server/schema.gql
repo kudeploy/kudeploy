@@ -27,13 +27,19 @@ type ApiKey {
 }
 
 type ApiKeyConnection {
-  """A list of edges."""
+  """
+  A list of edges.
+  """
   edges: [ApiKeyEdge!]!
 
-  """Information to aid in pagination."""
+  """
+  Information to aid in pagination.
+  """
   pageInfo: PageInfo!
 
-  """Identifies the total count of items in the connection."""
+  """
+  Identifies the total count of items in the connection.
+  """
   totalCount: Int!
 }
 
@@ -41,10 +47,14 @@ type ApiKeyConnection {
 An auto-generated type which holds one ApiKey and a cursor during pagination.
 """
 type ApiKeyEdge {
-  """A cursor for use in pagination."""
+  """
+  A cursor for use in pagination.
+  """
   cursor: String!
 
-  """The item at the end of ApiKeyEdge."""
+  """
+  The item at the end of ApiKeyEdge.
+  """
   node: ApiKey!
 }
 
@@ -54,16 +64,24 @@ Supported fields: name, key_prefix, created_at
 """
 scalar ApiKeyFilter
 
-"""Ordering options for apikey connections"""
+"""
+Ordering options for apikey connections
+"""
 input ApiKeyOrder {
-  """The ordering direction."""
+  """
+  The ordering direction.
+  """
   direction: OrderDirection!
 
-  """The field to order apikeys by."""
+  """
+  The field to order apikeys by.
+  """
   field: ApiKeyOrderField!
 }
 
-"""Properties by which apikey connections can be ordered."""
+"""
+Properties by which apikey connections can be ordered.
+"""
 enum ApiKeyOrderField {
   CREATED_AT
   ID
@@ -88,6 +106,14 @@ input CreateProjectInput {
   name: String!
 }
 
+input CreateRegistryCredentialInput {
+  name: String!
+  password: String!
+  projectId: ID!
+  registry: String!
+  username: String!
+}
+
 input CreateServiceAccountWorkspaceMemberInput {
   name: String!
   permissions: [WorkspacePermission!]
@@ -103,6 +129,7 @@ input CreateServiceInput {
   name: String!
   ports: [ServicePortInput!]!
   projectId: ID!
+  registryCredentialId: ID
   replicas: Int
   resources: ServiceResourcesInput
 }
@@ -157,13 +184,19 @@ type Deployment {
 }
 
 type DeploymentConnection {
-  """A list of edges."""
+  """
+  A list of edges.
+  """
   edges: [DeploymentEdge!]!
 
-  """Information to aid in pagination."""
+  """
+  Information to aid in pagination.
+  """
   pageInfo: PageInfo!
 
-  """Identifies the total count of items in the connection."""
+  """
+  Identifies the total count of items in the connection.
+  """
   totalCount: Int!
 }
 
@@ -171,10 +204,14 @@ type DeploymentConnection {
 An auto-generated type which holds one Deployment and a cursor during pagination.
 """
 type DeploymentEdge {
-  """A cursor for use in pagination."""
+  """
+  A cursor for use in pagination.
+  """
   cursor: String!
 
-  """The item at the end of DeploymentEdge."""
+  """
+  The item at the end of DeploymentEdge.
+  """
   node: Deployment!
 }
 
@@ -195,16 +232,24 @@ Supported fields: version, image, status, createdAt
 """
 scalar DeploymentFilter
 
-"""Ordering options for deployment connections"""
+"""
+Ordering options for deployment connections
+"""
 input DeploymentOrder {
-  """The ordering direction."""
+  """
+  The ordering direction.
+  """
   direction: OrderDirection!
 
-  """The field to order deployments by."""
+  """
+  The field to order deployments by.
+  """
   field: DeploymentOrderField!
 }
 
-"""Properties by which deployment connections can be ordered."""
+"""
+Properties by which deployment connections can be ordered.
+"""
 enum DeploymentOrderField {
   CREATED_AT
   ID
@@ -243,13 +288,19 @@ type Domain {
 }
 
 type DomainConnection {
-  """A list of edges."""
+  """
+  A list of edges.
+  """
   edges: [DomainEdge!]!
 
-  """Information to aid in pagination."""
+  """
+  Information to aid in pagination.
+  """
   pageInfo: PageInfo!
 
-  """Identifies the total count of items in the connection."""
+  """
+  Identifies the total count of items in the connection.
+  """
   totalCount: Int!
 }
 
@@ -257,10 +308,14 @@ type DomainConnection {
 An auto-generated type which holds one Domain and a cursor during pagination.
 """
 type DomainEdge {
-  """A cursor for use in pagination."""
+  """
+  A cursor for use in pagination.
+  """
   cursor: String!
 
-  """The item at the end of DomainEdge."""
+  """
+  The item at the end of DomainEdge.
+  """
   node: Domain!
 }
 
@@ -270,16 +325,24 @@ Supported fields: name, status, created_at
 """
 scalar DomainFilter
 
-"""Ordering options for domain connections"""
+"""
+Ordering options for domain connections
+"""
 input DomainOrder {
-  """The ordering direction."""
+  """
+  The ordering direction.
+  """
   direction: OrderDirection!
 
-  """The field to order domains by."""
+  """
+  The field to order domains by.
+  """
   field: DomainOrderField!
 }
 
-"""Properties by which domain connections can be ordered."""
+"""
+Properties by which domain connections can be ordered.
+"""
 enum DomainOrderField {
   CREATED_AT
   ID
@@ -298,34 +361,62 @@ type KubernetesMetricPoint {
 }
 
 type Mutation {
-  acceptWorkspaceInvite(input: AcceptWorkspaceInviteInput, token: String!): AcceptWorkspaceInviteResult!
-  addMembersToWorkspaceMemberGroup(id: ID!, memberIds: [ID!]!): WorkspaceMemberGroup!
+  acceptWorkspaceInvite(
+    input: AcceptWorkspaceInviteInput
+    token: String!
+  ): AcceptWorkspaceInviteResult!
+  addMembersToWorkspaceMemberGroup(
+    id: ID!
+    memberIds: [ID!]!
+  ): WorkspaceMemberGroup!
   addWorkspaceMember(input: AddWorkspaceMemberInput!): WorkspaceMember!
   createApiKey(input: CreateApiKeyInput!): CreateApiKeyResult!
   createDomain(input: CreateDomainInput!): Domain!
   createProject(input: CreateProjectInput!): Project!
+  createRegistryCredential(
+    input: CreateRegistryCredentialInput!
+  ): RegistryCredential!
   createService(input: CreateServiceInput!): Service!
-  createServiceAccountWorkspaceMember(input: CreateServiceAccountWorkspaceMemberInput!): WorkspaceMember!
+  createServiceAccountWorkspaceMember(
+    input: CreateServiceAccountWorkspaceMemberInput!
+  ): WorkspaceMember!
   createVolume(input: CreateVolumeInput!): Volume!
   createWorkspace(input: CreateWorkspaceInput!): Workspace!
   createWorkspaceInvite(input: CreateWorkspaceInviteInput!): WorkspaceMember!
-  createWorkspaceMemberGroup(input: CreateWorkspaceMemberGroupInput!): WorkspaceMemberGroup!
+  createWorkspaceMemberGroup(
+    input: CreateWorkspaceMemberGroupInput!
+  ): WorkspaceMemberGroup!
   deleteApiKey(id: ID!): ApiKey!
   deleteDomain(id: ID!): Domain!
   deleteProject(id: ID!): Project!
+  deleteRegistryCredential(id: ID!, projectId: ID!): RegistryCredential!
   deleteService(id: ID!, projectId: ID!): Service!
   deleteVolume(id: ID!, projectId: ID!): Volume!
   deleteWorkspace: Workspace!
   deleteWorkspaceMemberGroup(id: ID!): WorkspaceMemberGroup!
-  removeMembersFromWorkspaceMemberGroup(id: ID!, memberIds: [ID!]!): WorkspaceMemberGroup!
+  removeMembersFromWorkspaceMemberGroup(
+    id: ID!
+    memberIds: [ID!]!
+  ): WorkspaceMemberGroup!
   removeWorkspace: Workspace! @deprecated(reason: "Use deleteWorkspace instead")
   removeWorkspaceMember(id: ID!): WorkspaceMember!
   updateApiKey(id: ID!, input: UpdateApiKeyInput!): ApiKey!
   updateProject(id: ID!, input: UpdateProjectInput!): Project!
+  updateRegistryCredential(
+    id: ID!
+    input: UpdateRegistryCredentialInput!
+    projectId: ID!
+  ): RegistryCredential!
   updateService(id: ID!, input: UpdateServiceInput!, projectId: ID!): Service!
   updateWorkspace(input: UpdateWorkspaceInput!): Workspace!
-  updateWorkspaceMember(id: ID!, input: UpdateWorkspaceMemberInput!): WorkspaceMember
-  updateWorkspaceMemberGroup(id: ID!, input: UpdateWorkspaceMemberGroupInput!): WorkspaceMemberGroup!
+  updateWorkspaceMember(
+    id: ID!
+    input: UpdateWorkspaceMemberInput!
+  ): WorkspaceMember
+  updateWorkspaceMemberGroup(
+    id: ID!
+    input: UpdateWorkspaceMemberGroupInput!
+  ): WorkspaceMemberGroup!
   verifyDomain(id: ID!): Domain!
 }
 
@@ -340,10 +431,14 @@ Returns information about pagination in a connection, in accordance with the [Re
 type PageInfo {
   endCursor: String
 
-  """Whether there are more pages to fetch following the current page."""
+  """
+  Whether there are more pages to fetch following the current page.
+  """
   hasNextPage: Boolean!
 
-  """Whether there are any pages prior to the current page."""
+  """
+  Whether there are any pages prior to the current page.
+  """
   hasPreviousPage: Boolean!
   startCursor: String
 }
@@ -352,25 +447,75 @@ type Project {
   createdAt: DateTime!
   id: ID!
   name: String!
+  registryCredentials(
+    """
+    Returns the elements that come after the specified cursor.
+    """
+    after: String
+
+    """
+    Returns the elements that come before the specified cursor.
+    """
+    before: String
+
+    """
+    Filter registrycredentials using MongoDB query syntax.
+    """
+    filter: RegistryCredentialFilter
+
+    """
+    Returns up to the first `n` elements from the list.
+    """
+    first: Int
+
+    """
+    Returns up to the last `n` elements from the list.
+    """
+    last: Int
+
+    """
+    Ordering options for the returned registrycredentials.
+    """
+    orderBy: RegistryCredentialOrder
+
+    """
+    Apply one or multiple filters to the query.
+    Supported filter parameters:
+    `name`, `registry`, `createdAt`
+    """
+    query: String
+  ): RegistryCredentialConnection!
   status: ProjectStatus!
   updatedAt: DateTime!
   volumes(
-    """Returns the elements that come after the specified cursor."""
+    """
+    Returns the elements that come after the specified cursor.
+    """
     after: String
 
-    """Returns the elements that come before the specified cursor."""
+    """
+    Returns the elements that come before the specified cursor.
+    """
     before: String
 
-    """Filter volumes using MongoDB query syntax."""
+    """
+    Filter volumes using MongoDB query syntax.
+    """
     filter: VolumeFilter
 
-    """Returns up to the first `n` elements from the list."""
+    """
+    Returns up to the first `n` elements from the list.
+    """
     first: Int
 
-    """Returns up to the last `n` elements from the list."""
+    """
+    Returns up to the last `n` elements from the list.
+    """
     last: Int
 
-    """Ordering options for the returned volumes."""
+    """
+    Ordering options for the returned volumes.
+    """
     orderBy: VolumeOrder
 
     """
@@ -383,13 +528,19 @@ type Project {
 }
 
 type ProjectConnection {
-  """A list of edges."""
+  """
+  A list of edges.
+  """
   edges: [ProjectEdge!]!
 
-  """Information to aid in pagination."""
+  """
+  Information to aid in pagination.
+  """
   pageInfo: PageInfo!
 
-  """Identifies the total count of items in the connection."""
+  """
+  Identifies the total count of items in the connection.
+  """
   totalCount: Int!
 }
 
@@ -397,10 +548,14 @@ type ProjectConnection {
 An auto-generated type which holds one Project and a cursor during pagination.
 """
 type ProjectEdge {
-  """A cursor for use in pagination."""
+  """
+  A cursor for use in pagination.
+  """
   cursor: String!
 
-  """The item at the end of ProjectEdge."""
+  """
+  The item at the end of ProjectEdge.
+  """
   node: Project!
 }
 
@@ -410,16 +565,24 @@ Supported fields: name, createdAt
 """
 scalar ProjectFilter
 
-"""Ordering options for project connections"""
+"""
+Ordering options for project connections
+"""
 input ProjectOrder {
-  """The ordering direction."""
+  """
+  The ordering direction.
+  """
   direction: OrderDirection!
 
-  """The field to order projects by."""
+  """
+  The field to order projects by.
+  """
   field: ProjectOrderField!
 }
 
-"""Properties by which project connections can be ordered."""
+"""
+Properties by which project connections can be ordered.
+"""
 enum ProjectOrderField {
   CREATED_AT
   ID
@@ -436,22 +599,34 @@ enum ProjectStatus {
 type Query {
   apiKey(id: ID!): ApiKey
   apiKeys(
-    """Returns the elements that come after the specified cursor."""
+    """
+    Returns the elements that come after the specified cursor.
+    """
     after: String
 
-    """Returns the elements that come before the specified cursor."""
+    """
+    Returns the elements that come before the specified cursor.
+    """
     before: String
 
-    """Filter apikeys using MongoDB query syntax."""
+    """
+    Filter apikeys using MongoDB query syntax.
+    """
     filter: ApiKeyFilter
 
-    """Returns up to the first `n` elements from the list."""
+    """
+    Returns up to the first `n` elements from the list.
+    """
     first: Int
 
-    """Returns up to the last `n` elements from the list."""
+    """
+    Returns up to the last `n` elements from the list.
+    """
     last: Int
 
-    """Ordering options for the returned apikeys."""
+    """
+    Ordering options for the returned apikeys.
+    """
     orderBy: ApiKeyOrder
 
     """
@@ -466,22 +641,34 @@ type Query {
   currentWorkspaceMember: WorkspaceMember
   deployment(id: ID!, projectId: ID!): Deployment
   deployments(
-    """Returns the elements that come after the specified cursor."""
+    """
+    Returns the elements that come after the specified cursor.
+    """
     after: String
 
-    """Returns the elements that come before the specified cursor."""
+    """
+    Returns the elements that come before the specified cursor.
+    """
     before: String
 
-    """Filter deployments using MongoDB query syntax."""
+    """
+    Filter deployments using MongoDB query syntax.
+    """
     filter: DeploymentFilter
 
-    """Returns up to the first `n` elements from the list."""
+    """
+    Returns up to the first `n` elements from the list.
+    """
     first: Int
 
-    """Returns up to the last `n` elements from the list."""
+    """
+    Returns up to the last `n` elements from the list.
+    """
     last: Int
 
-    """Ordering options for the returned deployments."""
+    """
+    Ordering options for the returned deployments.
+    """
     orderBy: DeploymentOrder
     projectId: ID!
 
@@ -495,22 +682,34 @@ type Query {
   ): DeploymentConnection!
   domain(id: ID!): Domain
   domains(
-    """Returns the elements that come after the specified cursor."""
+    """
+    Returns the elements that come after the specified cursor.
+    """
     after: String
 
-    """Returns the elements that come before the specified cursor."""
+    """
+    Returns the elements that come before the specified cursor.
+    """
     before: String
 
-    """Filter domains using MongoDB query syntax."""
+    """
+    Filter domains using MongoDB query syntax.
+    """
     filter: DomainFilter
 
-    """Returns up to the first `n` elements from the list."""
+    """
+    Returns up to the first `n` elements from the list.
+    """
     first: Int
 
-    """Returns up to the last `n` elements from the list."""
+    """
+    Returns up to the last `n` elements from the list.
+    """
     last: Int
 
-    """Ordering options for the returned domains."""
+    """
+    Ordering options for the returned domains.
+    """
     orderBy: DomainOrder
 
     """
@@ -522,22 +721,34 @@ type Query {
   ): DomainConnection!
   project(id: ID!): Project
   projects(
-    """Returns the elements that come after the specified cursor."""
+    """
+    Returns the elements that come after the specified cursor.
+    """
     after: String
 
-    """Returns the elements that come before the specified cursor."""
+    """
+    Returns the elements that come before the specified cursor.
+    """
     before: String
 
-    """Filter projects using MongoDB query syntax."""
+    """
+    Filter projects using MongoDB query syntax.
+    """
     filter: ProjectFilter
 
-    """Returns up to the first `n` elements from the list."""
+    """
+    Returns up to the first `n` elements from the list.
+    """
     first: Int
 
-    """Returns up to the last `n` elements from the list."""
+    """
+    Returns up to the last `n` elements from the list.
+    """
     last: Int
 
-    """Ordering options for the returned projects."""
+    """
+    Ordering options for the returned projects.
+    """
     orderBy: ProjectOrder
 
     """
@@ -547,24 +758,76 @@ type Query {
     """
     query: String
   ): ProjectConnection!
-  service(id: ID!, projectId: ID!): Service
-  services(
-    """Returns the elements that come after the specified cursor."""
+  registryCredential(id: ID!, projectId: ID!): RegistryCredential
+  registryCredentials(
+    """
+    Returns the elements that come after the specified cursor.
+    """
     after: String
 
-    """Returns the elements that come before the specified cursor."""
+    """
+    Returns the elements that come before the specified cursor.
+    """
     before: String
 
-    """Filter services using MongoDB query syntax."""
-    filter: ServiceFilter
+    """
+    Filter registrycredentials using MongoDB query syntax.
+    """
+    filter: RegistryCredentialFilter
 
-    """Returns up to the first `n` elements from the list."""
+    """
+    Returns up to the first `n` elements from the list.
+    """
     first: Int
 
-    """Returns up to the last `n` elements from the list."""
+    """
+    Returns up to the last `n` elements from the list.
+    """
     last: Int
 
-    """Ordering options for the returned services."""
+    """
+    Ordering options for the returned registrycredentials.
+    """
+    orderBy: RegistryCredentialOrder
+    projectId: ID!
+
+    """
+    Apply one or multiple filters to the query.
+    Supported filter parameters:
+    `name`, `registry`, `createdAt`
+    """
+    query: String
+  ): RegistryCredentialConnection!
+  service(id: ID!, projectId: ID!): Service
+  services(
+    """
+    Returns the elements that come after the specified cursor.
+    """
+    after: String
+
+    """
+    Returns the elements that come before the specified cursor.
+    """
+    before: String
+
+    """
+    Filter services using MongoDB query syntax.
+    """
+    filter: ServiceFilter
+
+    """
+    Returns up to the first `n` elements from the list.
+    """
+    first: Int
+
+    """
+    Returns up to the last `n` elements from the list.
+    """
+    last: Int
+
+    """
+    Ordering options for the returned services.
+    """
     orderBy: ServiceOrder
     projectId: ID!
 
@@ -577,22 +840,34 @@ type Query {
   ): ServiceConnection!
   volume(id: ID!, projectId: ID!): Volume
   volumes(
-    """Returns the elements that come after the specified cursor."""
+    """
+    Returns the elements that come after the specified cursor.
+    """
     after: String
 
-    """Returns the elements that come before the specified cursor."""
+    """
+    Returns the elements that come before the specified cursor.
+    """
     before: String
 
-    """Filter volumes using MongoDB query syntax."""
+    """
+    Filter volumes using MongoDB query syntax.
+    """
     filter: VolumeFilter
 
-    """Returns up to the first `n` elements from the list."""
+    """
+    Returns up to the first `n` elements from the list.
+    """
     first: Int
 
-    """Returns up to the last `n` elements from the list."""
+    """
+    Returns up to the last `n` elements from the list.
+    """
     last: Int
 
-    """Ordering options for the returned volumes."""
+    """
+    Ordering options for the returned volumes.
+    """
     orderBy: VolumeOrder
     projectId: ID!
 
@@ -608,22 +883,34 @@ type Query {
   workspaceMemberByToken(token: String!): WorkspaceMember
   workspaceMemberGroup(id: ID!): WorkspaceMemberGroup!
   workspaceMemberGroups(
-    """Returns the elements that come after the specified cursor."""
+    """
+    Returns the elements that come after the specified cursor.
+    """
     after: String
 
-    """Returns the elements that come before the specified cursor."""
+    """
+    Returns the elements that come before the specified cursor.
+    """
     before: String
 
-    """Filter workspacemembergroups using MongoDB query syntax."""
+    """
+    Filter workspacemembergroups using MongoDB query syntax.
+    """
     filter: WorkspaceMemberGroupFilter
 
-    """Returns up to the first `n` elements from the list."""
+    """
+    Returns up to the first `n` elements from the list.
+    """
     first: Int
 
-    """Returns up to the last `n` elements from the list."""
+    """
+    Returns up to the last `n` elements from the list.
+    """
     last: Int
 
-    """Ordering options for the returned workspacemembergroups."""
+    """
+    Ordering options for the returned workspacemembergroups.
+    """
     orderBy: WorkspaceMemberGroupOrder
 
     """
@@ -634,22 +921,34 @@ type Query {
     query: String
   ): WorkspaceMemberGroupConnection!
   workspaceMembers(
-    """Returns the elements that come after the specified cursor."""
+    """
+    Returns the elements that come after the specified cursor.
+    """
     after: String
 
-    """Returns the elements that come before the specified cursor."""
+    """
+    Returns the elements that come before the specified cursor.
+    """
     before: String
 
-    """Filter workspacemembers using MongoDB query syntax."""
+    """
+    Filter workspacemembers using MongoDB query syntax.
+    """
     filter: WorkspaceMemberFilter
 
-    """Returns up to the first `n` elements from the list."""
+    """
+    Returns up to the first `n` elements from the list.
+    """
     first: Int
 
-    """Returns up to the last `n` elements from the list."""
+    """
+    Returns up to the last `n` elements from the list.
+    """
     last: Int
 
-    """Ordering options for the returned workspacemembers."""
+    """
+    Ordering options for the returned workspacemembers.
+    """
     orderBy: WorkspaceMemberOrder
 
     """
@@ -660,22 +959,34 @@ type Query {
     query: String
   ): WorkspaceMemberConnection!
   workspaces(
-    """Returns the elements that come after the specified cursor."""
+    """
+    Returns the elements that come after the specified cursor.
+    """
     after: String
 
-    """Returns the elements that come before the specified cursor."""
+    """
+    Returns the elements that come before the specified cursor.
+    """
     before: String
 
-    """Filter workspaces using MongoDB query syntax."""
+    """
+    Filter workspaces using MongoDB query syntax.
+    """
     filter: WorkspaceFilter
 
-    """Returns up to the first `n` elements from the list."""
+    """
+    Returns up to the first `n` elements from the list.
+    """
     first: Int
 
-    """Returns up to the last `n` elements from the list."""
+    """
+    Returns up to the last `n` elements from the list.
+    """
     last: Int
 
-    """Ordering options for the returned workspaces."""
+    """
+    Ordering options for the returned workspaces.
+    """
     orderBy: WorkspaceOrder
 
     """
@@ -685,6 +996,77 @@ type Query {
     """
     query: String
   ): WorkspaceConnection!
+}
+
+type RegistryCredential {
+  createdAt: DateTime!
+  id: ID!
+  name: String!
+  projectId: ID!
+  registry: String!
+  updatedAt: DateTime!
+  username: String!
+}
+
+type RegistryCredentialConnection {
+  """
+  A list of edges.
+  """
+  edges: [RegistryCredentialEdge!]!
+
+  """
+  Information to aid in pagination.
+  """
+  pageInfo: PageInfo!
+
+  """
+  Identifies the total count of items in the connection.
+  """
+  totalCount: Int!
+}
+
+"""
+An auto-generated type which holds one RegistryCredential and a cursor during pagination.
+"""
+type RegistryCredentialEdge {
+  """
+  A cursor for use in pagination.
+  """
+  cursor: String!
+
+  """
+  The item at the end of RegistryCredentialEdge.
+  """
+  node: RegistryCredential!
+}
+
+"""
+A filter for RegistryCredential that accepts MongoDB query syntax.
+Supported fields: name, registry, createdAt
+"""
+scalar RegistryCredentialFilter
+
+"""
+Ordering options for registrycredential connections
+"""
+input RegistryCredentialOrder {
+  """
+  The ordering direction.
+  """
+  direction: OrderDirection!
+
+  """
+  The field to order registrycredentials by.
+  """
+  field: RegistryCredentialOrderField!
+}
+
+"""
+Properties by which registrycredential connections can be ordered.
+"""
+enum RegistryCredentialOrderField {
+  CREATED_AT
+  ID
 }
 
 type Service {
@@ -697,11 +1079,17 @@ type Service {
   id: ID!
   image: String!
   latestDeploymentName: String
-  logs(after: String, before: String, first: Int, last: Int): ServiceLogConnection!
+  logs(
+    after: String
+    before: String
+    first: Int
+    last: Int
+  ): ServiceLogConnection!
   metrics(rangeSeconds: Int, stepSeconds: Int): ServiceMetrics!
   name: String!
   ports: [ServicePort!]!
   projectId: ID!
+  registryCredentialId: ID
   replicas: Int
   resources: ServiceResources
   status: ServiceStatus!
@@ -709,13 +1097,19 @@ type Service {
 }
 
 type ServiceConnection {
-  """A list of edges."""
+  """
+  A list of edges.
+  """
   edges: [ServiceEdge!]!
 
-  """Information to aid in pagination."""
+  """
+  Information to aid in pagination.
+  """
   pageInfo: PageInfo!
 
-  """Identifies the total count of items in the connection."""
+  """
+  Identifies the total count of items in the connection.
+  """
   totalCount: Int!
 }
 
@@ -723,10 +1117,14 @@ type ServiceConnection {
 An auto-generated type which holds one Service and a cursor during pagination.
 """
 type ServiceEdge {
-  """A cursor for use in pagination."""
+  """
+  A cursor for use in pagination.
+  """
   cursor: String!
 
-  """The item at the end of ServiceEdge."""
+  """
+  The item at the end of ServiceEdge.
+  """
   node: Service!
 }
 
@@ -797,16 +1195,24 @@ type ServiceMetrics {
   stepSeconds: Int!
 }
 
-"""Ordering options for service connections"""
+"""
+Ordering options for service connections
+"""
 input ServiceOrder {
-  """The ordering direction."""
+  """
+  The ordering direction.
+  """
   direction: OrderDirection!
 
-  """The field to order services by."""
+  """
+  The field to order services by.
+  """
   field: ServiceOrderField!
 }
 
-"""Properties by which service connections can be ordered."""
+"""
+Properties by which service connections can be ordered.
+"""
 enum ServiceOrderField {
   CREATED_AT
   ID
@@ -852,6 +1258,13 @@ input UpdateProjectInput {
   name: String
 }
 
+input UpdateRegistryCredentialInput {
+  name: String
+  password: String
+  registry: String
+  username: String
+}
+
 input UpdateServiceInput {
   args: [String!]
   command: [String!]
@@ -860,6 +1273,7 @@ input UpdateServiceInput {
   image: String
   name: String
   ports: [ServicePortInput!]
+  registryCredentialId: ID
   replicas: Int
   resources: ServiceResourcesInput
 }
@@ -901,13 +1315,19 @@ type Volume {
 }
 
 type VolumeConnection {
-  """A list of edges."""
+  """
+  A list of edges.
+  """
   edges: [VolumeEdge!]!
 
-  """Information to aid in pagination."""
+  """
+  Information to aid in pagination.
+  """
   pageInfo: PageInfo!
 
-  """Identifies the total count of items in the connection."""
+  """
+  Identifies the total count of items in the connection.
+  """
   totalCount: Int!
 }
 
@@ -915,10 +1335,14 @@ type VolumeConnection {
 An auto-generated type which holds one Volume and a cursor during pagination.
 """
 type VolumeEdge {
-  """A cursor for use in pagination."""
+  """
+  A cursor for use in pagination.
+  """
   cursor: String!
 
-  """The item at the end of VolumeEdge."""
+  """
+  The item at the end of VolumeEdge.
+  """
   node: Volume!
 }
 
@@ -928,16 +1352,24 @@ Supported fields: name, createdAt
 """
 scalar VolumeFilter
 
-"""Ordering options for volume connections"""
+"""
+Ordering options for volume connections
+"""
 input VolumeOrder {
-  """The ordering direction."""
+  """
+  The ordering direction.
+  """
   direction: OrderDirection!
 
-  """The field to order volumes by."""
+  """
+  The field to order volumes by.
+  """
   field: VolumeOrderField!
 }
 
-"""Properties by which volume connections can be ordered."""
+"""
+Properties by which volume connections can be ordered.
+"""
 enum VolumeOrderField {
   CREATED_AT
   ID
@@ -960,13 +1392,19 @@ type Workspace {
 }
 
 type WorkspaceConnection {
-  """A list of edges."""
+  """
+  A list of edges.
+  """
   edges: [WorkspaceEdge!]!
 
-  """Information to aid in pagination."""
+  """
+  Information to aid in pagination.
+  """
   pageInfo: PageInfo!
 
-  """Identifies the total count of items in the connection."""
+  """
+  Identifies the total count of items in the connection.
+  """
   totalCount: Int!
 }
 
@@ -974,10 +1412,14 @@ type WorkspaceConnection {
 An auto-generated type which holds one Workspace and a cursor during pagination.
 """
 type WorkspaceEdge {
-  """A cursor for use in pagination."""
+  """
+  A cursor for use in pagination.
+  """
   cursor: String!
 
-  """The item at the end of WorkspaceEdge."""
+  """
+  The item at the end of WorkspaceEdge.
+  """
   node: Workspace!
 }
 
@@ -996,22 +1438,34 @@ type WorkspaceMember {
   effectivePermissions: [WorkspacePermission!]!
   email: String
   groups(
-    """Returns the elements that come after the specified cursor."""
+    """
+    Returns the elements that come after the specified cursor.
+    """
     after: String
 
-    """Returns the elements that come before the specified cursor."""
+    """
+    Returns the elements that come before the specified cursor.
+    """
     before: String
 
-    """Filter workspacemembergroups using MongoDB query syntax."""
+    """
+    Filter workspacemembergroups using MongoDB query syntax.
+    """
     filter: WorkspaceMemberGroupFilter
 
-    """Returns up to the first `n` elements from the list."""
+    """
+    Returns up to the first `n` elements from the list.
+    """
     first: Int
 
-    """Returns up to the last `n` elements from the list."""
+    """
+    Returns up to the last `n` elements from the list.
+    """
     last: Int
 
-    """Ordering options for the returned workspacemembergroups."""
+    """
+    Ordering options for the returned workspacemembergroups.
+    """
     orderBy: WorkspaceMemberGroupOrder
 
     """
@@ -1036,13 +1490,19 @@ type WorkspaceMember {
 }
 
 type WorkspaceMemberConnection {
-  """A list of edges."""
+  """
+  A list of edges.
+  """
   edges: [WorkspaceMemberEdge!]!
 
-  """Information to aid in pagination."""
+  """
+  Information to aid in pagination.
+  """
   pageInfo: PageInfo!
 
-  """Identifies the total count of items in the connection."""
+  """
+  Identifies the total count of items in the connection.
+  """
   totalCount: Int!
 }
 
@@ -1050,10 +1510,14 @@ type WorkspaceMemberConnection {
 An auto-generated type which holds one WorkspaceMember and a cursor during pagination.
 """
 type WorkspaceMemberEdge {
-  """A cursor for use in pagination."""
+  """
+  A cursor for use in pagination.
+  """
   cursor: String!
 
-  """The item at the end of WorkspaceMemberEdge."""
+  """
+  The item at the end of WorkspaceMemberEdge.
+  """
   node: WorkspaceMember!
 }
 
@@ -1068,22 +1532,34 @@ type WorkspaceMemberGroup {
   description: String
   id: ID!
   members(
-    """Returns the elements that come after the specified cursor."""
+    """
+    Returns the elements that come after the specified cursor.
+    """
     after: String
 
-    """Returns the elements that come before the specified cursor."""
+    """
+    Returns the elements that come before the specified cursor.
+    """
     before: String
 
-    """Filter workspacemembers using MongoDB query syntax."""
+    """
+    Filter workspacemembers using MongoDB query syntax.
+    """
     filter: WorkspaceMemberFilter
 
-    """Returns up to the first `n` elements from the list."""
+    """
+    Returns up to the first `n` elements from the list.
+    """
     first: Int
 
-    """Returns up to the last `n` elements from the list."""
+    """
+    Returns up to the last `n` elements from the list.
+    """
     last: Int
 
-    """Ordering options for the returned workspacemembers."""
+    """
+    Ordering options for the returned workspacemembers.
+    """
     orderBy: WorkspaceMemberOrder
 
     """
@@ -1099,13 +1575,19 @@ type WorkspaceMemberGroup {
 }
 
 type WorkspaceMemberGroupConnection {
-  """A list of edges."""
+  """
+  A list of edges.
+  """
   edges: [WorkspaceMemberGroupEdge!]!
 
-  """Information to aid in pagination."""
+  """
+  Information to aid in pagination.
+  """
   pageInfo: PageInfo!
 
-  """Identifies the total count of items in the connection."""
+  """
+  Identifies the total count of items in the connection.
+  """
   totalCount: Int!
 }
 
@@ -1113,10 +1595,14 @@ type WorkspaceMemberGroupConnection {
 An auto-generated type which holds one WorkspaceMemberGroup and a cursor during pagination.
 """
 type WorkspaceMemberGroupEdge {
-  """A cursor for use in pagination."""
+  """
+  A cursor for use in pagination.
+  """
   cursor: String!
 
-  """The item at the end of WorkspaceMemberGroupEdge."""
+  """
+  The item at the end of WorkspaceMemberGroupEdge.
+  """
   node: WorkspaceMemberGroup!
 }
 
@@ -1126,31 +1612,47 @@ Supported fields: name, description, created_at
 """
 scalar WorkspaceMemberGroupFilter
 
-"""Ordering options for workspacemembergroup connections"""
+"""
+Ordering options for workspacemembergroup connections
+"""
 input WorkspaceMemberGroupOrder {
-  """The ordering direction."""
+  """
+  The ordering direction.
+  """
   direction: OrderDirection!
 
-  """The field to order workspacemembergroups by."""
+  """
+  The field to order workspacemembergroups by.
+  """
   field: WorkspaceMemberGroupOrderField!
 }
 
-"""Properties by which workspacemembergroup connections can be ordered."""
+"""
+Properties by which workspacemembergroup connections can be ordered.
+"""
 enum WorkspaceMemberGroupOrderField {
   CREATED_AT
   ID
 }
 
-"""Ordering options for workspacemember connections"""
+"""
+Ordering options for workspacemember connections
+"""
 input WorkspaceMemberOrder {
-  """The ordering direction."""
+  """
+  The ordering direction.
+  """
   direction: OrderDirection!
 
-  """The field to order workspacemembers by."""
+  """
+  The field to order workspacemembers by.
+  """
   field: WorkspaceMemberOrderField!
 }
 
-"""Properties by which workspacemember connections can be ordered."""
+"""
+Properties by which workspacemember connections can be ordered.
+"""
 enum WorkspaceMemberOrderField {
   CREATED_AT
   ID
@@ -1174,16 +1676,24 @@ enum WorkspaceMemberType {
   USER
 }
 
-"""Ordering options for workspace connections"""
+"""
+Ordering options for workspace connections
+"""
 input WorkspaceOrder {
-  """The ordering direction."""
+  """
+  The ordering direction.
+  """
   direction: OrderDirection!
 
-  """The field to order workspaces by."""
+  """
+  The field to order workspaces by.
+  """
   field: WorkspaceOrderField!
 }
 
-"""Properties by which workspace connections can be ordered."""
+"""
+Properties by which workspace connections can be ordered.
+"""
 enum WorkspaceOrderField {
   CREATED_AT
   ID

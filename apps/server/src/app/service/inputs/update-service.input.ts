@@ -1,4 +1,4 @@
-import { Field, InputType, Int } from '@nest-boot/graphql';
+import { Field, ID, InputType, Int } from '@nest-boot/graphql';
 import { Type } from 'class-transformer';
 import {
   IsArray,
@@ -25,6 +25,11 @@ export class UpdateServiceInput {
   @IsOptional()
   @Field(() => String, { nullable: true })
   image?: string;
+
+  @IsString()
+  @IsOptional()
+  @Field(() => ID, { nullable: true })
+  registryCredentialId?: string | null;
 
   @IsInt()
   @IsOptional()

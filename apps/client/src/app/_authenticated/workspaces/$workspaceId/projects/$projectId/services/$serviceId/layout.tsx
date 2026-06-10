@@ -16,6 +16,7 @@ const GET_SERVICE_FROM_SERVICE_LAYOUT = graphql(`
       projectId
       name
       image
+      registryCredentialId
       replicas
       command
       args

@@ -8,6 +8,7 @@ import { AuthModule } from '@/app/auth/auth.module';
 import { DeploymentModule } from '@/app/deployment';
 import { DomainModule } from '@/app/domain/domain.module';
 import { ProjectModule } from '@/app/project/project.module';
+import { RegistryCredentialModule } from '@/app/registry-credential';
 import { ServiceModule } from '@/app/service/service.module';
 import { ServiceTerminalModule } from '@/app/service-terminal/service-terminal.module';
 import { UserModule } from '@/app/user/user.module';
@@ -31,6 +32,7 @@ import { CommonModule } from '@/common/common.module';
     WorkspaceMemberGroupMemberModule,
     DomainModule,
     ProjectModule,
+    RegistryCredentialModule,
     ServiceModule,
     DeploymentModule,
     VolumeModule,

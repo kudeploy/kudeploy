@@ -1,4 +1,5 @@
 export const KUBERNETES_PROJECT_NAME_PREFIX = 'kd-project-';
+export const KUBERNETES_REGISTRY_CREDENTIAL_NAME_PREFIX = 'kd-regcred-';
 export const KUBERNETES_SERVICE_NAME_PREFIX = 'kd-service-';
 export const KUBERNETES_VOLUME_NAME_PREFIX = 'kd-volume-';
 
@@ -8,6 +9,10 @@ export function toKubernetesProjectName(id: string): string {
 
 export function toKubernetesServiceName(id: string): string {
   return `${KUBERNETES_SERVICE_NAME_PREFIX}${id}`;
+}
+
+export function toKubernetesRegistryCredentialName(id: string): string {
+  return `${KUBERNETES_REGISTRY_CREDENTIAL_NAME_PREFIX}${id}`;
 }
 
 export function toKubernetesVolumeName(id: string): string {
@@ -22,6 +27,13 @@ export function toGraphqlServiceId(name: string): string {
   return stripKubernetesPrefix(name, KUBERNETES_SERVICE_NAME_PREFIX);
 }
 
+export function toGraphqlRegistryCredentialId(name: string): string {
+  return stripKubernetesPrefix(
+    name,
+    KUBERNETES_REGISTRY_CREDENTIAL_NAME_PREFIX,
+  );
+}
+
 export function toGraphqlVolumeId(name: string): string {
   return stripKubernetesPrefix(name, KUBERNETES_VOLUME_NAME_PREFIX);
 }
@@ -32,6 +44,12 @@ export function hasKubernetesProjectNamePrefix(name: string): boolean {
 
 export function hasKubernetesServiceNamePrefix(name: string): boolean {
   return name.startsWith(KUBERNETES_SERVICE_NAME_PREFIX);
+}
+
+export function hasKubernetesRegistryCredentialNamePrefix(
+  name: string,
+): boolean {
+  return name.startsWith(KUBERNETES_REGISTRY_CREDENTIAL_NAME_PREFIX);
 }
 
 export function hasKubernetesVolumeNamePrefix(name: string): boolean {
