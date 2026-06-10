@@ -1,3 +1,9 @@
+## 0.12.0 (2026-06-10)
+
+### 🧱 Updated Dependencies
+
+- Updated crds-helm-chart to 0.7.0
+
 ## 0.11.2 (2026-06-10)
 
 ### 🧱 Updated Dependencies

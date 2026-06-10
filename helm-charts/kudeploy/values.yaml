@@ -65,7 +65,7 @@ controller:
   image:
     registry: ghcr.io
     repository: kudeploy/controller
-    tag: '0.6.0'
+    tag: '0.7.0'
     digest: ""
     pullPolicy: IfNotPresent
     pullSecrets: []
@@ -156,7 +156,7 @@ client:
   image:
     registry: ghcr.io
     repository: kudeploy/client
-    tag: '0.8.0'
+    tag: '0.9.0'
     digest: ""
     pullPolicy: IfNotPresent
     pullSecrets: []
@@ -225,7 +225,7 @@ server:
   image:
     registry: ghcr.io
     repository: kudeploy/server
-    tag: '1.11.0'
+    tag: '1.12.0'
     digest: ""
     pullPolicy: IfNotPresent
     pullSecrets: []

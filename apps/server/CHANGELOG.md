@@ -1,3 +1,13 @@
+## 1.12.0 (2026-06-10)
+
+### 🚀 Features
+
+- limit replicas, consolidate settings, and add volumes ([caa0742](https://github.com/kudeploy/kudeploy/commit/caa0742))
+
+### ❤️ Thank You
+
+- Xudong Huang @xudongcc
+
 ## 1.11.0 (2026-06-10)
 
 ### 🚀 Features
