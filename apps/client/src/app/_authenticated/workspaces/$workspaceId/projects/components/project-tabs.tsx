@@ -22,6 +22,14 @@ export function ProjectTabs({
         }),
       },
       {
+        title: t("project:tabs.volumes"),
+        testId: "project-volumes-tab",
+        link: linkOptions({
+          to: "/workspaces/$workspaceId/projects/$projectId/volumes",
+          params: { workspaceId, projectId },
+        }),
+      },
+      {
         title: t("project:tabs.settings"),
         testId: "project-settings-tab",
         link: linkOptions({

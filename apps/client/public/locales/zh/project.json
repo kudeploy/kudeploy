@@ -13,7 +13,58 @@
   },
   "tabs": {
     "services": "服务",
+    "volumes": "存储卷",
     "settings": "设置"
+  },
+  "volumes": {
+    "title": "存储卷",
+    "description": "存储卷是当前项目命名空间中的 Kubernetes PersistentVolumeClaim。",
+    "create": {
+      "button": "创建存储卷",
+      "title": "创建存储卷",
+      "description": "保存后会在项目命名空间中创建一个 PersistentVolumeClaim。"
+    },
+    "form": {
+      "name": {
+        "label": "名称",
+        "placeholder": "data",
+        "required": "请输入名称"
+      },
+      "size": {
+        "label": "容量 (Gi)",
+        "placeholder": "10",
+        "required": "请输入大于 0 的容量"
+      }
+    },
+    "filter": {
+      "search": {
+        "placeholder": "搜索存储卷"
+      },
+      "name": {
+        "label": "名称",
+        "placeholder": "存储卷名称"
+      }
+    },
+    "table": {
+      "created_at": "创建时间",
+      "name": "名称",
+      "size": "容量",
+      "status": "状态"
+    },
+    "delete": {
+      "title": "删除存储卷",
+      "description": "确认删除存储卷「{{name}}」？对应的 PersistentVolumeClaim 会被删除。"
+    },
+    "status": {
+      "BOUND": "已绑定",
+      "LOST": "丢失",
+      "PENDING": "等待中",
+      "UNKNOWN": "未知"
+    },
+    "toast": {
+      "created": "存储卷已创建",
+      "deleted": "存储卷已删除"
+    }
   },
   "settings": {
     "title": "设置",

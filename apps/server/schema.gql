@@ -107,6 +107,12 @@ input CreateServiceInput {
   resources: ServiceResourcesInput
 }
 
+input CreateVolumeInput {
+  name: String!
+  projectId: ID!
+  size: Int!
+}
+
 input CreateWorkspaceInput {
   name: String!
 }
@@ -300,6 +306,7 @@ type Mutation {
   createProject(input: CreateProjectInput!): Project!
   createService(input: CreateServiceInput!): Service!
   createServiceAccountWorkspaceMember(input: CreateServiceAccountWorkspaceMemberInput!): WorkspaceMember!
+  createVolume(input: CreateVolumeInput!): Volume!
   createWorkspace(input: CreateWorkspaceInput!): Workspace!
   createWorkspaceInvite(input: CreateWorkspaceInviteInput!): WorkspaceMember!
   createWorkspaceMemberGroup(input: CreateWorkspaceMemberGroupInput!): WorkspaceMemberGroup!
@@ -307,6 +314,7 @@ type Mutation {
   deleteDomain(id: ID!): Domain!
   deleteProject(id: ID!): Project!
   deleteService(id: ID!, projectId: ID!): Service!
+  deleteVolume(id: ID!, projectId: ID!): Volume!
   deleteWorkspace: Workspace!
   deleteWorkspaceMemberGroup(id: ID!): WorkspaceMemberGroup!
   removeMembersFromWorkspaceMemberGroup(id: ID!, memberIds: [ID!]!): WorkspaceMemberGroup!
@@ -346,6 +354,32 @@ type Project {
   name: String!
   status: ProjectStatus!
   updatedAt: DateTime!
+  volumes(
+    """Returns the elements that come after the specified cursor."""
+    after: String
+
+    """Returns the elements that come before the specified cursor."""
+    before: String
+
+    """Filter volumes using MongoDB query syntax."""
+    filter: VolumeFilter
+
+    """Returns up to the first `n` elements from the list."""
+    first: Int
+
+    """Returns up to the last `n` elements from the list."""
+    last: Int
+
+    """Ordering options for the returned volumes."""
+    orderBy: VolumeOrder
+
+    """
+    Apply one or multiple filters to the query.
+    Supported filter parameters:
+    `name`, `createdAt`
+    """
+    query: String
+  ): VolumeConnection!
 }
 
 type ProjectConnection {
@@ -541,6 +575,34 @@ type Query {
     """
     query: String
   ): ServiceConnection!
+  volume(id: ID!, projectId: ID!): Volume
+  volumes(
+    """Returns the elements that come after the specified cursor."""
+    after: String
+
+    """Returns the elements that come before the specified cursor."""
+    before: String
+
+    """Filter volumes using MongoDB query syntax."""
+    filter: VolumeFilter
+
+    """Returns up to the first `n` elements from the list."""
+    first: Int
+
+    """Returns up to the last `n` elements from the list."""
+    last: Int
+
+    """Ordering options for the returned volumes."""
+    orderBy: VolumeOrder
+    projectId: ID!
+
+    """
+    Apply one or multiple filters to the query.
+    Supported filter parameters:
+    `name`, `createdAt`
+    """
+    query: String
+  ): VolumeConnection!
   workspace(id: ID!): Workspace
   workspaceMember(id: ID!): WorkspaceMember
   workspaceMemberByToken(token: String!): WorkspaceMember
@@ -626,6 +688,7 @@ type Query {
 }
 
 type Service {
+  activeDeploymentName: String
   args: [String!]!
   command: [String!]!
   createdAt: DateTime!
@@ -633,6 +696,7 @@ type Service {
   healthCheck: ServiceHealthCheck
   id: ID!
   image: String!
+  latestDeploymentName: String
   logs(after: String, before: String, first: Int, last: Int): ServiceLogConnection!
   metrics(rangeSeconds: Int, stepSeconds: Int): ServiceMetrics!
   name: String!
@@ -824,6 +888,66 @@ type User {
   id: ID!
   name: String!
   updatedAt: DateTime!
+}
+
+type Volume {
+  createdAt: DateTime!
+  id: ID!
+  name: String!
+  projectId: ID!
+  size: Int!
+  status: VolumeStatus!
+  updatedAt: DateTime!
+}
+
+type VolumeConnection {
+  """A list of edges."""
+  edges: [VolumeEdge!]!
+
+  """Information to aid in pagination."""
+  pageInfo: PageInfo!
+
+  """Identifies the total count of items in the connection."""
+  totalCount: Int!
+}
+
+"""
+An auto-generated type which holds one Volume and a cursor during pagination.
+"""
+type VolumeEdge {
+  """A cursor for use in pagination."""
+  cursor: String!
+
+  """The item at the end of VolumeEdge."""
+  node: Volume!
+}
+
+"""
+A filter for Volume that accepts MongoDB query syntax.
+Supported fields: name, createdAt
+"""
+scalar VolumeFilter
+
+"""Ordering options for volume connections"""
+input VolumeOrder {
+  """The ordering direction."""
+  direction: OrderDirection!
+
+  """The field to order volumes by."""
+  field: VolumeOrderField!
+}
+
+"""Properties by which volume connections can be ordered."""
+enum VolumeOrderField {
+  CREATED_AT
+  ID
+}
+
+enum VolumeStatus {
+  BOUND
+  LOST
+  PENDING
+  UNKNOWN
 }
 
 type Workspace {
