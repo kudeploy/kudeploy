@@ -1,3 +1,13 @@
+## 0.8.0 (2026-06-10)
+
+### 🚀 Features
+
+- add project volume pvc management ([#9](https://github.com/kudeploy/kudeploy/pull/9))
+
+### ❤️ Thank You
+
+- Xudong Huang @xudongcc
+
 ## 0.7.1 (2026-06-10)
 
 ### 🩹 Fixes
