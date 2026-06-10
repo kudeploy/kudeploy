@@ -28,6 +28,7 @@ type ServiceSpec struct {
 	// Set to 0 to scale the Service to zero.
 	// +optional
 	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=100
 	Replicas *int32 `json:"replicas,omitempty"`
 
 	// image is the container image to run.

@@ -609,6 +609,7 @@ spec:
                   replicas is the desired number of instances. When omitted, 1 is used.
                   Set to 0 to scale the Service to zero.
                 format: int32
+                maximum: 100
                 minimum: 0
                 type: integer
               resources:

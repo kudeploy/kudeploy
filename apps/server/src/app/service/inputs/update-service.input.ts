@@ -5,6 +5,7 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  Max,
   Min,
   ValidateNested,
 } from 'class-validator';
@@ -34,6 +35,7 @@ export class UpdateServiceInput {
   @IsInt()
   @IsOptional()
   @Min(0)
+  @Max(100)
   @Field(() => Int, { nullable: true })
   replicas?: number | null;
 

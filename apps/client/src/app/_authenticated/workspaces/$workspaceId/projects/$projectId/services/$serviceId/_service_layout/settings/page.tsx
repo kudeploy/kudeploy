@@ -186,6 +186,7 @@ function ServiceSettingsComponent() {
             <Input
               data-testid="service-replicas-input"
               label={t("service:form.replicas")}
+              max={100}
               min={0}
               type="number"
               value={replicas}

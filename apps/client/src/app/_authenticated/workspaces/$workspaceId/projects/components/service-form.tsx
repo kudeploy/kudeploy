@@ -144,6 +144,7 @@ export function ServiceForm({
         data-testid="service-replicas-input"
         disabled={disabled}
         label={t("service:form.replicas")}
+        max={100}
         min={0}
         type="number"
         value={value.replicas}

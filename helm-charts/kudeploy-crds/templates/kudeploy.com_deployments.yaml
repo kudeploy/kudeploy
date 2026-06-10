@@ -610,6 +610,7 @@ spec:
                   replicas is the desired number of instances captured for this Deployment version.
                   When omitted, 1 is used. Set to 0 to scale this Deployment to zero.
                 format: int32
+                maximum: 100
                 minimum: 0
                 type: integer
               resources:
