@@ -466,22 +466,26 @@ function ServiceSettingsComponent() {
             <CardDescription>{t("service:source.description")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
-            <Input
-              data-testid="service-image-input"
-              label={t("service:form.image.label")}
-              placeholder={t("service:form.image.placeholder")}
-              value={image}
-              onChange={(event) => setImage(event.target.value)}
-            />
+            <div className="grid gap-5 sm:grid-cols-3">
+              <Input
+                className="sm:col-span-2"
+                data-testid="service-image-input"
+                label={t("service:form.image.label")}
+                placeholder={t("service:form.image.placeholder")}
+                value={image}
+                onChange={(event) => setImage(event.target.value)}
+              />
 
-            <Select<string>
-              data-testid="service-registry-credential-select"
-              items={registryCredentialItems}
-              label={t("service:form.registry_credential.label")}
-              placeholder={t("service:form.registry_credential.none")}
-              value={registryCredentialId}
-              onValueChange={setRegistryCredentialId}
-            />
+              <Select<string>
+                className="sm:col-span-1"
+                data-testid="service-registry-credential-select"
+                items={registryCredentialItems}
+                label={t("service:form.registry_credential.label")}
+                placeholder={t("service:form.registry_credential.none")}
+                value={registryCredentialId}
+                onValueChange={setRegistryCredentialId}
+              />
+            </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
               <Textarea
