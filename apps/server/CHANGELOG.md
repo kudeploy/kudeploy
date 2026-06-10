@@ -1,3 +1,13 @@
+## 1.11.0 (2026-06-10)
+
+### 🚀 Features
+
+- **server:** prefix Kubernetes workspace labels ([#17](https://github.com/kudeploy/kudeploy/pull/17))
+
+### ❤️ Thank You
+
+- Xudong Huang @xudongcc
+
 ## 1.10.0 (2026-06-10)
 
 ### 🚀 Features
