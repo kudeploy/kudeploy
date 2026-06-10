@@ -1,3 +1,13 @@
+## 1.7.0 (2026-06-10)
+
+### 🚀 Features
+
+- add paginated service logs ([#7](https://github.com/kudeploy/kudeploy/pull/7))
+
+### ❤️ Thank You
+
+- Xudong Huang @xudongcc
+
 ## 1.6.0 (2026-06-09)
 
 ### 🚀 Features

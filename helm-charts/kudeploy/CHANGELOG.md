@@ -1,3 +1,13 @@
+## 0.7.0 (2026-06-10)
+
+### 🚀 Features
+
+- add paginated service logs ([#7](https://github.com/kudeploy/kudeploy/pull/7))
+
+### ❤️ Thank You
+
+- Xudong Huang @xudongcc
+
 ## 0.6.0 (2026-06-09)
 
 This was a version bump only for helm-chart to align it with other projects, there were no code changes.
