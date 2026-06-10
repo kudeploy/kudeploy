@@ -1,3 +1,17 @@
+## 0.10.0 (2026-06-10)
+
+### 🚀 Features
+
+- add service volume bindings ([b149cbe](https://github.com/kudeploy/kudeploy/commit/b149cbe))
+
+### 🧱 Updated Dependencies
+
+- Updated crds-helm-chart to 0.5.0
+
+### ❤️ Thank You
+
+- Xudong Huang @xudongcc
+
 ## 0.9.1 (2026-06-10)
 
 This was a version bump only for helm-chart to align it with other projects, there were no code changes.
