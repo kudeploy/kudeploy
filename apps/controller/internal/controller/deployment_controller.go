@@ -85,6 +85,10 @@ func (r *DeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		}
 	}
 
+	if err := validatePVCVolumeSources(kudeployDeployment.Spec.Volumes); err != nil {
+		return r.markDeploymentUnsupportedVolume(ctx, kudeployDeployment, err)
+	}
+
 	if err := r.createOrUpdateDeploymentEnvSecret(ctx, kudeployDeployment); err != nil {
 		return ctrl.Result{}, err
 	}
@@ -226,6 +230,17 @@ func (r *DeploymentReconciler) updateDeploymentStatus(ctx context.Context, kudep
 		})
 	}
 	return ignoreConflict(r.Status().Patch(ctx, kudeployDeployment, client.MergeFrom(originalKudeployDeployment)))
+}
+
+func (r *DeploymentReconciler) markDeploymentUnsupportedVolume(ctx context.Context, kudeployDeployment *kudeployv1alpha1.Deployment, err error) (ctrl.Result, error) {
+	originalKudeployDeployment := kudeployDeployment.DeepCopy()
+	meta.SetStatusCondition(&kudeployDeployment.Status.Conditions, metav1.Condition{
+		Type:    deploymentReadyCondition,
+		Status:  metav1.ConditionFalse,
+		Reason:  unsupportedVolumeSourceReason,
+		Message: err.Error(),
+	})
+	return ctrl.Result{}, ignoreConflict(r.Status().Patch(ctx, kudeployDeployment, client.MergeFrom(originalKudeployDeployment)))
 }
 
 func ensureDeploymentMetadata(kudeployDeployment *kudeployv1alpha1.Deployment, workspaceID string) bool {

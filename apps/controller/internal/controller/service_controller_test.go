@@ -302,6 +302,36 @@ var _ = Describe("Service Controller", func() {
 		))
 	})
 
+	It("does not create a Kudeploy Deployment when the Service uses an unsupported volume source", func() {
+		service := newService()
+		service.Spec.Volumes = []corev1.Volume{
+			{
+				Name: "host",
+				VolumeSource: corev1.VolumeSource{
+					HostPath: &corev1.HostPathVolumeSource{Path: "/var/run"},
+				},
+			},
+		}
+		service.Spec.VolumeMounts = []corev1.VolumeMount{
+			{Name: "host", MountPath: "/host"},
+		}
+		reconciler := newReconciler(newNamespace(), service)
+
+		_, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: serviceKey})
+		Expect(err).NotTo(HaveOccurred())
+
+		kudeployDeployment := &kudeployv1alpha1.Deployment{}
+		Expect(apierrors.IsNotFound(reconciler.Get(ctx, types.NamespacedName{Name: firstDeploymentName, Namespace: namespaceName}, kudeployDeployment))).To(BeTrue())
+
+		Expect(reconciler.Get(ctx, serviceKey, service)).To(Succeed())
+		Expect(service.Status.ObservedGeneration).To(Equal(int64(1)))
+		Expect(service.Status.Conditions).To(ContainElement(SatisfyAll(
+			HaveField("Type", "Ready"),
+			HaveField("Status", metav1.ConditionFalse),
+			HaveField("Reason", "UnsupportedVolumeSource"),
+		)))
+	})
+
 	It("switches the stable Kubernetes Service selector after the latest Kudeploy Deployment is ready", func() {
 		service := newService()
 		service.Labels = map[string]string{
