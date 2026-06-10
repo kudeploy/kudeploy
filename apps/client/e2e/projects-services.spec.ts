@@ -231,7 +231,7 @@ test.describe("workspace Projects and Services", () => {
       .click();
     await page.getByRole("option", { name: /Data/ }).click();
     await page.getByTestId("service-volume-mount-path-input-0").fill("/data");
-    await page.getByTestId("service-volume-sub-path-input-0").fill("uploads");
+    await page.getByTestId("service-volume-sub-path-input-0").fill("/");
     await page.getByTestId("service-volume-read-only-input-0").click();
     await page.getByTestId("service-resources-enabled").click();
     await expect(page.getByTestId("service-cpu-request-input")).toHaveCount(0);
@@ -249,11 +249,13 @@ test.describe("workspace Projects and Services", () => {
         {
           volumeId: "volume-data",
           mountPath: "/data",
-          subPath: "uploads",
           readOnly: true,
         },
       ],
     });
+    expect(
+      graphqlMock.serviceUpdateRequests.at(-1)?.input.volumes[0],
+    ).not.toHaveProperty("subPath");
     await expect(page.getByTestId("service-name-input")).toHaveValue(
       "API Edited",
     );

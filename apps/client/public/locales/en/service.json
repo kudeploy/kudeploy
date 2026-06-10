@@ -216,7 +216,7 @@
       "label": "Volume",
       "select_placeholder": "Select volume",
       "mount_path": "Mount path",
-      "sub_path": "Sub path",
+      "sub_path": "Volume path",
       "read_only": "Read-only",
       "required": "Select a volume",
       "mount_path_required": "Mount path is required"

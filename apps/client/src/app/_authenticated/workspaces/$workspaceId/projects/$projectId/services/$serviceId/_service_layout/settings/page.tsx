@@ -294,12 +294,16 @@ function ServiceSettingsComponent() {
           ? {}
           : { targetPort: Number(port.targetPort) }),
       }));
-    const volumeInput = volumes.map((volume) => ({
-      volumeId: volume.volumeId,
-      mountPath: volume.mountPath.trim(),
-      ...(volume.subPath.trim() ? { subPath: volume.subPath.trim() } : {}),
-      readOnly: volume.readOnly,
-    }));
+    const volumeInput = volumes.map((volume) => {
+      const subPath = toVolumeSubPathInput(volume.subPath);
+
+      return {
+        volumeId: volume.volumeId,
+        mountPath: volume.mountPath.trim(),
+        ...(subPath ? { subPath } : {}),
+        readOnly: volume.readOnly,
+      };
+    });
 
     if (!trimmedName) {
       toast.error(t("service:form.name.required"));
@@ -633,21 +637,21 @@ function ServiceSettingsComponent() {
                       />
                     </div>
                     <Input
+                      data-testid={`service-volume-sub-path-input-${index}`}
+                      label={t("service:form.volume.sub_path")}
+                      placeholder="/"
+                      value={volume.subPath}
+                      onChange={(event) =>
+                        updateVolume(index, { subPath: event.target.value })
+                      }
+                    />
+                    <Input
                       data-testid={`service-volume-mount-path-input-${index}`}
                       label={t("service:form.volume.mount_path")}
                       placeholder="/data"
                       value={volume.mountPath}
                       onChange={(event) =>
                         updateVolume(index, { mountPath: event.target.value })
-                      }
-                    />
-                    <Input
-                      data-testid={`service-volume-sub-path-input-${index}`}
-                      label={t("service:form.volume.sub_path")}
-                      placeholder="uploads"
-                      value={volume.subPath}
-                      onChange={(event) =>
-                        updateVolume(index, { subPath: event.target.value })
                       }
                     />
                     <div className="flex items-end pb-2">
@@ -953,6 +957,16 @@ function toHealthCheckValue(
     port: healthCheck?.port ?? "",
     path: healthCheck?.path ?? "/healthz",
   };
+}
+
+function toVolumeSubPathInput(value: string) {
+  const trimmed = value.trim();
+
+  if (trimmed === "/") {
+    return "";
+  }
+
+  return trimmed.replace(/^\/+/, "");
 }
 
 function toPortValues(

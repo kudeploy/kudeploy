@@ -214,7 +214,7 @@
       "label": "卷",
       "select_placeholder": "选择卷",
       "mount_path": "挂载路径",
-      "sub_path": "子路径",
+      "sub_path": "卷路径",
       "read_only": "只读",
       "required": "请选择卷",
       "mount_path_required": "请输入挂载路径"
