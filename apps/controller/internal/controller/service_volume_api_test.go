@@ -59,6 +59,41 @@ var _ = Describe("ServiceVolume API validation", func() {
 		Expect(k8sClient.Create(ctx, service)).To(Succeed())
 	})
 
+	It("admits Services with the maximum replica count", func() {
+		service := &kudeployv1alpha1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "max-replica-service",
+				Namespace: namespace.Name,
+			},
+			Spec: kudeployv1alpha1.ServiceSpec{
+				Replicas: ptrInt32(100),
+				Image:    "ghcr.io/kudeploy/whoami:latest",
+				Ports:    []kudeployv1alpha1.ServicePort{{Port: 80}},
+			},
+		}
+
+		Expect(k8sClient.Create(ctx, service)).To(Succeed())
+	})
+
+	It("rejects Services above the maximum replica count", func() {
+		service := &kudeployv1alpha1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "too-many-replica-service",
+				Namespace: namespace.Name,
+			},
+			Spec: kudeployv1alpha1.ServiceSpec{
+				Replicas: ptrInt32(101),
+				Image:    "ghcr.io/kudeploy/whoami:latest",
+				Ports:    []kudeployv1alpha1.ServicePort{{Port: 80}},
+			},
+		}
+
+		err := k8sClient.Create(ctx, service)
+
+		Expect(apierrors.IsInvalid(err)).To(BeTrue(), "expected invalid error, got %v", err)
+		Expect(err.Error()).To(ContainSubstring("less than or equal to 100"))
+	})
+
 	It("rejects Service volumes with more than one replica", func() {
 		service := &kudeployv1alpha1.Service{
 			ObjectMeta: metav1.ObjectMeta{
@@ -104,5 +139,46 @@ var _ = Describe("ServiceVolume API validation", func() {
 
 		Expect(apierrors.IsInvalid(err)).To(BeTrue(), "expected invalid error, got %v", err)
 		Expect(err.Error()).To(ContainSubstring("replicas must be 0 or 1 when volumes are configured"))
+	})
+
+	It("admits Kudeploy Deployments with the maximum replica count", func() {
+		deployment := &kudeployv1alpha1.Deployment{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "max-replica-deployment",
+				Namespace: namespace.Name,
+			},
+			Spec: kudeployv1alpha1.DeploymentSpec{
+				ServiceName:        "max-replica-service",
+				Version:            1,
+				ServiceAccountName: "service-max-replica-service",
+				Replicas:           ptrInt32(100),
+				Image:              "ghcr.io/kudeploy/whoami:latest",
+				Ports:              []kudeployv1alpha1.ServicePort{{Port: 80}},
+			},
+		}
+
+		Expect(k8sClient.Create(ctx, deployment)).To(Succeed())
+	})
+
+	It("rejects Kudeploy Deployments above the maximum replica count", func() {
+		deployment := &kudeployv1alpha1.Deployment{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "too-many-replica-deployment",
+				Namespace: namespace.Name,
+			},
+			Spec: kudeployv1alpha1.DeploymentSpec{
+				ServiceName:        "too-many-replica-service",
+				Version:            1,
+				ServiceAccountName: "service-too-many-replica-service",
+				Replicas:           ptrInt32(101),
+				Image:              "ghcr.io/kudeploy/whoami:latest",
+				Ports:              []kudeployv1alpha1.ServicePort{{Port: 80}},
+			},
+		}
+
+		err := k8sClient.Create(ctx, deployment)
+
+		Expect(apierrors.IsInvalid(err)).To(BeTrue(), "expected invalid error, got %v", err)
+		Expect(err.Error()).To(ContainSubstring("less than or equal to 100"))
 	})
 })

@@ -12,10 +12,6 @@
   },
   "tabs": {
     "overview": "Overview",
-    "source": "Source",
-    "environment": "Environment",
-    "network": "Network",
-    "volumes": "Volumes",
     "deployments": "Deployments",
     "terminal": "Terminal",
     "logs": "Logs",
@@ -38,8 +34,14 @@
     "empty": "No environment variables configured."
   },
   "network": {
-    "description": "Configure exposed ports and health checks.",
+    "description": "Configure service ports.",
     "ports": "Ports"
+  },
+  "volumes": {
+    "title": "Volume mounts",
+    "description": "Mount existing project volumes into the service container.",
+    "empty": "No volumes mounted.",
+    "unavailable": "No project volumes available."
   },
   "deployments": {
     "description": "Review service releases, the active traffic version, and the backing Kubernetes Deployment.",
@@ -155,7 +157,7 @@
     "used_of_limit": "{{percent}} used"
   },
   "settings": {
-    "description": "Manage service metadata, scale, resources, and deletion.",
+    "description": "Manage service source, environment, networking, volumes, scale, resources, and deletion.",
     "general": {
       "title": "General",
       "description": "Update the service name and replica count."
@@ -209,7 +211,17 @@
     "port": "Port",
     "replicas": "Replicas",
     "target_port": "Target",
-    "value": "Value"
+    "value": "Value",
+    "volume": {
+      "label": "Volume",
+      "select_placeholder": "Select volume",
+      "mount_path": "Mount path",
+      "sub_path": "Volume path",
+      "read_only": "Read-only",
+      "required": "Select a volume",
+      "mount_path_required": "Mount path is required",
+      "replicas_limited": "Volume mounts require replicas to be 0 or 1"
+    }
   },
   "filter": {
     "search": {
@@ -247,6 +259,8 @@
   },
   "actions": {
     "add_env": "Add env",
-    "add_port": "Add port"
+    "add_port": "Add port",
+    "add_volume": "Add volume",
+    "remove_volume": "Remove volume"
   }
 }

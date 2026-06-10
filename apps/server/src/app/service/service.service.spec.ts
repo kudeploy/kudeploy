@@ -9,6 +9,7 @@ import type { CustomObjectsApi } from '@kubernetes/client-node';
 
 import { ProjectService } from '@/app/project/project.service';
 import { RegistryCredentialService } from '@/app/registry-credential/registry-credential.service';
+import { VolumeService } from '@/app/volume/volume.service';
 import { Workspace } from '@/app/workspace/workspace.entity';
 import { KubernetesConnectionManager } from '@/lib/kubernetes-graphql-connection/kubernetes-connection.manager';
 
@@ -249,6 +250,104 @@ describe('ServiceService', () => {
     expect(result.registryCredentialId).toBe('456');
   });
 
+  it('creates a Service CRD with existing Project volume mounts', async () => {
+    const { service, customObjectsApi, projectService, volumeService } =
+      createService();
+    const workspace = { id: 'workspace_1' } as Workspace;
+
+    projectService.findProject.mockResolvedValue({
+      id: '123',
+      name: 'Payments',
+    });
+    volumeService.findVolume.mockResolvedValue({
+      id: 'data',
+      projectId: '123',
+      name: 'Data',
+    });
+    customObjectsApi.patchNamespacedCustomObject.mockResolvedValue(
+      serviceCrd({
+        volumes: [
+          {
+            name: 'kd-volume-data',
+            mountPath: '/data',
+            subPath: 'uploads',
+            readOnly: true,
+          },
+        ],
+      }),
+    );
+
+    const result = await service.createService(workspace, {
+      projectId: '123',
+      name: 'API',
+      image: 'ghcr.io/kudeploy/whoami:latest',
+      ports: [{ port: 80 }],
+      volumes: [
+        {
+          volumeId: 'data',
+          mountPath: '/data',
+          subPath: 'uploads',
+          readOnly: true,
+        },
+      ],
+    });
+
+    expect(volumeService.findVolume).toHaveBeenCalledWith(
+      workspace,
+      '123',
+      'data',
+    );
+    expect(customObjectsApi.patchNamespacedCustomObject).toHaveBeenCalledWith(
+      expect.objectContaining({
+        body: expect.objectContaining({
+          spec: expect.objectContaining({
+            volumes: [
+              {
+                name: 'kd-volume-data',
+                mountPath: '/data',
+                subPath: 'uploads',
+                readOnly: true,
+              },
+            ],
+          }),
+        }),
+      }),
+      expect.any(Object),
+    );
+    expect(result.volumes).toEqual([
+      {
+        volumeId: 'data',
+        mountPath: '/data',
+        subPath: 'uploads',
+        readOnly: true,
+      },
+    ]);
+  });
+
+  it('does not create a Service CRD when a requested volume is missing', async () => {
+    const { service, customObjectsApi, projectService, volumeService } =
+      createService();
+    const workspace = { id: 'workspace_1' } as Workspace;
+
+    projectService.findProject.mockResolvedValue({
+      id: '123',
+      name: 'Payments',
+    });
+    volumeService.findVolume.mockResolvedValue(null);
+
+    await expect(
+      service.createService(workspace, {
+        projectId: '123',
+        name: 'API',
+        image: 'ghcr.io/kudeploy/whoami:latest',
+        ports: [{ port: 80 }],
+        volumes: [{ volumeId: 'missing', mountPath: '/data' }],
+      }),
+    ).rejects.toThrow('Volume not found');
+
+    expect(customObjectsApi.patchNamespacedCustomObject).not.toHaveBeenCalled();
+  });
+
   it('resets replicas to one when updating a Service CRD with null replicas', async () => {
     const { service, customObjectsApi, projectService } = createService();
     const workspace = { id: 'workspace_1' } as Workspace;
@@ -333,6 +432,101 @@ describe('ServiceService', () => {
       expect.any(Object),
     );
     expect(result.registryCredentialId).toBe('456');
+  });
+
+  it('updates Service CRD volume mounts', async () => {
+    const { service, customObjectsApi, projectService, volumeService } =
+      createService();
+    const workspace = { id: 'workspace_1' } as Workspace;
+
+    projectService.findProject.mockResolvedValue({
+      id: '123',
+      name: 'Payments',
+    });
+    volumeService.findVolume.mockResolvedValue({
+      id: 'cache',
+      projectId: '123',
+      name: 'Cache',
+    });
+    customObjectsApi.getNamespacedCustomObject.mockResolvedValue(
+      serviceCrd({
+        volumes: [{ name: 'kd-volume-data', mountPath: '/data' }],
+      }),
+    );
+    customObjectsApi.patchNamespacedCustomObject.mockResolvedValue(
+      serviceCrd({
+        volumes: [{ name: 'kd-volume-cache', mountPath: '/cache' }],
+      }),
+    );
+
+    const result = await service.updateService(workspace, '123', '123', {
+      volumes: [{ volumeId: 'cache', mountPath: '/cache' }],
+    });
+
+    expect(volumeService.findVolume).toHaveBeenCalledWith(
+      workspace,
+      '123',
+      'cache',
+    );
+    expect(customObjectsApi.patchNamespacedCustomObject).toHaveBeenCalledWith(
+      expect.objectContaining({
+        body: expect.objectContaining({
+          spec: expect.objectContaining({
+            volumes: [
+              {
+                name: 'kd-volume-cache',
+                mountPath: '/cache',
+              },
+            ],
+          }),
+        }),
+      }),
+      expect.any(Object),
+    );
+    expect(result.volumes).toEqual([
+      {
+        volumeId: 'cache',
+        mountPath: '/cache',
+        subPath: null,
+        readOnly: false,
+      },
+    ]);
+  });
+
+  it('clears Service CRD volume mounts when updating with null volumes', async () => {
+    const { service, customObjectsApi, projectService, volumeService } =
+      createService();
+    const workspace = { id: 'workspace_1' } as Workspace;
+
+    projectService.findProject.mockResolvedValue({
+      id: '123',
+      name: 'Payments',
+    });
+    customObjectsApi.getNamespacedCustomObject.mockResolvedValue(
+      serviceCrd({
+        volumes: [{ name: 'kd-volume-data', mountPath: '/data' }],
+      }),
+    );
+    customObjectsApi.patchNamespacedCustomObject.mockResolvedValue(
+      serviceCrd({ volumes: [] }),
+    );
+
+    const result = await service.updateService(workspace, '123', '123', {
+      volumes: null,
+    });
+
+    expect(volumeService.findVolume).not.toHaveBeenCalled();
+    expect(customObjectsApi.patchNamespacedCustomObject).toHaveBeenCalledWith(
+      expect.objectContaining({
+        body: expect.objectContaining({
+          spec: expect.objectContaining({
+            volumes: [],
+          }),
+        }),
+      }),
+      expect.any(Object),
+    );
+    expect(result.volumes).toEqual([]);
   });
 
   it('clears imageSecretRef when updating a Service CRD with a null registry credential', async () => {
@@ -510,6 +704,25 @@ describe('ServiceService', () => {
       latestDeploymentName: 'kd-service-123-00003',
     });
   });
+
+  it('keeps non-prefixed Service volume names readable', () => {
+    const { service } = createService();
+
+    expect(
+      service.toService(
+        serviceCrd({
+          volumes: [{ name: 'data', mountPath: '/data' }],
+        }),
+      ).volumes,
+    ).toEqual([
+      {
+        volumeId: 'data',
+        mountPath: '/data',
+        subPath: null,
+        readOnly: false,
+      },
+    ]);
+  });
 });
 
 function createService() {
@@ -528,11 +741,15 @@ function createService() {
   const registryCredentialService = {
     findRegistryCredential: jest.fn(),
   };
+  const volumeService = {
+    findVolume: jest.fn(),
+  };
   const service = new ServiceService(
     customObjectsApi as unknown as CustomObjectsApi,
     connectionManager as unknown as KubernetesConnectionManager,
     projectService as unknown as ProjectService,
     registryCredentialService as unknown as RegistryCredentialService,
+    volumeService as unknown as VolumeService,
   );
 
   return {
@@ -541,6 +758,7 @@ function createService() {
     connectionManager,
     projectService,
     registryCredentialService,
+    volumeService,
   };
 }
 
@@ -557,6 +775,12 @@ function serviceCrd(
     readyStatus?: 'True' | 'False' | 'Unknown';
     readyReason?: string;
     imageSecretRefName?: string;
+    volumes?: Array<{
+      name: string;
+      mountPath: string;
+      subPath?: string;
+      readOnly?: boolean;
+    }>;
   } = {},
 ): ServiceResource {
   const {
@@ -571,6 +795,7 @@ function serviceCrd(
     readyStatus,
     readyReason = 'DeploymentReady',
     imageSecretRefName,
+    volumes,
   } = options;
 
   return {
@@ -615,6 +840,7 @@ function serviceCrd(
       },
       ports: [{ port: 80, targetPort: 8080 }],
       env: [{ name: 'NODE_ENV', value: 'production' }],
+      ...(volumes ? { volumes } : {}),
     },
     status:
       readyStatus || activeDeploymentName || latestDeploymentName

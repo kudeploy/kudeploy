@@ -5,6 +5,7 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  Max,
   Min,
   ValidateNested,
 } from 'class-validator';
@@ -13,6 +14,7 @@ import { ServiceEnvVarInput } from './service-env-var.input';
 import { ServiceHealthCheckInput } from './service-health-check.input';
 import { ServicePortInput } from './service-port.input';
 import { ServiceResourcesInput } from './service-resources.input';
+import { ServiceVolumeInput } from './service-volume.input';
 
 @InputType()
 export class CreateServiceInput {
@@ -36,6 +38,7 @@ export class CreateServiceInput {
   @IsInt()
   @IsOptional()
   @Min(0)
+  @Max(100)
   @Field(() => Int, { nullable: true })
   replicas?: number | null;
 
@@ -75,4 +78,11 @@ export class CreateServiceInput {
   @Type(() => ServiceHealthCheckInput)
   @Field(() => ServiceHealthCheckInput, { nullable: true })
   healthCheck?: ServiceHealthCheckInput;
+
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => ServiceVolumeInput)
+  @Field(() => [ServiceVolumeInput], { nullable: true })
+  volumes?: ServiceVolumeInput[] | null;
 }

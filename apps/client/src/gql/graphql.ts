@@ -186,6 +186,7 @@ export type CreateServiceInput = {
   registryCredentialId?: InputMaybe<Scalars["ID"]["input"]>;
   replicas?: InputMaybe<Scalars["Int"]["input"]>;
   resources?: InputMaybe<ServiceResourcesInput>;
+  volumes?: InputMaybe<Array<ServiceVolumeInput>>;
 };
 
 export type CreateVolumeInput = {
@@ -865,6 +866,7 @@ export type Service = {
   resources?: Maybe<ServiceResources>;
   status: ServiceStatus;
   updatedAt: Scalars["DateTime"]["output"];
+  volumes: Array<ServiceVolume>;
 };
 
 export type ServiceLogsArgs = {
@@ -1013,6 +1015,21 @@ export enum ServiceStatus {
   UNKNOWN = "UNKNOWN",
 }
 
+export type ServiceVolume = {
+  __typename?: "ServiceVolume";
+  mountPath: Scalars["String"]["output"];
+  readOnly: Scalars["Boolean"]["output"];
+  subPath?: Maybe<Scalars["String"]["output"]>;
+  volumeId: Scalars["ID"]["output"];
+};
+
+export type ServiceVolumeInput = {
+  mountPath: Scalars["String"]["input"];
+  readOnly?: InputMaybe<Scalars["Boolean"]["input"]>;
+  subPath?: InputMaybe<Scalars["String"]["input"]>;
+  volumeId: Scalars["ID"]["input"];
+};
+
 export type UpdateApiKeyInput = {
   name?: InputMaybe<Scalars["String"]["input"]>;
 };
@@ -1039,6 +1056,7 @@ export type UpdateServiceInput = {
   registryCredentialId?: InputMaybe<Scalars["ID"]["input"]>;
   replicas?: InputMaybe<Scalars["Int"]["input"]>;
   resources?: InputMaybe<ServiceResourcesInput>;
+  volumes?: InputMaybe<Array<ServiceVolumeInput>>;
 };
 
 export type UpdateWorkspaceInput = {
@@ -2289,23 +2307,6 @@ export type GetServiceDeploymentsFromServiceDeploymentsRouteQuery = {
   };
 };
 
-export type UpdateServiceEnvironmentFromServiceEnvironmentRouteMutationVariables =
-  Exact<{
-    projectId: Scalars["ID"]["input"];
-    id: Scalars["ID"]["input"];
-    input: UpdateServiceInput;
-  }>;
-
-export type UpdateServiceEnvironmentFromServiceEnvironmentRouteMutation = {
-  __typename?: "Mutation";
-  updateService: {
-    __typename?: "Service";
-    id: string;
-    updatedAt: any;
-    env: Array<{ __typename?: "ServiceEnvVar"; key: string; value: string }>;
-  };
-};
-
 export type GetServiceLogsFromServiceLogsRouteQueryVariables = Exact<{
   projectId: Scalars["ID"]["input"];
   id: Scalars["ID"]["input"];
@@ -2390,30 +2391,45 @@ export type GetServiceMetricsFromServiceMetricsRouteQuery = {
   } | null;
 };
 
-export type UpdateServiceNetworkFromServiceNetworkRouteMutationVariables =
+export type GetRegistryCredentialsFromServiceSettingsRouteQueryVariables =
   Exact<{
     projectId: Scalars["ID"]["input"];
-    id: Scalars["ID"]["input"];
-    input: UpdateServiceInput;
   }>;
 
-export type UpdateServiceNetworkFromServiceNetworkRouteMutation = {
-  __typename?: "Mutation";
-  updateService: {
-    __typename?: "Service";
-    id: string;
-    updatedAt: any;
-    ports: Array<{
-      __typename?: "ServicePort";
-      port: number;
-      targetPort?: number | null;
+export type GetRegistryCredentialsFromServiceSettingsRouteQuery = {
+  __typename?: "Query";
+  registryCredentials: {
+    __typename?: "RegistryCredentialConnection";
+    edges: Array<{
+      __typename?: "RegistryCredentialEdge";
+      node: {
+        __typename?: "RegistryCredential";
+        id: string;
+        name: string;
+        registry: string;
+      };
     }>;
-    healthCheck?: {
-      __typename?: "ServiceHealthCheck";
-      type: ServiceHealthCheckType;
-      port: number;
-      path?: string | null;
-    } | null;
+  };
+};
+
+export type GetVolumesFromServiceSettingsRouteQueryVariables = Exact<{
+  projectId: Scalars["ID"]["input"];
+}>;
+
+export type GetVolumesFromServiceSettingsRouteQuery = {
+  __typename?: "Query";
+  volumes: {
+    __typename?: "VolumeConnection";
+    edges: Array<{
+      __typename?: "VolumeEdge";
+      node: {
+        __typename?: "Volume";
+        id: string;
+        name: string;
+        size: number;
+        status: VolumeStatus;
+      };
+    }>;
   };
 };
 
@@ -2430,7 +2446,11 @@ export type UpdateServiceSettingsFromServiceSettingsRouteMutation = {
     __typename?: "Service";
     id: string;
     name: string;
+    image: string;
+    registryCredentialId?: string | null;
     replicas?: number | null;
+    command: Array<string>;
+    args: Array<string>;
     updatedAt: any;
     resources?: {
       __typename?: "ServiceResources";
@@ -2439,6 +2459,25 @@ export type UpdateServiceSettingsFromServiceSettingsRouteMutation = {
       memoryRequest?: string | null;
       memoryLimit?: string | null;
     } | null;
+    healthCheck?: {
+      __typename?: "ServiceHealthCheck";
+      type: ServiceHealthCheckType;
+      port: number;
+      path?: string | null;
+    } | null;
+    ports: Array<{
+      __typename?: "ServicePort";
+      port: number;
+      targetPort?: number | null;
+    }>;
+    env: Array<{ __typename?: "ServiceEnvVar"; key: string; value: string }>;
+    volumes: Array<{
+      __typename?: "ServiceVolume";
+      volumeId: string;
+      mountPath: string;
+      subPath?: string | null;
+      readOnly: boolean;
+    }>;
   };
 };
 
@@ -2450,45 +2489,6 @@ export type DeleteServiceFromServiceSettingsRouteMutationVariables = Exact<{
 export type DeleteServiceFromServiceSettingsRouteMutation = {
   __typename?: "Mutation";
   deleteService: { __typename?: "Service"; id: string };
-};
-
-export type GetRegistryCredentialsFromServiceSourceRouteQueryVariables = Exact<{
-  projectId: Scalars["ID"]["input"];
-}>;
-
-export type GetRegistryCredentialsFromServiceSourceRouteQuery = {
-  __typename?: "Query";
-  registryCredentials: {
-    __typename?: "RegistryCredentialConnection";
-    edges: Array<{
-      __typename?: "RegistryCredentialEdge";
-      node: {
-        __typename?: "RegistryCredential";
-        id: string;
-        name: string;
-        registry: string;
-      };
-    }>;
-  };
-};
-
-export type UpdateServiceSourceFromServiceSourceRouteMutationVariables = Exact<{
-  projectId: Scalars["ID"]["input"];
-  id: Scalars["ID"]["input"];
-  input: UpdateServiceInput;
-}>;
-
-export type UpdateServiceSourceFromServiceSourceRouteMutation = {
-  __typename?: "Mutation";
-  updateService: {
-    __typename?: "Service";
-    id: string;
-    image: string;
-    registryCredentialId?: string | null;
-    command: Array<string>;
-    args: Array<string>;
-    updatedAt: any;
-  };
 };
 
 export type GetDeploymentFromDeploymentLayoutQueryVariables = Exact<{
@@ -2580,6 +2580,13 @@ export type GetServiceFromServiceLayoutQuery = {
       targetPort?: number | null;
     }>;
     env: Array<{ __typename?: "ServiceEnvVar"; key: string; value: string }>;
+    volumes: Array<{
+      __typename?: "ServiceVolume";
+      volumeId: string;
+      mountPath: string;
+      subPath?: string | null;
+      readOnly: boolean;
+    }>;
   } | null;
 };
 
@@ -7398,110 +7405,6 @@ export const GetServiceDeploymentsFromServiceDeploymentsRouteDocument = {
   GetServiceDeploymentsFromServiceDeploymentsRouteQuery,
   GetServiceDeploymentsFromServiceDeploymentsRouteQueryVariables
 >;
-export const UpdateServiceEnvironmentFromServiceEnvironmentRouteDocument = {
-  kind: "Document",
-  definitions: [
-    {
-      kind: "OperationDefinition",
-      operation: "mutation",
-      name: {
-        kind: "Name",
-        value: "updateServiceEnvironmentFromServiceEnvironmentRoute",
-      },
-      variableDefinitions: [
-        {
-          kind: "VariableDefinition",
-          variable: {
-            kind: "Variable",
-            name: { kind: "Name", value: "projectId" },
-          },
-          type: {
-            kind: "NonNullType",
-            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
-          },
-        },
-        {
-          kind: "VariableDefinition",
-          variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
-          type: {
-            kind: "NonNullType",
-            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
-          },
-        },
-        {
-          kind: "VariableDefinition",
-          variable: {
-            kind: "Variable",
-            name: { kind: "Name", value: "input" },
-          },
-          type: {
-            kind: "NonNullType",
-            type: {
-              kind: "NamedType",
-              name: { kind: "Name", value: "UpdateServiceInput" },
-            },
-          },
-        },
-      ],
-      selectionSet: {
-        kind: "SelectionSet",
-        selections: [
-          {
-            kind: "Field",
-            name: { kind: "Name", value: "updateService" },
-            arguments: [
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "projectId" },
-                value: {
-                  kind: "Variable",
-                  name: { kind: "Name", value: "projectId" },
-                },
-              },
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "id" },
-                value: {
-                  kind: "Variable",
-                  name: { kind: "Name", value: "id" },
-                },
-              },
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "input" },
-                value: {
-                  kind: "Variable",
-                  name: { kind: "Name", value: "input" },
-                },
-              },
-            ],
-            selectionSet: {
-              kind: "SelectionSet",
-              selections: [
-                { kind: "Field", name: { kind: "Name", value: "id" } },
-                {
-                  kind: "Field",
-                  name: { kind: "Name", value: "env" },
-                  selectionSet: {
-                    kind: "SelectionSet",
-                    selections: [
-                      { kind: "Field", name: { kind: "Name", value: "key" } },
-                      { kind: "Field", name: { kind: "Name", value: "value" } },
-                    ],
-                  },
-                },
-                { kind: "Field", name: { kind: "Name", value: "updatedAt" } },
-              ],
-            },
-          },
-        ],
-      },
-    },
-  ],
-} as unknown as DocumentNode<
-  UpdateServiceEnvironmentFromServiceEnvironmentRouteMutation,
-  UpdateServiceEnvironmentFromServiceEnvironmentRouteMutationVariables
->;
 export const GetServiceLogsFromServiceLogsRouteDocument = {
   kind: "Document",
   definitions: [
@@ -7923,15 +7826,15 @@ export const GetServiceMetricsFromServiceMetricsRouteDocument = {
   GetServiceMetricsFromServiceMetricsRouteQuery,
   GetServiceMetricsFromServiceMetricsRouteQueryVariables
 >;
-export const UpdateServiceNetworkFromServiceNetworkRouteDocument = {
+export const GetRegistryCredentialsFromServiceSettingsRouteDocument = {
   kind: "Document",
   definitions: [
     {
       kind: "OperationDefinition",
-      operation: "mutation",
+      operation: "query",
       name: {
         kind: "Name",
-        value: "updateServiceNetworkFromServiceNetworkRoute",
+        value: "getRegistryCredentialsFromServiceSettingsRoute",
       },
       variableDefinitions: [
         {
@@ -7945,35 +7848,13 @@ export const UpdateServiceNetworkFromServiceNetworkRouteDocument = {
             type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
           },
         },
-        {
-          kind: "VariableDefinition",
-          variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
-          type: {
-            kind: "NonNullType",
-            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
-          },
-        },
-        {
-          kind: "VariableDefinition",
-          variable: {
-            kind: "Variable",
-            name: { kind: "Name", value: "input" },
-          },
-          type: {
-            kind: "NonNullType",
-            type: {
-              kind: "NamedType",
-              name: { kind: "Name", value: "UpdateServiceInput" },
-            },
-          },
-        },
       ],
       selectionSet: {
         kind: "SelectionSet",
         selections: [
           {
             kind: "Field",
-            name: { kind: "Name", value: "updateService" },
+            name: { kind: "Name", value: "registryCredentials" },
             arguments: [
               {
                 kind: "Argument",
@@ -7985,52 +7866,43 @@ export const UpdateServiceNetworkFromServiceNetworkRouteDocument = {
               },
               {
                 kind: "Argument",
-                name: { kind: "Name", value: "id" },
-                value: {
-                  kind: "Variable",
-                  name: { kind: "Name", value: "id" },
-                },
-              },
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "input" },
-                value: {
-                  kind: "Variable",
-                  name: { kind: "Name", value: "input" },
-                },
+                name: { kind: "Name", value: "first" },
+                value: { kind: "IntValue", value: "20" },
               },
             ],
             selectionSet: {
               kind: "SelectionSet",
               selections: [
-                { kind: "Field", name: { kind: "Name", value: "id" } },
                 {
                   kind: "Field",
-                  name: { kind: "Name", value: "ports" },
+                  name: { kind: "Name", value: "edges" },
                   selectionSet: {
                     kind: "SelectionSet",
                     selections: [
-                      { kind: "Field", name: { kind: "Name", value: "port" } },
                       {
                         kind: "Field",
-                        name: { kind: "Name", value: "targetPort" },
+                        name: { kind: "Name", value: "node" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "id" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "name" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "registry" },
+                            },
+                          ],
+                        },
                       },
                     ],
                   },
                 },
-                {
-                  kind: "Field",
-                  name: { kind: "Name", value: "healthCheck" },
-                  selectionSet: {
-                    kind: "SelectionSet",
-                    selections: [
-                      { kind: "Field", name: { kind: "Name", value: "type" } },
-                      { kind: "Field", name: { kind: "Name", value: "port" } },
-                      { kind: "Field", name: { kind: "Name", value: "path" } },
-                    ],
-                  },
-                },
-                { kind: "Field", name: { kind: "Name", value: "updatedAt" } },
               ],
             },
           },
@@ -8039,8 +7911,97 @@ export const UpdateServiceNetworkFromServiceNetworkRouteDocument = {
     },
   ],
 } as unknown as DocumentNode<
-  UpdateServiceNetworkFromServiceNetworkRouteMutation,
-  UpdateServiceNetworkFromServiceNetworkRouteMutationVariables
+  GetRegistryCredentialsFromServiceSettingsRouteQuery,
+  GetRegistryCredentialsFromServiceSettingsRouteQueryVariables
+>;
+export const GetVolumesFromServiceSettingsRouteDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "getVolumesFromServiceSettingsRoute" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "projectId" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "volumes" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "projectId" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "projectId" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "first" },
+                value: { kind: "IntValue", value: "100" },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "edges" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "node" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "id" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "name" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "size" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "status" },
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  GetVolumesFromServiceSettingsRouteQuery,
+  GetVolumesFromServiceSettingsRouteQueryVariables
 >;
 export const UpdateServiceSettingsFromServiceSettingsRouteDocument = {
   kind: "Document",
@@ -8124,7 +8085,14 @@ export const UpdateServiceSettingsFromServiceSettingsRouteDocument = {
               selections: [
                 { kind: "Field", name: { kind: "Name", value: "id" } },
                 { kind: "Field", name: { kind: "Name", value: "name" } },
+                { kind: "Field", name: { kind: "Name", value: "image" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "registryCredentialId" },
+                },
                 { kind: "Field", name: { kind: "Name", value: "replicas" } },
+                { kind: "Field", name: { kind: "Name", value: "command" } },
+                { kind: "Field", name: { kind: "Name", value: "args" } },
                 {
                   kind: "Field",
                   name: { kind: "Name", value: "resources" },
@@ -8146,6 +8114,68 @@ export const UpdateServiceSettingsFromServiceSettingsRouteDocument = {
                       {
                         kind: "Field",
                         name: { kind: "Name", value: "memoryLimit" },
+                      },
+                    ],
+                  },
+                },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "healthCheck" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "type" } },
+                      { kind: "Field", name: { kind: "Name", value: "port" } },
+                      { kind: "Field", name: { kind: "Name", value: "path" } },
+                    ],
+                  },
+                },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "ports" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "port" } },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "targetPort" },
+                      },
+                    ],
+                  },
+                },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "env" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "key" } },
+                      { kind: "Field", name: { kind: "Name", value: "value" } },
+                    ],
+                  },
+                },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "volumes" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "volumeId" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "mountPath" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "subPath" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "readOnly" },
                       },
                     ],
                   },
@@ -8228,194 +8258,6 @@ export const DeleteServiceFromServiceSettingsRouteDocument = {
 } as unknown as DocumentNode<
   DeleteServiceFromServiceSettingsRouteMutation,
   DeleteServiceFromServiceSettingsRouteMutationVariables
->;
-export const GetRegistryCredentialsFromServiceSourceRouteDocument = {
-  kind: "Document",
-  definitions: [
-    {
-      kind: "OperationDefinition",
-      operation: "query",
-      name: {
-        kind: "Name",
-        value: "getRegistryCredentialsFromServiceSourceRoute",
-      },
-      variableDefinitions: [
-        {
-          kind: "VariableDefinition",
-          variable: {
-            kind: "Variable",
-            name: { kind: "Name", value: "projectId" },
-          },
-          type: {
-            kind: "NonNullType",
-            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
-          },
-        },
-      ],
-      selectionSet: {
-        kind: "SelectionSet",
-        selections: [
-          {
-            kind: "Field",
-            name: { kind: "Name", value: "registryCredentials" },
-            arguments: [
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "projectId" },
-                value: {
-                  kind: "Variable",
-                  name: { kind: "Name", value: "projectId" },
-                },
-              },
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "first" },
-                value: { kind: "IntValue", value: "20" },
-              },
-            ],
-            selectionSet: {
-              kind: "SelectionSet",
-              selections: [
-                {
-                  kind: "Field",
-                  name: { kind: "Name", value: "edges" },
-                  selectionSet: {
-                    kind: "SelectionSet",
-                    selections: [
-                      {
-                        kind: "Field",
-                        name: { kind: "Name", value: "node" },
-                        selectionSet: {
-                          kind: "SelectionSet",
-                          selections: [
-                            {
-                              kind: "Field",
-                              name: { kind: "Name", value: "id" },
-                            },
-                            {
-                              kind: "Field",
-                              name: { kind: "Name", value: "name" },
-                            },
-                            {
-                              kind: "Field",
-                              name: { kind: "Name", value: "registry" },
-                            },
-                          ],
-                        },
-                      },
-                    ],
-                  },
-                },
-              ],
-            },
-          },
-        ],
-      },
-    },
-  ],
-} as unknown as DocumentNode<
-  GetRegistryCredentialsFromServiceSourceRouteQuery,
-  GetRegistryCredentialsFromServiceSourceRouteQueryVariables
->;
-export const UpdateServiceSourceFromServiceSourceRouteDocument = {
-  kind: "Document",
-  definitions: [
-    {
-      kind: "OperationDefinition",
-      operation: "mutation",
-      name: {
-        kind: "Name",
-        value: "updateServiceSourceFromServiceSourceRoute",
-      },
-      variableDefinitions: [
-        {
-          kind: "VariableDefinition",
-          variable: {
-            kind: "Variable",
-            name: { kind: "Name", value: "projectId" },
-          },
-          type: {
-            kind: "NonNullType",
-            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
-          },
-        },
-        {
-          kind: "VariableDefinition",
-          variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
-          type: {
-            kind: "NonNullType",
-            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
-          },
-        },
-        {
-          kind: "VariableDefinition",
-          variable: {
-            kind: "Variable",
-            name: { kind: "Name", value: "input" },
-          },
-          type: {
-            kind: "NonNullType",
-            type: {
-              kind: "NamedType",
-              name: { kind: "Name", value: "UpdateServiceInput" },
-            },
-          },
-        },
-      ],
-      selectionSet: {
-        kind: "SelectionSet",
-        selections: [
-          {
-            kind: "Field",
-            name: { kind: "Name", value: "updateService" },
-            arguments: [
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "projectId" },
-                value: {
-                  kind: "Variable",
-                  name: { kind: "Name", value: "projectId" },
-                },
-              },
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "id" },
-                value: {
-                  kind: "Variable",
-                  name: { kind: "Name", value: "id" },
-                },
-              },
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "input" },
-                value: {
-                  kind: "Variable",
-                  name: { kind: "Name", value: "input" },
-                },
-              },
-            ],
-            selectionSet: {
-              kind: "SelectionSet",
-              selections: [
-                { kind: "Field", name: { kind: "Name", value: "id" } },
-                { kind: "Field", name: { kind: "Name", value: "image" } },
-                {
-                  kind: "Field",
-                  name: { kind: "Name", value: "registryCredentialId" },
-                },
-                { kind: "Field", name: { kind: "Name", value: "command" } },
-                { kind: "Field", name: { kind: "Name", value: "args" } },
-                { kind: "Field", name: { kind: "Name", value: "updatedAt" } },
-              ],
-            },
-          },
-        ],
-      },
-    },
-  ],
-} as unknown as DocumentNode<
-  UpdateServiceSourceFromServiceSourceRouteMutation,
-  UpdateServiceSourceFromServiceSourceRouteMutationVariables
 >;
 export const GetDeploymentFromDeploymentLayoutDocument = {
   kind: "Document",
@@ -8697,6 +8539,31 @@ export const GetServiceFromServiceLayoutDocument = {
                     selections: [
                       { kind: "Field", name: { kind: "Name", value: "key" } },
                       { kind: "Field", name: { kind: "Name", value: "value" } },
+                    ],
+                  },
+                },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "volumes" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "volumeId" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "mountPath" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "subPath" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "readOnly" },
+                      },
                     ],
                   },
                 },

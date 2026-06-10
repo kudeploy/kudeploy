@@ -42,6 +42,12 @@ const GET_SERVICE_FROM_SERVICE_LAYOUT = graphql(`
         key
         value
       }
+      volumes {
+        volumeId
+        mountPath
+        subPath
+        readOnly
+      }
     }
   }
 `);
