@@ -164,6 +164,9 @@ function ServiceSettingsComponent() {
   const [resources, setResources] = useState<ResourcesValue>(
     toResourcesValue(service.resources),
   );
+  const [resourcesEnabled, setResourcesEnabled] = useState(
+    hasResourcesValue(service.resources),
+  );
   const [env, setEnv] = useState<Array<EnvValue>>(service.env.map(copyEnv));
   const [ports, setPorts] = useState<Array<PortValue>>(
     toPortValues(service.ports),
@@ -245,6 +248,7 @@ function ServiceSettingsComponent() {
     setArgs(linesToValue(service.args));
     setReplicas(service.replicas ?? "");
     setResources(toResourcesValue(service.resources));
+    setResourcesEnabled(hasResourcesValue(service.resources));
     setEnv(service.env.map(copyEnv));
     setPorts(toPortValues(service.ports));
     setVolumes(service.volumes.map(copyVolume));
@@ -346,7 +350,7 @@ function ServiceSettingsComponent() {
             ...(replicas === "" ? {} : { replicas }),
             command: toLines(command),
             args: toLines(args),
-            resources: toResourcesInput(resources),
+            resources: resourcesEnabled ? toResourcesInput(resources) : null,
             ports: portInput,
             healthCheck:
               healthCheck.enabled && healthCheck.port !== ""
@@ -821,42 +825,56 @@ function ServiceSettingsComponent() {
 
         <Card>
           <CardHeader>
-            <CardTitle>{t("service:form.resources")}</CardTitle>
+            <div className="flex items-center justify-between gap-3">
+              <CardTitle>{t("service:form.resources")}</CardTitle>
+              <Switch
+                aria-label={t("service:form.resources")}
+                data-testid="service-resources-enabled"
+                checked={resourcesEnabled}
+                onCheckedChange={setResourcesEnabled}
+              />
+            </div>
           </CardHeader>
-          <CardContent className="grid gap-3 sm:grid-cols-2">
-            <Input
-              label={t("service:form.cpu_request")}
-              placeholder="250m"
-              value={resources.cpuRequest}
-              onChange={(event) =>
-                updateResources({ cpuRequest: event.target.value })
-              }
-            />
-            <Input
-              label={t("service:form.cpu_limit")}
-              placeholder="500m"
-              value={resources.cpuLimit}
-              onChange={(event) =>
-                updateResources({ cpuLimit: event.target.value })
-              }
-            />
-            <Input
-              label={t("service:form.memory_request")}
-              placeholder="256Mi"
-              value={resources.memoryRequest}
-              onChange={(event) =>
-                updateResources({ memoryRequest: event.target.value })
-              }
-            />
-            <Input
-              label={t("service:form.memory_limit")}
-              placeholder="512Mi"
-              value={resources.memoryLimit}
-              onChange={(event) =>
-                updateResources({ memoryLimit: event.target.value })
-              }
-            />
-          </CardContent>
+          {resourcesEnabled && (
+            <CardContent className="grid gap-3 sm:grid-cols-2">
+              <Input
+                data-testid="service-cpu-request-input"
+                label={t("service:form.cpu_request")}
+                placeholder="250m"
+                value={resources.cpuRequest}
+                onChange={(event) =>
+                  updateResources({ cpuRequest: event.target.value })
+                }
+              />
+              <Input
+                data-testid="service-cpu-limit-input"
+                label={t("service:form.cpu_limit")}
+                placeholder="500m"
+                value={resources.cpuLimit}
+                onChange={(event) =>
+                  updateResources({ cpuLimit: event.target.value })
+                }
+              />
+              <Input
+                data-testid="service-memory-request-input"
+                label={t("service:form.memory_request")}
+                placeholder="256Mi"
+                value={resources.memoryRequest}
+                onChange={(event) =>
+                  updateResources({ memoryRequest: event.target.value })
+                }
+              />
+              <Input
+                data-testid="service-memory-limit-input"
+                label={t("service:form.memory_limit")}
+                placeholder="512Mi"
+                value={resources.memoryLimit}
+                onChange={(event) =>
+                  updateResources({ memoryLimit: event.target.value })
+                }
+              />
+            </CardContent>
+          )}
           <CardFooter className="justify-end @md/page:hidden">
             <Button disabled={updateLoading} onClick={handleSave}>
               {t("action.save")}
@@ -956,6 +974,22 @@ function toResourcesValue(
     memoryRequest: resources?.memoryRequest ?? "",
     memoryLimit: resources?.memoryLimit ?? "",
   };
+}
+
+function hasResourcesValue(
+  resources?: {
+    cpuRequest?: string | null;
+    cpuLimit?: string | null;
+    memoryRequest?: string | null;
+    memoryLimit?: string | null;
+  } | null,
+) {
+  return [
+    resources?.cpuRequest,
+    resources?.cpuLimit,
+    resources?.memoryRequest,
+    resources?.memoryLimit,
+  ].some((value) => value?.trim());
 }
 
 function toResourcesInput(value: ResourcesValue) {

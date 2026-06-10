@@ -211,6 +211,8 @@ test.describe("workspace Projects and Services", () => {
     await expect(page.getByTestId("service-settings-page")).toBeVisible();
     await expect(breadcrumb).toContainText(/项目.*Payments.*服务.*API/);
     await expect(breadcrumb).not.toContainText("设置");
+    await expect(page.getByTestId("service-resources-enabled")).toBeChecked();
+    await expect(page.getByTestId("service-cpu-request-input")).toBeVisible();
 
     const updateRequestsBeforeSettingsSave =
       graphqlMock.serviceUpdateRequests.length;
@@ -231,6 +233,8 @@ test.describe("workspace Projects and Services", () => {
     await page.getByTestId("service-volume-mount-path-input-0").fill("/data");
     await page.getByTestId("service-volume-sub-path-input-0").fill("uploads");
     await page.getByTestId("service-volume-read-only-input-0").click();
+    await page.getByTestId("service-resources-enabled").click();
+    await expect(page.getByTestId("service-cpu-request-input")).toHaveCount(0);
     await page.getByTestId("service-save-action").click();
     await expect
       .poll(() => graphqlMock.serviceUpdateRequests.length)
@@ -240,6 +244,7 @@ test.describe("workspace Projects and Services", () => {
       image: "ghcr.io/kudeploy/api:v2",
       env: [{ key: "NODE_ENV", value: "production" }],
       ports: [{ port: 80, targetPort: 8081 }],
+      resources: null,
       volumes: [
         {
           volumeId: "volume-data",
