@@ -53,7 +53,7 @@ describe('VolumeService', () => {
             namespace: 'kd-project-123',
             labels: {
               'app.kubernetes.io/managed-by': 'kudeploy',
-              'kudeploy.com/workspace-id': 'workspace_1',
+              'kudeploy.com/workspace': 'workspace_1',
               'kudeploy.com/project': 'kd-project-123',
             },
             annotations: {
@@ -165,7 +165,7 @@ describe('VolumeService', () => {
     expect(coreV1Api.listNamespacedPersistentVolumeClaim).toHaveBeenCalledWith({
       namespace: 'kd-project-123',
       labelSelector:
-        'app.kubernetes.io/managed-by=kudeploy,kudeploy.com/workspace-id=workspace_1,kudeploy.com/project=kd-project-123',
+        'app.kubernetes.io/managed-by=kudeploy,kudeploy.com/workspace=workspace_1,kudeploy.com/project=kd-project-123',
     });
     expect(connectionManager.find).toHaveBeenCalledWith(
       VolumeConnection,
@@ -309,7 +309,7 @@ function volumePvc(
       namespace,
       labels: {
         'app.kubernetes.io/managed-by': 'kudeploy',
-        'kudeploy.com/workspace-id': workspaceId,
+        'kudeploy.com/workspace': workspaceId,
         'kudeploy.com/project': namespace,
       },
       annotations: {

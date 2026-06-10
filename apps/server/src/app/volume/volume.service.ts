@@ -18,7 +18,7 @@ import {
   MANAGED_BY_LABEL,
   MANAGED_BY_LABEL_VALUE,
   ProjectService,
-  WORKSPACE_ID_LABEL,
+  WORKSPACE_LABEL,
 } from '@/app/project/project.service';
 import { Workspace } from '@/app/workspace/workspace.entity';
 import { KubernetesConnectionManager } from '@/lib/kubernetes-graphql-connection/kubernetes-connection.manager';
@@ -233,7 +233,7 @@ export class VolumeService {
         namespace: projectId,
         labels: {
           [MANAGED_BY_LABEL]: MANAGED_BY_LABEL_VALUE,
-          [WORKSPACE_ID_LABEL]: workspace.id,
+          [WORKSPACE_LABEL]: workspace.id,
           [PROJECT_LABEL]: projectId,
         },
         annotations: {
@@ -276,13 +276,13 @@ export class VolumeService {
       hasKubernetesVolumeNamePrefix(resource.metadata.name) &&
       resource.metadata?.labels?.[MANAGED_BY_LABEL] ===
         MANAGED_BY_LABEL_VALUE &&
-      resource.metadata?.labels?.[WORKSPACE_ID_LABEL] === workspace.id &&
+      resource.metadata?.labels?.[WORKSPACE_LABEL] === workspace.id &&
       resource.metadata?.labels?.[PROJECT_LABEL] === projectId
     );
   }
 
   private volumeLabelSelector(workspace: Workspace, projectId: string): string {
-    return `${MANAGED_BY_LABEL}=${MANAGED_BY_LABEL_VALUE},${WORKSPACE_ID_LABEL}=${workspace.id},${PROJECT_LABEL}=${projectId}`;
+    return `${MANAGED_BY_LABEL}=${MANAGED_BY_LABEL_VALUE},${WORKSPACE_LABEL}=${workspace.id},${PROJECT_LABEL}=${projectId}`;
   }
 
   private toVolumeSize(value?: string): number {

@@ -2,8 +2,8 @@ const MANAGED_BY_LABEL_VALUE = 'kudeploy';
 
 const LOG_FIELD_MANAGED_BY =
   'kubernetes.pod_labels.app.kubernetes.io/managed-by';
-const LOG_FIELD_WORKSPACE_ID =
-  'kubernetes.pod_labels.kudeploy.com/workspace-id';
+const LOG_FIELD_WORKSPACE =
+  'kubernetes.pod_labels.kudeploy.com/workspace';
 const LOG_FIELD_PROJECT = 'kubernetes.pod_labels.kudeploy.com/project';
 const LOG_FIELD_SERVICE = 'kubernetes.pod_labels.kudeploy.com/service';
 
@@ -68,7 +68,7 @@ export function buildServiceLogsQuery(
   const pipes = [
     [
       exactFilter(LOG_FIELD_MANAGED_BY, MANAGED_BY_LABEL_VALUE),
-      exactFilter(LOG_FIELD_WORKSPACE_ID, workspaceId),
+      exactFilter(LOG_FIELD_WORKSPACE, workspaceId),
       exactFilter(LOG_FIELD_PROJECT, projectId),
       exactFilter(LOG_FIELD_SERVICE, serviceId),
     ]

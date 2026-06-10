@@ -16,7 +16,7 @@ describe('kubernetes metrics PromQL helpers', () => {
         serviceId: 'kd-service-1',
       }),
     ).toBe(
-      'app.kubernetes.io/managed-by=kudeploy,kudeploy.com/workspace-id=workspace_1,kudeploy.com/project=kd-project-1,kudeploy.com/service=kd-service-1',
+      'app.kubernetes.io/managed-by=kudeploy,kudeploy.com/workspace=workspace_1,kudeploy.com/project=kd-project-1,kudeploy.com/service=kd-service-1',
     );
   });
 

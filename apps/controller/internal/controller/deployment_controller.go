@@ -199,7 +199,7 @@ func (r *DeploymentReconciler) buildDeploymentEnvSecret(ctx context.Context, kud
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        deploymentEnvSecretNameFor(kudeployDeployment.Name),
 			Namespace:   kudeployDeployment.Namespace,
-			Labels:      deploymentManagedLabels(kudeployDeployment.Namespace, kudeployDeployment.Spec.ServiceName, kudeployDeployment.Name, workspaceIDFromLabels(kudeployDeployment.Labels)),
+			Labels:      deploymentManagedLabels(kudeployDeployment.Namespace, kudeployDeployment.Spec.ServiceName, kudeployDeployment.Name, workspaceFromLabels(kudeployDeployment.Labels)),
 			Annotations: copyStringMap(serviceEnvSecret.Annotations),
 		},
 		Type: corev1.SecretTypeOpaque,
@@ -242,7 +242,7 @@ func ensureDeploymentMetadata(kudeployDeployment *kudeployv1alpha1.Deployment, w
 }
 
 func buildKubernetesDeployment(kudeployDeployment *kudeployv1alpha1.Deployment, replicas *int32) *appsv1.Deployment {
-	labels := deploymentManagedLabels(kudeployDeployment.Namespace, kudeployDeployment.Spec.ServiceName, kudeployDeployment.Name, workspaceIDFromLabels(kudeployDeployment.Labels))
+	labels := deploymentManagedLabels(kudeployDeployment.Namespace, kudeployDeployment.Spec.ServiceName, kudeployDeployment.Name, workspaceFromLabels(kudeployDeployment.Labels))
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      kudeployDeployment.Name,

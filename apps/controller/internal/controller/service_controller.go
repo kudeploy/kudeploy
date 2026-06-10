@@ -494,14 +494,14 @@ func ensureServiceMetadata(service *kudeployv1alpha1.Service, workspaceID string
 		service.Labels[managedByLabel] = managedByLabelValue
 		changed = true
 	}
-	if syncWorkspaceIDLabel(service.Labels, workspaceID) {
+	if syncWorkspaceLabel(service.Labels, workspaceID) {
 		changed = true
 	}
 	return changed
 }
 
 func buildKudeployDeployment(kudeployService *kudeployv1alpha1.Service, version int64, name string) *kudeployv1alpha1.Deployment {
-	labels := deploymentManagedLabels(kudeployService.Namespace, kudeployService.Name, name, workspaceIDFromLabels(kudeployService.Labels))
+	labels := deploymentManagedLabels(kudeployService.Namespace, kudeployService.Name, name, workspaceFromLabels(kudeployService.Labels))
 	labels[routingStateLabel] = routingStatePending
 	return &kudeployv1alpha1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -596,11 +596,11 @@ func serviceVersionName(serviceName string, version int64) string {
 }
 
 func serviceManagedLabels(kudeployService *kudeployv1alpha1.Service) map[string]string {
-	return addWorkspaceIDLabel(map[string]string{
+	return addWorkspaceLabel(map[string]string{
 		projectLabel:   kudeployService.Namespace,
 		serviceLabel:   kudeployService.Name,
 		managedByLabel: managedByLabelValue,
-	}, workspaceIDFromLabels(kudeployService.Labels))
+	}, workspaceFromLabels(kudeployService.Labels))
 }
 
 func deploymentManagedLabels(namespace, serviceName, deploymentName string, workspaceIDs ...string) map[string]string {
@@ -608,7 +608,7 @@ func deploymentManagedLabels(namespace, serviceName, deploymentName string, work
 	if len(workspaceIDs) > 0 {
 		workspaceID = workspaceIDs[0]
 	}
-	return addWorkspaceIDLabel(map[string]string{
+	return addWorkspaceLabel(map[string]string{
 		projectLabel:    namespace,
 		serviceLabel:    serviceName,
 		deploymentLabel: deploymentName,
