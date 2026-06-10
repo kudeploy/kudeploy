@@ -22,6 +22,7 @@ import (
 )
 
 // ServiceSpec defines the desired state of Service.
+// +kubebuilder:validation:XValidation:rule="!has(self.volumes) || self.volumes.size() == 0 || !has(self.replicas) || self.replicas <= 1",message="replicas must be 0 or 1 when volumes are configured"
 type ServiceSpec struct {
 	// replicas is the desired number of instances. When omitted, 1 is used.
 	// Set to 0 to scale the Service to zero.
@@ -103,19 +104,12 @@ type ServicePort struct {
 
 // ServiceVolume describes one PersistentVolumeClaim mounted by a Kudeploy workload.
 type ServiceVolume struct {
-	// name is the Pod volume name and must be unique within the Service.
+	// name is the PersistentVolumeClaim name. It is also used as the Pod volume name and mount name.
 	// +required
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=63
 	// +kubebuilder:validation:Pattern=`^[a-z0-9]([-a-z0-9]*[a-z0-9])?$`
 	Name string `json:"name"`
-
-	// claimName is the PersistentVolumeClaim name in the same namespace.
-	// +required
-	// +kubebuilder:validation:MinLength=1
-	// +kubebuilder:validation:MaxLength=253
-	// +kubebuilder:validation:Pattern=`^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$`
-	ClaimName string `json:"claimName"`
 
 	// mountPath is the absolute path where the volume is mounted in the container.
 	// +required

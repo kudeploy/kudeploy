@@ -78,7 +78,7 @@ var _ = Describe("Service Controller", func() {
 				UID:        types.UID("service-uid"),
 			},
 			Spec: kudeployv1alpha1.ServiceSpec{
-				Replicas: ptrInt32(2),
+				Replicas: ptrInt32(1),
 				Image:    "ghcr.io/kudeploy/whoami:latest",
 				ImageSecretRef: &corev1.LocalObjectReference{
 					Name: "registry-credentials",
@@ -110,8 +110,7 @@ var _ = Describe("Service Controller", func() {
 				},
 				Volumes: []kudeployv1alpha1.ServiceVolume{
 					{
-						Name:      "data",
-						ClaimName: "kd-volume-data",
+						Name:      "kd-volume-data",
 						MountPath: "/data",
 						SubPath:   "app",
 						ReadOnly:  true,
@@ -198,7 +197,7 @@ var _ = Describe("Service Controller", func() {
 		Expect(kudeployDeployment.Spec.ServiceName).To(Equal(serviceName))
 		Expect(kudeployDeployment.Spec.Version).To(Equal(int64(1)))
 		Expect(kudeployDeployment.Spec.ServiceAccountName).To(Equal("service-whoami"))
-		Expect(kudeployDeployment.Spec.Replicas).To(Equal(ptrInt32(2)))
+		Expect(kudeployDeployment.Spec.Replicas).To(Equal(ptrInt32(1)))
 		Expect(kudeployDeployment.Spec.Image).To(Equal("ghcr.io/kudeploy/whoami:latest"))
 		Expect(kudeployDeployment.Spec.ImageSecretRef).To(Equal(&corev1.LocalObjectReference{Name: "registry-credentials"}))
 		Expect(kudeployDeployment.Spec.Command).To(Equal([]string{"/whoami"}))
@@ -215,8 +214,7 @@ var _ = Describe("Service Controller", func() {
 		}))
 		Expect(kudeployDeployment.Spec.Ports).To(ConsistOf(kudeployv1alpha1.ServicePort{Port: 80, TargetPort: 8080}))
 		Expect(kudeployDeployment.Spec.Volumes).To(ConsistOf(kudeployv1alpha1.ServiceVolume{
-			Name:      "data",
-			ClaimName: "kd-volume-data",
+			Name:      "kd-volume-data",
 			MountPath: "/data",
 			SubPath:   "app",
 			ReadOnly:  true,
@@ -649,11 +647,11 @@ var _ = Describe("Service Controller", func() {
 			},
 		}
 		ownDeployment(service, activeDeployment)
-		activeKubernetesDeployment := buildKubernetesDeployment(activeDeployment, ptrInt32(2))
-		activeKubernetesDeployment.Status.Replicas = 2
-		activeKubernetesDeployment.Status.ReadyReplicas = 2
-		activeKubernetesDeployment.Status.AvailableReplicas = 2
-		activeKubernetesDeployment.Status.UpdatedReplicas = 2
+		activeKubernetesDeployment := buildKubernetesDeployment(activeDeployment, ptrInt32(1))
+		activeKubernetesDeployment.Status.Replicas = 1
+		activeKubernetesDeployment.Status.ReadyReplicas = 1
+		activeKubernetesDeployment.Status.AvailableReplicas = 1
+		activeKubernetesDeployment.Status.UpdatedReplicas = 1
 		kubernetesService := buildKubernetesService(service, map[string]string{
 			deploymentLabel: firstDeploymentName,
 		})

@@ -142,8 +142,7 @@ var _ = Describe("Deployment Controller", func() {
 				},
 				Volumes: []kudeployv1alpha1.ServiceVolume{
 					{
-						Name:      "data",
-						ClaimName: "kd-volume-data",
+						Name:      "kd-volume-data",
 						MountPath: "/data",
 						SubPath:   "app",
 						ReadOnly:  true,
@@ -234,7 +233,7 @@ var _ = Describe("Deployment Controller", func() {
 		))
 		Expect(kubernetesDeployment.Spec.Template.Spec.Containers[0].Ports).To(ConsistOf(corev1.ContainerPort{ContainerPort: 8080}))
 		Expect(kubernetesDeployment.Spec.Template.Spec.Volumes).To(ConsistOf(corev1.Volume{
-			Name: "data",
+			Name: "kd-volume-data",
 			VolumeSource: corev1.VolumeSource{
 				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
 					ClaimName: "kd-volume-data",
@@ -243,7 +242,7 @@ var _ = Describe("Deployment Controller", func() {
 			},
 		}))
 		Expect(kubernetesDeployment.Spec.Template.Spec.Containers[0].VolumeMounts).To(ConsistOf(corev1.VolumeMount{
-			Name:      "data",
+			Name:      "kd-volume-data",
 			MountPath: "/data",
 			SubPath:   "app",
 			ReadOnly:  true,

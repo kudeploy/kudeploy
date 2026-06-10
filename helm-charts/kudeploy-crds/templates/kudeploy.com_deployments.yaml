@@ -843,13 +843,6 @@ spec:
                   description: ServiceVolume describes one PersistentVolumeClaim mounted
                     by a Kudeploy workload.
                   properties:
-                    claimName:
-                      description: claimName is the PersistentVolumeClaim name in
-                        the same namespace.
-                      maxLength: 253
-                      minLength: 1
-                      pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
-                      type: string
                     mountPath:
                       description: mountPath is the absolute path where the volume
                         is mounted in the container.
@@ -858,8 +851,8 @@ spec:
                       pattern: ^/[^:]*$
                       type: string
                     name:
-                      description: name is the Pod volume name and must be unique
-                        within the Service.
+                      description: name is the PersistentVolumeClaim name. It is also
+                        used as the Pod volume name and mount name.
                       maxLength: 63
                       minLength: 1
                       pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
@@ -877,7 +870,6 @@ spec:
                           path elements
                         rule: self == "" || (!self.startsWith("/") && !self.matches("(^|/)\\.\\.(/|$)"))
                   required:
-                  - claimName
                   - mountPath
                   - name
                   type: object
@@ -897,6 +889,10 @@ spec:
             - serviceName
             - version
             type: object
+            x-kubernetes-validations:
+            - message: replicas must be 0 or 1 when volumes are configured
+              rule: '!has(self.volumes) || self.volumes.size() == 0 || !has(self.replicas)
+                || self.replicas <= 1'
           status:
             description: status defines the observed state of Deployment.
             properties:

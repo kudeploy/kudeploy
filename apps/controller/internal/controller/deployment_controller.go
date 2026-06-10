@@ -334,7 +334,7 @@ func podVolumesFor(volumes []kudeployv1alpha1.ServiceVolume) []corev1.Volume {
 			Name: volume.Name,
 			VolumeSource: corev1.VolumeSource{
 				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-					ClaimName: volume.ClaimName,
+					ClaimName: volume.Name,
 					ReadOnly:  volume.ReadOnly,
 				},
 			},
