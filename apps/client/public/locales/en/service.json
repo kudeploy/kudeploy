@@ -12,10 +12,6 @@
   },
   "tabs": {
     "overview": "Overview",
-    "source": "Source",
-    "environment": "Environment",
-    "network": "Network",
-    "volumes": "Volumes",
     "deployments": "Deployments",
     "terminal": "Terminal",
     "logs": "Logs",
@@ -155,7 +151,7 @@
     "used_of_limit": "{{percent}} used"
   },
   "settings": {
-    "description": "Manage service metadata, scale, resources, and deletion.",
+    "description": "Manage service source, environment, networking, scale, resources, and deletion.",
     "general": {
       "title": "General",
       "description": "Update the service name and replica count."

@@ -177,46 +177,51 @@ test.describe("workspace Projects and Services", () => {
       "data-active",
       "true",
     );
-    await expect(page.getByTestId("service-source-tab")).toBeVisible();
-    await expect(page.getByTestId("service-environment-tab")).toBeVisible();
-    await expect(page.getByTestId("service-network-tab")).toBeVisible();
+    await expect(page.getByTestId("service-source-tab")).toHaveCount(0);
+    await expect(page.getByTestId("service-environment-tab")).toHaveCount(0);
+    await expect(page.getByTestId("service-network-tab")).toHaveCount(0);
+    await expect(page.getByTestId("service-volumes-tab")).toHaveCount(0);
     await expect(page.getByTestId("service-deployments-tab")).toBeVisible();
     await expect(page.getByTestId("service-settings-tab")).toBeVisible();
     await expect(page.getByTestId("service-status")).toContainText("就绪");
     await expect(breadcrumb).toContainText(/项目.*Payments.*服务.*API/);
 
-    await page.getByTestId("service-source-tab").click();
+    await page.getByTestId("service-settings-tab").click();
     await expect(page).toHaveURL(
       new RegExp(
-        `/workspaces/${workspaceId}/projects/project-e2e/services/service-e2e/source$`,
+        `/workspaces/${workspaceId}/projects/project-e2e/services/service-e2e/settings$`,
       ),
     );
-    await expect(page.getByTestId("service-source-page")).toBeVisible();
+    await expect(page.getByTestId("service-settings-page")).toBeVisible();
+    await expect(breadcrumb).toContainText(/项目.*Payments.*服务.*API/);
+    await expect(breadcrumb).not.toContainText("设置");
+
+    const updateRequestsBeforeSettingsSave =
+      graphqlMock.serviceUpdateRequests.length;
+    await page.getByTestId("service-name-input").fill("API Edited");
     await page
       .getByTestId("service-image-input")
       .fill("ghcr.io/kudeploy/api:v2");
+    await page.getByTestId("service-add-env-action").click();
+    await page.getByTestId("service-env-key-input-0").fill("NODE_ENV");
+    await page.getByTestId("service-env-value-input-0").fill("production");
+    await page.getByTestId("service-target-port-input-0").fill("8081");
     await page.getByTestId("service-save-action").click();
+    await expect
+      .poll(() => graphqlMock.serviceUpdateRequests.length)
+      .toBe(updateRequestsBeforeSettingsSave + 1);
+    expect(graphqlMock.serviceUpdateRequests.at(-1)?.input).toMatchObject({
+      name: "API Edited",
+      image: "ghcr.io/kudeploy/api:v2",
+      env: [{ key: "NODE_ENV", value: "production" }],
+      ports: [{ port: 80, targetPort: 8081 }],
+    });
+    await expect(page.getByTestId("service-name-input")).toHaveValue(
+      "API Edited",
+    );
     await expect(page.getByTestId("service-image-input")).toHaveValue(
       "ghcr.io/kudeploy/api:v2",
     );
-
-    await page.getByTestId("service-environment-tab").click();
-    await expect(page).toHaveURL(
-      new RegExp(
-        `/workspaces/${workspaceId}/projects/project-e2e/services/service-e2e/environment$`,
-      ),
-    );
-    await expect(page.getByTestId("service-environment-page")).toBeVisible();
-    await expect(breadcrumb).toContainText(/项目.*Payments.*服务.*API/);
-    await expect(breadcrumb).not.toContainText("环境变量");
-
-    await page.getByTestId("service-network-tab").click();
-    await expect(page).toHaveURL(
-      new RegExp(
-        `/workspaces/${workspaceId}/projects/project-e2e/services/service-e2e/network$`,
-      ),
-    );
-    await expect(page.getByTestId("service-network-page")).toBeVisible();
 
     await page.getByTestId("service-deployments-tab").click();
     await expect(page).toHaveURL(
@@ -533,9 +538,6 @@ test.describe("workspace Projects and Services", () => {
     );
     await expect(page.getByTestId("service-settings-page")).toBeVisible();
 
-    await page.getByTestId("service-name-input").fill("API Edited");
-    await page.getByTestId("service-save-action").click();
-
     await expect(page.getByTestId("service-name-input")).toHaveValue(
       "API Edited",
     );
@@ -556,6 +558,7 @@ async function mockProjectsAndServicesGraphql(page: Page) {
   const services: Array<MockService> = [];
   const deployments: Array<MockDeployment> = [];
   const serviceLogRequests: Array<Record<string, any>> = [];
+  const serviceUpdateRequests: Array<Record<string, any>> = [];
 
   await page.route("**/api/graphql", async (route) => {
     const request = route.request();
@@ -807,11 +810,8 @@ async function mockProjectsAndServicesGraphql(page: Page) {
         });
         return;
       }
-      case "updateServiceFromServiceRoute":
-      case "updateServiceSourceFromServiceSourceRoute":
-      case "updateServiceEnvironmentFromServiceEnvironmentRoute":
-      case "updateServiceNetworkFromServiceNetworkRoute":
       case "updateServiceSettingsFromServiceSettingsRoute": {
+        serviceUpdateRequests.push(variables);
         const service = services.find(
           (item) =>
             item.projectId === variables.projectId && item.id === variables.id,
@@ -862,6 +862,7 @@ async function mockProjectsAndServicesGraphql(page: Page) {
 
   return {
     serviceLogRequests,
+    serviceUpdateRequests,
   };
 }
 

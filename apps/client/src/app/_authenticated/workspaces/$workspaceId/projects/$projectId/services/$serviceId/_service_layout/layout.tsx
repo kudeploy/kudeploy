@@ -29,38 +29,6 @@ function ServiceTabsLayout() {
         }),
       },
       {
-        title: t("service:tabs.source"),
-        testId: "service-source-tab",
-        link: linkOptions({
-          to: "/workspaces/$workspaceId/projects/$projectId/services/$serviceId/source",
-          params: { workspaceId, projectId, serviceId },
-        }),
-      },
-      {
-        title: t("service:tabs.environment"),
-        testId: "service-environment-tab",
-        link: linkOptions({
-          to: "/workspaces/$workspaceId/projects/$projectId/services/$serviceId/environment",
-          params: { workspaceId, projectId, serviceId },
-        }),
-      },
-      {
-        title: t("service:tabs.network"),
-        testId: "service-network-tab",
-        link: linkOptions({
-          to: "/workspaces/$workspaceId/projects/$projectId/services/$serviceId/network",
-          params: { workspaceId, projectId, serviceId },
-        }),
-      },
-      {
-        title: t("service:tabs.volumes"),
-        testId: "service-volumes-tab",
-        link: linkOptions({
-          to: "/workspaces/$workspaceId/projects/$projectId/services/$serviceId/volumes",
-          params: { workspaceId, projectId, serviceId },
-        }),
-      },
-      {
         title: t("service:tabs.deployments"),
         testId: "service-deployments-tab",
         link: linkOptions({

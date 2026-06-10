@@ -12,10 +12,6 @@
   },
   "tabs": {
     "overview": "概览",
-    "source": "来源",
-    "environment": "环境变量",
-    "network": "网络",
-    "volumes": "存储卷",
     "deployments": "部署",
     "terminal": "终端",
     "logs": "日志",
@@ -153,7 +149,7 @@
     "used_of_limit": "已用 {{percent}}"
   },
   "settings": {
-    "description": "管理服务基础信息、副本、资源限制和删除操作。",
+    "description": "管理服务来源、环境变量、网络、副本、资源限制和删除操作。",
     "general": {
       "title": "基础信息",
       "description": "更新服务名称和副本数。"
