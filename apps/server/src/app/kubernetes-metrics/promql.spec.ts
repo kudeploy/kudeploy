@@ -12,11 +12,11 @@ describe('kubernetes metrics PromQL helpers', () => {
     expect(
       buildServicePodLabelSelector({
         workspaceId: 'workspace_1',
-        projectId: 'project-1',
-        serviceId: 'service-1',
+        projectId: 'kd-project-1',
+        serviceId: 'kd-service-1',
       }),
     ).toBe(
-      'app.kubernetes.io/managed-by=kudeploy,kudeploy.com/workspace-id=workspace_1,kudeploy.com/project=project-1,kudeploy.com/service=service-1',
+      'app.kubernetes.io/managed-by=kudeploy,kudeploy.com/workspace-id=workspace_1,kudeploy.com/project=kd-project-1,kudeploy.com/service=kd-service-1',
     );
   });
 

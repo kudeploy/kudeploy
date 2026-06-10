@@ -4,6 +4,13 @@ import { Sonyflake } from 'sonyflake-js';
 
 import { SERVER_SIDE_APPLY_OPTIONS } from '@/app/kubernetes';
 import {
+  hasKubernetesServiceNamePrefix,
+  toGraphqlProjectId,
+  toGraphqlServiceId,
+  toKubernetesProjectName,
+  toKubernetesServiceName,
+} from '@/app/kubernetes/resource-names';
+import {
   DISPLAY_NAME_ANNOTATION,
   KUDEPLOY_API_GROUP,
   KUDEPLOY_API_VERSION,
@@ -127,19 +134,21 @@ export class ServiceService {
     projectId: string,
     args: ServiceConnectionArgs,
   ): Promise<ServiceConnection> {
+    const projectName = toKubernetesProjectName(projectId);
+
     await this.ensureProject(workspace, projectId);
 
     const list = (await this.customObjectsApi.listNamespacedCustomObject({
       group: KUDEPLOY_API_GROUP,
       version: KUDEPLOY_API_VERSION_NAME,
-      namespace: projectId,
+      namespace: projectName,
       plural: SERVICES_PLURAL,
-      labelSelector: this.serviceLabelSelector(workspace, projectId),
+      labelSelector: this.serviceLabelSelector(workspace, projectName),
     })) as { items?: ServiceResource[] };
 
     const items = (list.items ?? [])
       .filter((resource) =>
-        this.belongsToWorkspaceAndProject(resource, workspace, projectId),
+        this.belongsToWorkspaceAndProject(resource, workspace, projectName),
       )
       .map((resource) => this.toService(resource));
 
@@ -153,18 +162,23 @@ export class ServiceService {
     projectId: string,
     id: string,
   ): Promise<Service | null> {
+    const projectName = toKubernetesProjectName(projectId);
+    const name = toKubernetesServiceName(id);
+
     await this.ensureProject(workspace, projectId);
 
     try {
       const resource = (await this.customObjectsApi.getNamespacedCustomObject({
         group: KUDEPLOY_API_GROUP,
         version: KUDEPLOY_API_VERSION_NAME,
-        namespace: projectId,
+        namespace: projectName,
         plural: SERVICES_PLURAL,
-        name: id,
+        name,
       })) as ServiceResource;
 
-      if (!this.belongsToWorkspaceAndProject(resource, workspace, projectId)) {
+      if (
+        !this.belongsToWorkspaceAndProject(resource, workspace, projectName)
+      ) {
         return null;
       }
 
@@ -181,22 +195,19 @@ export class ServiceService {
     workspace: Workspace,
     input: CreateServiceInput,
   ): Promise<Service> {
+    const projectName = toKubernetesProjectName(input.projectId);
+
     await this.ensureProject(workspace, input.projectId);
 
-    const name = `service-${Sonyflake.next()}`;
+    const name = toKubernetesServiceName(String(Sonyflake.next()));
     const resource = (await this.customObjectsApi.patchNamespacedCustomObject(
       {
         group: KUDEPLOY_API_GROUP,
         version: KUDEPLOY_API_VERSION_NAME,
-        namespace: input.projectId,
+        namespace: projectName,
         plural: SERVICES_PLURAL,
         name,
-        body: this.buildServiceResource(
-          workspace,
-          input.projectId,
-          name,
-          input,
-        ),
+        body: this.buildServiceResource(workspace, projectName, name, input),
         fieldManager: KUDEPLOY_FIELD_MANAGER,
         force: true,
       },
@@ -212,6 +223,8 @@ export class ServiceService {
     id: string,
     input: UpdateServiceInput,
   ): Promise<Service> {
+    const projectName = toKubernetesProjectName(projectId);
+    const name = toKubernetesServiceName(id);
     const existing = await this.findService(workspace, projectId, id);
     if (!existing) {
       throw new NotFoundException('Service not found');
@@ -221,10 +234,10 @@ export class ServiceService {
       {
         group: KUDEPLOY_API_GROUP,
         version: KUDEPLOY_API_VERSION_NAME,
-        namespace: projectId,
+        namespace: projectName,
         plural: SERVICES_PLURAL,
-        name: id,
-        body: this.buildServiceResource(workspace, projectId, id, {
+        name,
+        body: this.buildServiceResource(workspace, projectName, name, {
           projectId,
           name: input.name ?? existing.name,
           image: input.image ?? existing.image,
@@ -265,19 +278,26 @@ export class ServiceService {
     projectId: string,
     id: string,
   ): Promise<Service> {
+    const projectName = toKubernetesProjectName(projectId);
+    const name = toKubernetesServiceName(id);
+
     await this.ensureProject(workspace, projectId);
 
     const existingResource =
       (await this.customObjectsApi.getNamespacedCustomObject({
         group: KUDEPLOY_API_GROUP,
         version: KUDEPLOY_API_VERSION_NAME,
-        namespace: projectId,
+        namespace: projectName,
         plural: SERVICES_PLURAL,
-        name: id,
+        name,
       })) as ServiceResource;
 
     if (
-      !this.belongsToWorkspaceAndProject(existingResource, workspace, projectId)
+      !this.belongsToWorkspaceAndProject(
+        existingResource,
+        workspace,
+        projectName,
+      )
     ) {
       throw new NotFoundException('Service not found');
     }
@@ -285,9 +305,9 @@ export class ServiceService {
     await this.customObjectsApi.deleteNamespacedCustomObject({
       group: KUDEPLOY_API_GROUP,
       version: KUDEPLOY_API_VERSION_NAME,
-      namespace: projectId,
+      namespace: projectName,
       plural: SERVICES_PLURAL,
-      name: id,
+      name,
     });
 
     return this.toService(existingResource);
@@ -297,8 +317,8 @@ export class ServiceService {
     const creationTime = this.toDate(resource.metadata.creationTimestamp);
 
     return {
-      id: resource.metadata.name,
-      projectId: resource.metadata.namespace,
+      id: toGraphqlServiceId(resource.metadata.name),
+      projectId: toGraphqlProjectId(resource.metadata.namespace),
       name:
         resource.metadata.annotations?.[DISPLAY_NAME_ANNOTATION] ??
         resource.metadata.name,
@@ -530,6 +550,7 @@ export class ServiceService {
   ): boolean {
     return (
       resource.metadata.namespace === projectId &&
+      hasKubernetesServiceNamePrefix(resource.metadata.name) &&
       resource.metadata.labels?.[MANAGED_BY_LABEL] === MANAGED_BY_LABEL_VALUE &&
       resource.metadata.labels?.[WORKSPACE_ID_LABEL] === workspace.id &&
       resource.metadata.labels?.[PROJECT_LABEL] === projectId

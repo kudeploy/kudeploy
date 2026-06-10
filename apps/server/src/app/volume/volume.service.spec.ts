@@ -21,13 +21,13 @@ describe('VolumeService', () => {
     const workspace = { id: 'workspace_1' } as Workspace;
 
     projectService.findProject.mockResolvedValue({
-      id: 'project-123',
+      id: '123',
       name: 'Payments',
     });
     coreV1Api.createNamespacedPersistentVolumeClaim.mockResolvedValue(
       volumePvc({
-        name: 'volume-123',
-        namespace: 'project-123',
+        name: 'kd-volume-123',
+        namespace: 'kd-project-123',
         workspaceId: 'workspace_1',
         displayName: 'Database',
         storage: '10Gi',
@@ -35,7 +35,7 @@ describe('VolumeService', () => {
     );
 
     const result = await service.createVolume(workspace, {
-      projectId: 'project-123',
+      projectId: '123',
       name: 'Database',
       size: 10,
     });
@@ -44,17 +44,17 @@ describe('VolumeService', () => {
       coreV1Api.createNamespacedPersistentVolumeClaim,
     ).toHaveBeenCalledWith(
       expect.objectContaining({
-        namespace: 'project-123',
+        namespace: 'kd-project-123',
         body: expect.objectContaining({
           apiVersion: 'v1',
           kind: 'PersistentVolumeClaim',
           metadata: expect.objectContaining({
-            name: expect.stringMatching(/^volume-\d+$/),
-            namespace: 'project-123',
+            name: expect.stringMatching(/^kd-volume-\d+$/),
+            namespace: 'kd-project-123',
             labels: {
               'app.kubernetes.io/managed-by': 'kudeploy',
               'kudeploy.com/workspace-id': 'workspace_1',
-              'kudeploy.com/project': 'project-123',
+              'kudeploy.com/project': 'kd-project-123',
             },
             annotations: {
               'kudeploy.com/display-name': 'Database',
@@ -73,8 +73,8 @@ describe('VolumeService', () => {
       }),
     );
     expect(result).toMatchObject({
-      id: 'volume-123',
-      projectId: 'project-123',
+      id: '123',
+      projectId: '123',
       name: 'Database',
       size: 10,
       status: VolumeStatus.PENDING,
@@ -86,7 +86,7 @@ describe('VolumeService', () => {
     const workspace = { id: 'workspace_1' } as Workspace;
 
     projectService.findProject.mockResolvedValue({
-      id: 'project-123',
+      id: '123',
       name: 'Payments',
     });
     coreV1Api.createNamespacedPersistentVolumeClaim.mockResolvedValue(
@@ -94,7 +94,7 @@ describe('VolumeService', () => {
     );
 
     await service.createVolume(workspace, {
-      projectId: 'project-123',
+      projectId: '123',
       name: 'Cache',
       size: 1,
     });
@@ -117,20 +117,20 @@ describe('VolumeService', () => {
       createService();
     const workspace = { id: 'workspace_1' } as Workspace;
     const visibleVolume = volumePvc({
-      name: 'volume-visible',
-      namespace: 'project-123',
+      name: 'kd-volume-visible',
+      namespace: 'kd-project-123',
       workspaceId: 'workspace_1',
       displayName: 'Visible',
     });
     const hiddenVolume = volumePvc({
-      name: 'volume-hidden',
-      namespace: 'project-123',
+      name: 'kd-volume-hidden',
+      namespace: 'kd-project-123',
       workspaceId: 'workspace_2',
       displayName: 'Hidden',
     });
 
     projectService.findProject.mockResolvedValue({
-      id: 'project-123',
+      id: '123',
       name: 'Payments',
     });
     coreV1Api.listNamespacedPersistentVolumeClaim.mockResolvedValue({
@@ -158,14 +158,14 @@ describe('VolumeService', () => {
       },
     );
 
-    const result = await service.findVolumes(workspace, 'project-123', {
+    const result = await service.findVolumes(workspace, '123', {
       first: 20,
     });
 
     expect(coreV1Api.listNamespacedPersistentVolumeClaim).toHaveBeenCalledWith({
-      namespace: 'project-123',
+      namespace: 'kd-project-123',
       labelSelector:
-        'app.kubernetes.io/managed-by=kudeploy,kudeploy.com/workspace-id=workspace_1,kudeploy.com/project=project-123',
+        'app.kubernetes.io/managed-by=kudeploy,kudeploy.com/workspace-id=workspace_1,kudeploy.com/project=kd-project-123',
     });
     expect(connectionManager.find).toHaveBeenCalledWith(
       VolumeConnection,
@@ -173,7 +173,8 @@ describe('VolumeService', () => {
       {
         items: [
           expect.objectContaining({
-            id: 'volume-visible',
+            id: 'visible',
+            projectId: '123',
             name: 'Visible',
             size: 10,
           }),
@@ -191,7 +192,7 @@ describe('VolumeService', () => {
 
     await expect(
       service.createVolume(workspace, {
-        projectId: 'project-123',
+        projectId: '123',
         name: 'Database',
         size: 10,
       }),
@@ -207,20 +208,25 @@ describe('VolumeService', () => {
     const workspace = { id: 'workspace_1' } as Workspace;
 
     projectService.findProject.mockResolvedValue({
-      id: 'project-123',
+      id: '123',
       name: 'Payments',
     });
     coreV1Api.readNamespacedPersistentVolumeClaim.mockResolvedValue(
       volumePvc({
-        name: 'volume-123',
-        namespace: 'project-123',
+        name: 'kd-volume-123',
+        namespace: 'kd-project-123',
         workspaceId: 'workspace_2',
       }),
     );
 
-    await expect(
-      service.deleteVolume(workspace, 'project-123', 'volume-123'),
-    ).rejects.toThrow('Volume not found');
+    await expect(service.deleteVolume(workspace, '123', '123')).rejects.toThrow(
+      'Volume not found',
+    );
+
+    expect(coreV1Api.readNamespacedPersistentVolumeClaim).toHaveBeenCalledWith({
+      namespace: 'kd-project-123',
+      name: 'kd-volume-123',
+    });
 
     expect(
       coreV1Api.deleteNamespacedPersistentVolumeClaim,
@@ -286,8 +292,8 @@ function volumePvc(
   } = {},
 ): VolumeResource {
   const {
-    name = 'volume-123',
-    namespace = 'project-123',
+    name = 'kd-volume-123',
+    namespace = 'kd-project-123',
     workspaceId = 'workspace_1',
     displayName = 'Database',
     storage = '10Gi',

@@ -3,7 +3,12 @@ import { NotFoundException } from '@nestjs/common';
 import { Injectable } from '@nestjs/common';
 import { Sonyflake } from 'sonyflake-js';
 
-import { SERVER_SIDE_APPLY_OPTIONS } from '@/app/kubernetes';
+import {
+  hasKubernetesProjectNamePrefix,
+  SERVER_SIDE_APPLY_OPTIONS,
+  toGraphqlProjectId,
+  toKubernetesProjectName,
+} from '@/app/kubernetes';
 import { Workspace } from '@/app/workspace/workspace.entity';
 import { KubernetesConnectionManager } from '@/lib/kubernetes-graphql-connection/kubernetes-connection.manager';
 
@@ -71,9 +76,11 @@ export class ProjectService {
   }
 
   async findProject(workspace: Workspace, id: string): Promise<Project | null> {
+    const name = toKubernetesProjectName(id);
+
     try {
       const resource = (await this.coreV1Api.readNamespace({
-        name: id,
+        name,
       })) as ProjectResource;
 
       if (!this.belongsToWorkspace(resource, workspace)) {
@@ -93,7 +100,7 @@ export class ProjectService {
     workspace: Workspace,
     input: { name: string },
   ): Promise<Project> {
-    const name = `project-${Sonyflake.next()}`;
+    const name = toKubernetesProjectName(String(Sonyflake.next()));
     const resource = (await this.coreV1Api.createNamespace({
       body: this.buildProjectResource(workspace, name, input),
       fieldManager: KUDEPLOY_FIELD_MANAGER,
@@ -107,6 +114,7 @@ export class ProjectService {
     id: string,
     input: { name?: string },
   ): Promise<Project> {
+    const name = toKubernetesProjectName(id);
     const existing = await this.findProject(workspace, id);
     if (!existing) {
       throw new NotFoundException('Project not found');
@@ -114,8 +122,8 @@ export class ProjectService {
 
     const resource = (await this.coreV1Api.patchNamespace(
       {
-        name: id,
-        body: this.buildProjectResource(workspace, id, {
+        name,
+        body: this.buildProjectResource(workspace, name, {
           name: input.name ?? existing.name,
         }),
         fieldManager: KUDEPLOY_FIELD_MANAGER,
@@ -128,8 +136,9 @@ export class ProjectService {
   }
 
   async deleteProject(workspace: Workspace, id: string): Promise<Project> {
+    const name = toKubernetesProjectName(id);
     const existingResource = (await this.coreV1Api.readNamespace({
-      name: id,
+      name,
     })) as ProjectResource;
 
     if (!this.belongsToWorkspace(existingResource, workspace)) {
@@ -137,7 +146,7 @@ export class ProjectService {
     }
 
     await this.coreV1Api.deleteNamespace({
-      name: id,
+      name,
     });
 
     return this.toProject(existingResource);
@@ -147,7 +156,7 @@ export class ProjectService {
     const creationTime = this.toDate(resource.metadata.creationTimestamp);
 
     return {
-      id: resource.metadata.name,
+      id: toGraphqlProjectId(resource.metadata.name),
       name:
         resource.metadata.annotations?.[DISPLAY_NAME_ANNOTATION] ??
         resource.metadata.name,
@@ -202,6 +211,7 @@ export class ProjectService {
   ): boolean {
     return (
       resource.metadata.labels?.[MANAGED_BY_LABEL] === MANAGED_BY_LABEL_VALUE &&
+      hasKubernetesProjectNamePrefix(resource.metadata.name) &&
       resource.metadata.labels?.[WORKSPACE_ID_LABEL] === workspace.id &&
       resource.metadata.labels?.[PROJECT_LABEL] === resource.metadata.name
     );

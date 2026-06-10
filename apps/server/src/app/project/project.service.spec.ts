@@ -21,7 +21,7 @@ describe('ProjectService', () => {
 
     coreV1Api.createNamespace.mockResolvedValue(
       namespaceResource({
-        name: 'project-123',
+        name: 'kd-project-123',
         workspaceId: 'workspace_1',
         displayName: 'Payments',
         phase: 'Active',
@@ -38,11 +38,11 @@ describe('ProjectService', () => {
           apiVersion: 'v1',
           kind: 'Namespace',
           metadata: expect.objectContaining({
-            name: expect.stringMatching(/^project-\d+$/),
+            name: expect.stringMatching(/^kd-project-\d+$/),
             labels: {
               'app.kubernetes.io/managed-by': 'kudeploy',
               'kudeploy.com/workspace-id': 'workspace_1',
-              'kudeploy.com/project': expect.stringMatching(/^project-\d+$/),
+              'kudeploy.com/project': expect.stringMatching(/^kd-project-\d+$/),
             },
             annotations: {
               'kudeploy.com/display-name': 'Payments',
@@ -53,9 +53,31 @@ describe('ProjectService', () => {
       }),
     );
     expect(result).toMatchObject({
-      id: 'project-123',
+      id: '123',
       name: 'Payments',
       status: ProjectStatus.READY,
+    });
+  });
+
+  it('reads a Namespace by adding the Kubernetes project prefix to the GraphQL id', async () => {
+    const { service, coreV1Api } = createService();
+    const workspace = { id: 'workspace_1' } as Workspace;
+
+    coreV1Api.readNamespace.mockResolvedValue(
+      namespaceResource({
+        name: 'kd-project-123',
+        workspaceId: 'workspace_1',
+      }),
+    );
+
+    const result = await service.findProject(workspace, '123');
+
+    expect(coreV1Api.readNamespace).toHaveBeenCalledWith({
+      name: 'kd-project-123',
+    });
+    expect(result).toMatchObject({
+      id: '123',
+      name: 'Payments',
     });
   });
 
@@ -63,13 +85,13 @@ describe('ProjectService', () => {
     const { service, coreV1Api, connectionManager } = createService();
     const workspace = { id: 'workspace_1' } as Workspace;
     const visibleProject = namespaceResource({
-      name: 'project-visible',
+      name: 'kd-project-visible',
       workspaceId: 'workspace_1',
       displayName: 'Visible',
       phase: 'Active',
     });
     const hiddenProject = namespaceResource({
-      name: 'project-hidden',
+      name: 'kd-project-hidden',
       workspaceId: 'workspace_2',
       displayName: 'Hidden',
       phase: 'Active',
@@ -112,7 +134,7 @@ describe('ProjectService', () => {
       {
         items: [
           expect.objectContaining({
-            id: 'project-visible',
+            id: 'visible',
             name: 'Visible',
           }),
         ],
@@ -183,7 +205,7 @@ function namespaceResource(
   } = {},
 ): ProjectResource {
   const {
-    name = 'project-123',
+    name = 'kd-project-123',
     workspaceId = 'workspace_1',
     displayName = 'Payments',
     phase,

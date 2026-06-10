@@ -19,7 +19,7 @@ describe('KubernetesLogsService', () => {
     victoriaLogsClient.query.mockResolvedValue([ready]);
 
     await expect(
-      service.getServiceLogs(workspace(), 'project-1', 'service-1', {
+      service.getServiceLogs(workspace(), '1', '1', {
         now: new Date('2026-06-08T17:00:00.000Z'),
       }),
     ).resolves.toEqual({
@@ -53,6 +53,13 @@ describe('KubernetesLogsService', () => {
         start: new Date('2026-05-09T17:00:00.000Z'),
       },
     );
+    const logsQuery = victoriaLogsClient.query.mock.calls[0][0] as string;
+    expect(logsQuery).toContain(
+      '`kubernetes.pod_labels.kudeploy.com/project`:="kd-project-1"',
+    );
+    expect(logsQuery).toContain(
+      '`kubernetes.pod_labels.kudeploy.com/service`:="kd-service-1"',
+    );
   });
 
   it('clamps small page sizes up to the Grafana-style default', async () => {
@@ -60,7 +67,7 @@ describe('KubernetesLogsService', () => {
 
     victoriaLogsClient.query.mockResolvedValue([]);
 
-    await service.getServiceLogs(workspace(), 'project-1', 'service-1', {
+    await service.getServiceLogs(workspace(), '1', '1', {
       first: 10,
     });
 
@@ -77,7 +84,7 @@ describe('KubernetesLogsService', () => {
 
     victoriaLogsClient.query.mockResolvedValue([]);
 
-    await service.getServiceLogs(workspace(), 'project-1', 'service-1', {
+    await service.getServiceLogs(workspace(), '1', '1', {
       first: 20_000,
     });
 
@@ -114,7 +121,7 @@ describe('KubernetesLogsService', () => {
     ]);
 
     await expect(
-      service.getServiceLogs(workspace(), 'project-1', 'service-1', {
+      service.getServiceLogs(workspace(), '1', '1', {
         after,
         first: 1000,
         now: new Date('2026-06-08T17:00:00.000Z'),
@@ -139,9 +146,7 @@ describe('KubernetesLogsService', () => {
       },
     });
     expect(victoriaLogsClient.query).toHaveBeenCalledWith(
-      expect.stringContaining(
-        'filter (_time:<2026-06-08T16:46:23.123456789Z',
-      ),
+      expect.stringContaining('filter (_time:<2026-06-08T16:46:23.123456789Z'),
       expect.objectContaining({
         end: '2026-06-08T16:46:23.123456790Z',
         limit: 1001,
@@ -180,7 +185,7 @@ describe('KubernetesLogsService', () => {
     ]);
 
     await expect(
-      service.getServiceLogs(workspace(), 'project-1', 'service-1', {
+      service.getServiceLogs(workspace(), '1', '1', {
         after: encodeServiceLogCursor(cursorLog),
         first: 1000,
         now: new Date('2026-06-08T17:00:00.000Z'),
@@ -221,7 +226,7 @@ describe('KubernetesLogsService', () => {
     victoriaLogsClient.query.mockResolvedValue(filteredRows);
 
     await expect(
-      service.getServiceLogs(workspace(), 'project-1', 'service-1', {
+      service.getServiceLogs(workspace(), '1', '1', {
         after: encodeServiceLogCursor(cursorLog),
         first: 1000,
         now: new Date('2026-06-08T17:00:00.000Z'),
@@ -259,7 +264,7 @@ describe('KubernetesLogsService', () => {
     victoriaLogsClient.query.mockResolvedValue([firstReturned, secondReturned]);
 
     await expect(
-      service.getServiceLogs(workspace(), 'project-1', 'service-1', {
+      service.getServiceLogs(workspace(), '1', '1', {
         before,
         last: 1000,
         now: new Date('2026-06-08T17:00:00.000Z'),
@@ -284,9 +289,7 @@ describe('KubernetesLogsService', () => {
       },
     });
     expect(victoriaLogsClient.query).toHaveBeenCalledWith(
-      expect.stringContaining(
-        'filter (_time:>2026-06-08T16:46:23.123456789Z',
-      ),
+      expect.stringContaining('filter (_time:>2026-06-08T16:46:23.123456789Z'),
       expect.objectContaining({
         limit: 1001,
         order: 'asc',
@@ -311,7 +314,7 @@ describe('KubernetesLogsService', () => {
     victoriaLogsClient.query.mockResolvedValue([exactSecond, fractionalSecond]);
 
     await expect(
-      service.getServiceLogs(workspace(), 'project-1', 'service-1', {
+      service.getServiceLogs(workspace(), '1', '1', {
         now: new Date('2026-06-08T17:00:00.000Z'),
       }),
     ).resolves.toMatchObject({
@@ -330,7 +333,7 @@ describe('KubernetesLogsService', () => {
     const { service } = createService();
 
     await expect(
-      service.getServiceLogs(workspace(), 'project-1', 'service-1', {
+      service.getServiceLogs(workspace(), '1', '1', {
         first: 1000,
         last: 1000,
       }),
@@ -343,7 +346,7 @@ describe('KubernetesLogsService', () => {
     victoriaLogsClient.isConfigured.mockReturnValue(false);
 
     await expect(
-      service.getServiceLogs(workspace(), 'project-1', 'service-1'),
+      service.getServiceLogs(workspace(), '1', '1'),
     ).resolves.toEqual({
       available: false,
       edges: [],
@@ -365,7 +368,7 @@ describe('KubernetesLogsService', () => {
     });
 
     await expect(
-      service.getServiceLogs(workspace(), 'project-1', 'service-1'),
+      service.getServiceLogs(workspace(), '1', '1'),
     ).resolves.toEqual({
       available: false,
       edges: [],
@@ -385,7 +388,7 @@ describe('KubernetesLogsService', () => {
     victoriaLogsClient.query.mockRejectedValue(new Error('unreachable'));
 
     await expect(
-      service.getServiceLogs(workspace(), 'project-1', 'service-1'),
+      service.getServiceLogs(workspace(), '1', '1'),
     ).resolves.toEqual({
       available: false,
       edges: [],

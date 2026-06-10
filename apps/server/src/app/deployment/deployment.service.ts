@@ -2,6 +2,12 @@ import { CustomObjectsApi } from '@kubernetes/client-node';
 import { Injectable, NotFoundException } from '@nestjs/common';
 
 import {
+  toGraphqlProjectId,
+  toGraphqlServiceId,
+  toKubernetesProjectName,
+  toKubernetesServiceName,
+} from '@/app/kubernetes/resource-names';
+import {
   KUDEPLOY_API_GROUP,
   KUDEPLOY_API_VERSION,
   KUDEPLOY_API_VERSION_NAME,
@@ -100,6 +106,8 @@ export class DeploymentService {
     serviceId: string,
     args: DeploymentConnectionArgs,
   ): Promise<DeploymentConnection> {
+    const projectName = toKubernetesProjectName(projectId);
+    const serviceName = toKubernetesServiceName(serviceId);
     const service = await this.serviceService.findService(
       workspace,
       projectId,
@@ -113,12 +121,12 @@ export class DeploymentService {
     const list = (await this.customObjectsApi.listNamespacedCustomObject({
       group: KUDEPLOY_API_GROUP,
       version: KUDEPLOY_API_VERSION_NAME,
-      namespace: projectId,
+      namespace: projectName,
       plural: DEPLOYMENTS_PLURAL,
       labelSelector: this.deploymentLabelSelector(
         workspace,
-        projectId,
-        serviceId,
+        projectName,
+        serviceName,
       ),
     })) as { items?: DeploymentResource[] };
 
@@ -127,8 +135,8 @@ export class DeploymentService {
         this.belongsToWorkspaceProjectAndService(
           resource,
           workspace,
-          projectId,
-          serviceId,
+          projectName,
+          serviceName,
         ),
       )
       .map((resource) =>
@@ -148,29 +156,33 @@ export class DeploymentService {
     projectId: string,
     id: string,
   ): Promise<Deployment | null> {
+    const projectName = toKubernetesProjectName(projectId);
+    const name = toKubernetesServiceName(id);
+
     try {
       const resource = (await this.customObjectsApi.getNamespacedCustomObject({
         group: KUDEPLOY_API_GROUP,
         version: KUDEPLOY_API_VERSION_NAME,
-        namespace: projectId,
+        namespace: projectName,
         plural: DEPLOYMENTS_PLURAL,
-        name: id,
+        name,
       })) as DeploymentResource;
 
-      const serviceId = resource.metadata.labels?.[SERVICE_LABEL];
+      const serviceName = resource.metadata.labels?.[SERVICE_LABEL];
 
       if (
-        !serviceId ||
+        !serviceName ||
         !this.belongsToWorkspaceProjectAndService(
           resource,
           workspace,
-          projectId,
-          serviceId,
+          projectName,
+          serviceName,
         )
       ) {
         return null;
       }
 
+      const serviceId = toGraphqlServiceId(serviceName);
       const service = await this.serviceService.findService(
         workspace,
         projectId,
@@ -205,10 +217,11 @@ export class DeploymentService {
     const updatedAt = this.toUpdatedAt(resource, createdAt);
 
     return {
-      id: resource.metadata.name,
-      projectId: resource.metadata.namespace,
-      serviceId:
+      id: toGraphqlServiceId(resource.metadata.name),
+      projectId: toGraphqlProjectId(resource.metadata.namespace),
+      serviceId: toGraphqlServiceId(
         resource.metadata.labels?.[SERVICE_LABEL] ?? resource.spec.serviceName,
+      ),
       version: resource.spec.version,
       image: resource.spec.image,
       replicas: resource.spec.replicas ?? null,

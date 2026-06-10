@@ -18,7 +18,7 @@ describe('KubernetesMetricsService', () => {
     coreV1Api.listNamespacedPod.mockResolvedValue({
       items: [
         pod({
-          name: 'service-1-abc',
+          name: 'kd-service-1-abc',
           containers: [
             {
               limits: {
@@ -53,25 +53,20 @@ describe('KubernetesMetricsService', () => {
       return [];
     });
 
-    const result = await service.getServiceMetrics(
-      workspace,
-      'project-1',
-      'service-1',
-      {
-        activeDeploymentName: 'service-1-00002',
-        now,
-        rangeSeconds: 3600,
-        stepSeconds: 300,
-      },
-    );
+    const result = await service.getServiceMetrics(workspace, '1', '1', {
+      activeDeploymentName: 'kd-service-1-00002',
+      now,
+      rangeSeconds: 3600,
+      stepSeconds: 300,
+    });
 
     expect(coreV1Api.listNamespacedPod).toHaveBeenCalledWith({
-      namespace: 'project-1',
+      namespace: 'kd-project-1',
       labelSelector:
-        'app.kubernetes.io/managed-by=kudeploy,kudeploy.com/workspace-id=workspace_1,kudeploy.com/project=project-1,kudeploy.com/service=service-1,kudeploy.com/deployment=service-1-00002',
+        'app.kubernetes.io/managed-by=kudeploy,kudeploy.com/workspace-id=workspace_1,kudeploy.com/project=kd-project-1,kudeploy.com/service=kd-service-1,kudeploy.com/deployment=kd-service-1-00002',
     });
     expect(prometheusClient.queryRange).toHaveBeenCalledWith(
-      expect.stringContaining('container_cpu_usage_seconds_total'),
+      expect.stringContaining('namespace="kd-project-1"'),
       {
         start: new Date('2026-06-08T07:00:00.000Z'),
         end: now,
@@ -98,11 +93,7 @@ describe('KubernetesMetricsService', () => {
     coreV1Api.listNamespacedPod.mockResolvedValue({ items: [] });
 
     await expect(
-      service.getServiceMetrics(
-        { id: 'workspace_1' } as Workspace,
-        'project-1',
-        'service-1',
-      ),
+      service.getServiceMetrics({ id: 'workspace_1' } as Workspace, '1', '1'),
     ).resolves.toMatchObject({
       available: false,
       cpuLimitMillicores: null,
@@ -124,11 +115,7 @@ describe('KubernetesMetricsService', () => {
     coreV1Api.listNamespacedPod.mockResolvedValue({ items: [] });
 
     await expect(
-      service.getServiceMetrics(
-        { id: 'workspace_1' } as Workspace,
-        'project-1',
-        'service-1',
-      ),
+      service.getServiceMetrics({ id: 'workspace_1' } as Workspace, '1', '1'),
     ).resolves.toMatchObject({
       available: false,
       cpuUsageMillicores: [],
@@ -146,15 +133,10 @@ describe('KubernetesMetricsService', () => {
     coreV1Api.listNamespacedPod.mockResolvedValue({ items: [] });
 
     await expect(
-      service.getServiceMetrics(
-        { id: 'workspace_1' } as Workspace,
-        'project-1',
-        'service-1',
-        {
-          rangeSeconds: 7 * 24 * 60 * 60,
-          stepSeconds: 6 * 60 * 60,
-        },
-      ),
+      service.getServiceMetrics({ id: 'workspace_1' } as Workspace, '1', '1', {
+        rangeSeconds: 7 * 24 * 60 * 60,
+        stepSeconds: 6 * 60 * 60,
+      }),
     ).resolves.toMatchObject({
       rangeSeconds: 7 * 24 * 60 * 60,
       stepSeconds: 6 * 60 * 60,
@@ -181,11 +163,7 @@ describe('KubernetesMetricsService', () => {
     prometheusClient.queryRange.mockRejectedValue(new Error('unreachable'));
 
     await expect(
-      service.getServiceMetrics(
-        { id: 'workspace_1' } as Workspace,
-        'project-1',
-        'service-1',
-      ),
+      service.getServiceMetrics({ id: 'workspace_1' } as Workspace, '1', '1'),
     ).resolves.toMatchObject({
       available: false,
       cpuLimitMillicores: 250,
@@ -231,7 +209,7 @@ function pod(
 ): V1Pod {
   return {
     metadata: {
-      name: options.name ?? 'service-1-abc',
+      name: options.name ?? 'kd-service-1-abc',
     },
     spec: {
       containers: (options.containers ?? []).map((container, index) => ({

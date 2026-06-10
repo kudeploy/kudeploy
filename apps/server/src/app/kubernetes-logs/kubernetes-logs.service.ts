@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
 
+import {
+  toKubernetesProjectName,
+  toKubernetesServiceName,
+} from '@/app/kubernetes/resource-names';
 import { Workspace } from '@/app/workspace/workspace.entity';
 
 import { ServiceLog, ServiceLogConnection } from './kubernetes-logs.object';
@@ -64,8 +68,8 @@ export class KubernetesLogsService {
         buildServiceLogsQuery(
           {
             workspaceId: workspace.id,
-            projectId,
-            serviceId,
+            projectId: toKubernetesProjectName(projectId),
+            serviceId: toKubernetesServiceName(serviceId),
           },
           {
             cursor,
@@ -193,7 +197,8 @@ function toConnection({
       ? sortedRows.slice(0, limit)
       : sortedRows.slice(Math.max(sortedRows.length - limit, 0));
   const hasMore =
-    pageRows.length > 0 && (rows.length > limit || rows.length >= MAX_PAGE_SIZE);
+    pageRows.length > 0 &&
+    (rows.length > limit || rows.length >= MAX_PAGE_SIZE);
   const edges = pageRows.map((node) => ({
     cursor: encodeServiceLogCursor(node),
     node,

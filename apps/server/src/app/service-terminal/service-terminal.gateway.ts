@@ -19,6 +19,10 @@ import {
   buildServicePodLabelSelector,
   DEPLOYMENT_LABEL,
 } from '@/app/kubernetes-metrics/promql';
+import {
+  toKubernetesProjectName,
+  toKubernetesServiceName,
+} from '@/app/kubernetes/resource-names';
 import { ServiceService } from '@/app/service/service.service';
 import { Workspace } from '@/app/workspace/workspace.entity';
 
@@ -118,10 +122,12 @@ export class ServiceTerminalGateway
           return;
         }
 
+        const projectName = toKubernetesProjectName(projectId);
+        const serviceName = toKubernetesServiceName(serviceId);
         const pod = await this.findServicePod(
           workspace,
-          projectId,
-          serviceId,
+          projectName,
+          serviceName,
           service.activeDeploymentName ?? service.latestDeploymentName,
         );
         const podName = pod.metadata?.name;
@@ -138,8 +144,8 @@ export class ServiceTerminalGateway
           client,
           containerName,
           podName,
-          projectId,
-          serviceId,
+          projectId: projectName,
+          serviceId: serviceName,
         });
 
         if (!client.connected) {
