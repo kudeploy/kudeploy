@@ -72,6 +72,8 @@ type DeploymentSpec struct {
 	// +optional
 	// +listType=map
 	// +listMapKey=name
+	// +kubebuilder:validation:MaxItems=32
+	// +kubebuilder:validation:XValidation:rule="self.all(volume, self.exists_one(other, other.mountPath == volume.mountPath))",message="mountPath values must be unique"
 	Volumes []ServiceVolume `json:"volumes,omitempty"`
 
 	// env describes plain Kubernetes container environment variables captured for this Deployment version.

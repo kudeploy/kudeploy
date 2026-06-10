@@ -60,6 +60,8 @@ type ServiceSpec struct {
 	// +optional
 	// +listType=map
 	// +listMapKey=name
+	// +kubebuilder:validation:MaxItems=32
+	// +kubebuilder:validation:XValidation:rule="self.all(volume, self.exists_one(other, other.mountPath == volume.mountPath))",message="mountPath values must be unique"
 	Volumes []ServiceVolume `json:"volumes,omitempty"`
 
 	// env describes plain Kubernetes container environment variables.
@@ -118,11 +120,14 @@ type ServiceVolume struct {
 	// mountPath is the absolute path where the volume is mounted in the container.
 	// +required
 	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=1024
 	// +kubebuilder:validation:Pattern=`^/[^:]*$`
 	MountPath string `json:"mountPath"`
 
 	// subPath is an optional path within the volume to mount.
 	// +optional
+	// +kubebuilder:validation:MaxLength=1024
+	// +kubebuilder:validation:XValidation:rule="self == \"\" || (!self.startsWith(\"/\") && !self.matches(\"(^|/)\\\\.\\\\.(/|$)\"))",message="subPath must be relative and must not contain '..' path elements"
 	SubPath string `json:"subPath,omitempty"`
 
 	// readOnly mounts the volume read-only when true.

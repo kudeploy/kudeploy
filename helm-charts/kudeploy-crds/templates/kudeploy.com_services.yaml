@@ -840,6 +840,7 @@ spec:
                     mountPath:
                       description: mountPath is the absolute path where the volume
                         is mounted in the container.
+                      maxLength: 1024
                       minLength: 1
                       pattern: ^/[^:]*$
                       type: string
@@ -856,16 +857,26 @@ spec:
                     subPath:
                       description: subPath is an optional path within the volume to
                         mount.
+                      maxLength: 1024
                       type: string
+                      x-kubernetes-validations:
+                      - message: subPath must be relative and must not contain '..'
+                          path elements
+                        rule: self == "" || (!self.startsWith("/") && !self.matches("(^|/)\\.\\.(/|$)"))
                   required:
                   - claimName
                   - mountPath
                   - name
                   type: object
+                maxItems: 32
                 type: array
                 x-kubernetes-list-map-keys:
                 - name
                 x-kubernetes-list-type: map
+                x-kubernetes-validations:
+                - message: mountPath values must be unique
+                  rule: self.all(volume, self.exists_one(other, other.mountPath ==
+                    volume.mountPath))
             required:
             - image
             - ports
