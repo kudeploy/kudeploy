@@ -6227,7 +6227,7 @@ export const GetServicesFromServicesRouteDocument = {
               {
                 kind: "Argument",
                 name: { kind: "Name", value: "first" },
-                value: { kind: "IntValue", value: "100" },
+                value: { kind: "IntValue", value: "20" },
               },
             ],
             selectionSet: {
@@ -8270,7 +8270,7 @@ export const GetRegistryCredentialsFromServiceSourceRouteDocument = {
               {
                 kind: "Argument",
                 name: { kind: "Name", value: "first" },
-                value: { kind: "IntValue", value: "100" },
+                value: { kind: "IntValue", value: "20" },
               },
             ],
             selectionSet: {

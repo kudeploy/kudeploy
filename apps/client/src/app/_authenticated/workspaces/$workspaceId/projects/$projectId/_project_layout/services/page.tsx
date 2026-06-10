@@ -60,7 +60,7 @@ const GET_SERVICES_FROM_SERVICES_ROUTE = graphql(`
       id
       name
     }
-    registryCredentials(projectId: $projectId, first: 100) {
+    registryCredentials(projectId: $projectId, first: 20) {
       edges {
         node {
           id

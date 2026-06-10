@@ -22,7 +22,7 @@ const NONE_REGISTRY_CREDENTIAL_VALUE = "__none__";
 
 const GET_REGISTRY_CREDENTIALS_FROM_SERVICE_SOURCE_ROUTE = graphql(`
   query getRegistryCredentialsFromServiceSourceRoute($projectId: ID!) {
-    registryCredentials(projectId: $projectId, first: 100) {
+    registryCredentials(projectId: $projectId, first: 20) {
       edges {
         node {
           id

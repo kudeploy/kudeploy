@@ -38,6 +38,7 @@ export const REGISTRY_CREDENTIAL_SECRET_TYPE = 'kubernetes.io/dockerconfigjson';
 export const REGISTRY_ANNOTATION = 'kudeploy.com/registry';
 export const REGISTRY_USERNAME_ANNOTATION = 'kudeploy.com/registry-username';
 export const DOCKER_CONFIG_JSON_KEY = '.dockerconfigjson';
+export const MAX_REGISTRY_CREDENTIALS_PER_PROJECT = 20;
 
 export interface RegistryCredentialResource extends Omit<V1Secret, 'metadata'> {
   metadata?: {
@@ -140,6 +141,7 @@ export class RegistryCredentialService {
     const projectName = toKubernetesProjectName(input.projectId);
 
     await this.ensureProject(workspace, input.projectId);
+    await this.ensureRegistryCredentialQuota(workspace, projectName);
 
     const name = toKubernetesRegistryCredentialName(String(Sonyflake.next()));
     const resource = (await this.coreV1Api.createNamespacedSecret({
@@ -268,6 +270,25 @@ export class RegistryCredentialService {
 
     if (!project) {
       throw new NotFoundException('Project not found');
+    }
+  }
+
+  private async ensureRegistryCredentialQuota(
+    workspace: Workspace,
+    projectName: string,
+  ): Promise<void> {
+    const list = (await this.coreV1Api.listNamespacedSecret({
+      namespace: projectName,
+      labelSelector: this.registryCredentialLabelSelector(workspace, projectName),
+    })) as { items?: RegistryCredentialResource[] };
+    const count = (list.items ?? []).filter((resource) =>
+      this.belongsToWorkspaceAndProject(resource, workspace, projectName),
+    ).length;
+
+    if (count >= MAX_REGISTRY_CREDENTIALS_PER_PROJECT) {
+      throw new BadRequestException(
+        `Registry credentials limit reached (${MAX_REGISTRY_CREDENTIALS_PER_PROJECT} per project)`,
+      );
     }
   }
 

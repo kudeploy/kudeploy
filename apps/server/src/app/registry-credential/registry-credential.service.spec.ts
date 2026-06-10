@@ -90,6 +90,37 @@ describe('RegistryCredentialService', () => {
     });
   });
 
+  it('does not create a registry credential after the project limit is reached', async () => {
+    const { service, coreV1Api, projectService } = createService();
+    const workspace = { id: 'workspace_1' } as Workspace;
+
+    projectService.findProject.mockResolvedValue({
+      id: '123',
+      name: 'Payments',
+    });
+    coreV1Api.listNamespacedSecret.mockResolvedValue({
+      items: Array.from({ length: 20 }, (_, index) =>
+        registryCredentialSecret({
+          name: `kd-regcred-${index}`,
+          namespace: 'kd-project-123',
+          workspaceId: 'workspace_1',
+        }),
+      ),
+    });
+
+    await expect(
+      service.createRegistryCredential(workspace, {
+        projectId: '123',
+        name: 'GitHub Container Registry',
+        registry: 'ghcr.io',
+        username: 'octocat',
+        password: 'secret-token',
+      }),
+    ).rejects.toThrow('Registry credentials limit reached');
+
+    expect(coreV1Api.createNamespacedSecret).not.toHaveBeenCalled();
+  });
+
   it('updates an owned dockerconfigjson Secret without changing its Kubernetes name', async () => {
     const { service, coreV1Api, projectService } = createService();
     const workspace = { id: 'workspace_1' } as Workspace;
@@ -277,7 +308,7 @@ describe('RegistryCredentialService', () => {
 function createService() {
   const coreV1Api = {
     createNamespacedSecret: jest.fn(),
-    listNamespacedSecret: jest.fn(),
+    listNamespacedSecret: jest.fn().mockResolvedValue({ items: [] }),
     readNamespacedSecret: jest.fn(),
     patchNamespacedSecret: jest.fn(),
     deleteNamespacedSecret: jest.fn(),
