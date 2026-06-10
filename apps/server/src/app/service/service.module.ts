@@ -4,6 +4,7 @@ import { KubernetesModule } from '@/app/kubernetes';
 import { KubernetesLogsModule } from '@/app/kubernetes-logs';
 import { KubernetesMetricsModule } from '@/app/kubernetes-metrics';
 import { ProjectModule } from '@/app/project/project.module';
+import { RegistryCredentialModule } from '@/app/registry-credential';
 import { KubernetesGraphqlConnectionModule } from '@/lib/kubernetes-graphql-connection';
 
 import { ServiceResolver } from './service.resolver';
@@ -16,6 +17,7 @@ import { ServiceService } from './service.service';
     KubernetesLogsModule,
     KubernetesMetricsModule,
     ProjectModule,
+    RegistryCredentialModule,
   ],
   providers: [ServiceResolver, ServiceService],
   exports: [ServiceService],

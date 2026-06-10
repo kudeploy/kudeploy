@@ -7,6 +7,8 @@ import { Select } from "@/components/fabric-ui/select";
 import { Textarea } from "@/components/fabric-ui/textarea";
 import { Switch } from "@/components/ui/switch";
 
+const NONE_REGISTRY_CREDENTIAL_VALUE = "__none__";
+
 export type ServicePortFormValue = {
   port: number | "";
   targetPort: number | "";
@@ -31,9 +33,15 @@ export type ServiceHealthCheckFormValue = {
   path: string;
 };
 
+export type RegistryCredentialOption = {
+  label: string;
+  value: string;
+};
+
 export type ServiceFormValue = {
   name: string;
   image: string;
+  registryCredentialId: string | null;
   replicas: number | "";
   command: string;
   args: string;
@@ -45,13 +53,23 @@ export type ServiceFormValue = {
 
 export function ServiceForm({
   disabled,
+  registryCredentialOptions = [],
   value,
   onChange,
 }: {
   disabled?: boolean;
+  registryCredentialOptions?: Array<RegistryCredentialOption>;
   value: ServiceFormValue;
   onChange: (value: ServiceFormValue) => void;
 }) {
+  const registryCredentialItems = [
+    {
+      label: t("service:form.registry_credential.none"),
+      value: NONE_REGISTRY_CREDENTIAL_VALUE,
+    },
+    ...registryCredentialOptions,
+  ];
+
   const updatePort = (index: number, patch: Partial<ServicePortFormValue>) => {
     onChange({
       ...value,
@@ -102,6 +120,24 @@ export function ServiceForm({
         placeholder={t("service:form.image.placeholder")}
         value={value.image}
         onChange={(event) => onChange({ ...value, image: event.target.value })}
+      />
+
+      <Select<string>
+        data-testid="service-registry-credential-select"
+        disabled={disabled}
+        items={registryCredentialItems}
+        label={t("service:form.registry_credential.label")}
+        placeholder={t("service:form.registry_credential.none")}
+        value={value.registryCredentialId ?? NONE_REGISTRY_CREDENTIAL_VALUE}
+        onValueChange={(registryCredentialId) =>
+          onChange({
+            ...value,
+            registryCredentialId:
+              registryCredentialId === NONE_REGISTRY_CREDENTIAL_VALUE
+                ? null
+                : registryCredentialId,
+          })
+        }
       />
 
       <Input
@@ -380,6 +416,7 @@ export function toServiceInput(value: ServiceFormValue) {
   return {
     name: value.name.trim(),
     image: value.image.trim(),
+    registryCredentialId: value.registryCredentialId,
     ...(value.replicas === "" ? {} : { replicas: value.replicas }),
     command,
     args,
@@ -415,6 +452,7 @@ export function initialServiceFormValue(): ServiceFormValue {
   return {
     name: "",
     image: "",
+    registryCredentialId: null,
     replicas: 1,
     command: "",
     args: "",

@@ -62,6 +62,9 @@ export class Service {
   @Field(() => String)
   image!: string;
 
+  @Field(() => ID, { nullable: true })
+  registryCredentialId?: string | null;
+
   @Field(() => Int, { nullable: true })
   replicas?: number | null;
 

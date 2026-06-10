@@ -8,6 +8,7 @@ jest.mock('@kubernetes/client-node', () => ({
 import type { CustomObjectsApi } from '@kubernetes/client-node';
 
 import { ProjectService } from '@/app/project/project.service';
+import { RegistryCredentialService } from '@/app/registry-credential/registry-credential.service';
 import { Workspace } from '@/app/workspace/workspace.entity';
 import { KubernetesConnectionManager } from '@/lib/kubernetes-graphql-connection/kubernetes-connection.manager';
 
@@ -198,6 +199,56 @@ describe('ServiceService', () => {
     );
   });
 
+  it('sets imageSecretRef when creating a Service CRD with a registry credential', async () => {
+    const {
+      service,
+      customObjectsApi,
+      projectService,
+      registryCredentialService,
+    } = createService();
+    const workspace = { id: 'workspace_1' } as Workspace;
+
+    projectService.findProject.mockResolvedValue({
+      id: '123',
+      name: 'Payments',
+    });
+    registryCredentialService.findRegistryCredential.mockResolvedValue({
+      id: '456',
+      projectId: '123',
+      name: 'GitHub Container Registry',
+    });
+    customObjectsApi.patchNamespacedCustomObject.mockResolvedValue(
+      serviceCrd({
+        imageSecretRefName: 'kd-regcred-456',
+      }),
+    );
+
+    const result = await service.createService(workspace, {
+      projectId: '123',
+      name: 'API',
+      image: 'ghcr.io/kudeploy/whoami:latest',
+      registryCredentialId: '456',
+      ports: [{ port: 80 }],
+    });
+
+    expect(
+      registryCredentialService.findRegistryCredential,
+    ).toHaveBeenCalledWith(workspace, '123', '456');
+    expect(customObjectsApi.patchNamespacedCustomObject).toHaveBeenCalledWith(
+      expect.objectContaining({
+        body: expect.objectContaining({
+          spec: expect.objectContaining({
+            imageSecretRef: {
+              name: 'kd-regcred-456',
+            },
+          }),
+        }),
+      }),
+      expect.any(Object),
+    );
+    expect(result.registryCredentialId).toBe('456');
+  });
+
   it('resets replicas to one when updating a Service CRD with null replicas', async () => {
     const { service, customObjectsApi, projectService } = createService();
     const workspace = { id: 'workspace_1' } as Workspace;
@@ -235,6 +286,93 @@ describe('ServiceService', () => {
       }),
       expect.any(Object),
     );
+  });
+
+  it('updates imageSecretRef when updating a Service CRD with a registry credential', async () => {
+    const {
+      service,
+      customObjectsApi,
+      projectService,
+      registryCredentialService,
+    } = createService();
+    const workspace = { id: 'workspace_1' } as Workspace;
+
+    projectService.findProject.mockResolvedValue({
+      id: '123',
+      name: 'Payments',
+    });
+    registryCredentialService.findRegistryCredential.mockResolvedValue({
+      id: '456',
+      projectId: '123',
+      name: 'GitHub Container Registry',
+    });
+    customObjectsApi.getNamespacedCustomObject.mockResolvedValue(
+      serviceCrd({ imageSecretRefName: 'kd-regcred-old' }),
+    );
+    customObjectsApi.patchNamespacedCustomObject.mockResolvedValue(
+      serviceCrd({ imageSecretRefName: 'kd-regcred-456' }),
+    );
+
+    const result = await service.updateService(workspace, '123', '123', {
+      registryCredentialId: '456',
+    });
+
+    expect(
+      registryCredentialService.findRegistryCredential,
+    ).toHaveBeenCalledWith(workspace, '123', '456');
+    expect(customObjectsApi.patchNamespacedCustomObject).toHaveBeenCalledWith(
+      expect.objectContaining({
+        body: expect.objectContaining({
+          spec: expect.objectContaining({
+            imageSecretRef: {
+              name: 'kd-regcred-456',
+            },
+          }),
+        }),
+      }),
+      expect.any(Object),
+    );
+    expect(result.registryCredentialId).toBe('456');
+  });
+
+  it('clears imageSecretRef when updating a Service CRD with a null registry credential', async () => {
+    const {
+      service,
+      customObjectsApi,
+      projectService,
+      registryCredentialService,
+    } = createService();
+    const workspace = { id: 'workspace_1' } as Workspace;
+
+    projectService.findProject.mockResolvedValue({
+      id: '123',
+      name: 'Payments',
+    });
+    customObjectsApi.getNamespacedCustomObject.mockResolvedValue(
+      serviceCrd({ imageSecretRefName: 'kd-regcred-456' }),
+    );
+    customObjectsApi.patchNamespacedCustomObject.mockResolvedValue(
+      serviceCrd({ imageSecretRefName: undefined }),
+    );
+
+    const result = await service.updateService(workspace, '123', '123', {
+      registryCredentialId: null,
+    });
+
+    expect(
+      registryCredentialService.findRegistryCredential,
+    ).not.toHaveBeenCalled();
+    expect(customObjectsApi.patchNamespacedCustomObject).toHaveBeenCalledWith(
+      expect.objectContaining({
+        body: expect.objectContaining({
+          spec: expect.not.objectContaining({
+            imageSecretRef: expect.anything(),
+          }),
+        }),
+      }),
+      expect.any(Object),
+    );
+    expect(result.registryCredentialId).toBeNull();
   });
 
   it('filters listed Service CRDs by current workspace and project before returning a connection', async () => {
@@ -387,13 +525,23 @@ function createService() {
   const projectService = {
     findProject: jest.fn(),
   };
+  const registryCredentialService = {
+    findRegistryCredential: jest.fn(),
+  };
   const service = new ServiceService(
     customObjectsApi as unknown as CustomObjectsApi,
     connectionManager as unknown as KubernetesConnectionManager,
     projectService as unknown as ProjectService,
+    registryCredentialService as unknown as RegistryCredentialService,
   );
 
-  return { service, customObjectsApi, connectionManager, projectService };
+  return {
+    service,
+    customObjectsApi,
+    connectionManager,
+    projectService,
+    registryCredentialService,
+  };
 }
 
 function serviceCrd(
@@ -408,6 +556,7 @@ function serviceCrd(
     replicas?: number;
     readyStatus?: 'True' | 'False' | 'Unknown';
     readyReason?: string;
+    imageSecretRefName?: string;
   } = {},
 ): ServiceResource {
   const {
@@ -421,6 +570,7 @@ function serviceCrd(
     replicas = 2,
     readyStatus,
     readyReason = 'DeploymentReady',
+    imageSecretRefName,
   } = options;
 
   return {
@@ -441,6 +591,9 @@ function serviceCrd(
     },
     spec: {
       image,
+      ...(imageSecretRefName
+        ? { imageSecretRef: { name: imageSecretRefName } }
+        : {}),
       replicas,
       command: ['pnpm'],
       args: ['start'],

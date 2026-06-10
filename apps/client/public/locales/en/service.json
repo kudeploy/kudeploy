@@ -46,6 +46,8 @@
     "loading": "Loading deployments",
     "error": "Deployments failed to load",
     "summary": "{{count}} deployments",
+    "summary_one": "{{count}} deployment",
+    "summary_other": "{{count}} deployments",
     "active": "Current",
     "latest": "Latest",
     "version": "v{{version}}",
@@ -109,6 +111,8 @@
     "loading": "Loading logs",
     "loading_older": "Loading older logs",
     "updated": "Updated {{time}} with {{count}} lines",
+    "updated_one": "Updated {{time}} with {{count}} line",
+    "updated_other": "Updated {{time}} with {{count}} lines",
     "unavailable": "Logs data source unavailable",
     "error": "Logs failed to load",
     "empty": "No logs yet",
@@ -173,6 +177,10 @@
       "placeholder": "ghcr.io/acme/api:latest",
       "required": "Image is required"
     },
+    "registry_credential": {
+      "label": "Registry credential",
+      "none": "No credential"
+    },
     "key": "Key",
     "name": {
       "label": "Name",
@@ -217,6 +225,7 @@
     "image": "Image",
     "name": "Name",
     "ports": "Ports",
+    "registry_credential": "Registry credential",
     "replicas": "Replicas",
     "status": "Status"
   },

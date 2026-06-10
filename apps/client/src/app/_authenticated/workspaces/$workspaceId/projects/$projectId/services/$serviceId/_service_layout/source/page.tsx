@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useMutation } from "@apollo/client/react";
+import { useEffect, useMemo, useState } from "react";
+import { useMutation, useQuery } from "@apollo/client/react";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { t } from "i18next";
 import { toast } from "sonner";
@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/fabric-ui/button";
 import { Input } from "@/components/fabric-ui/input";
 import { Page } from "@/components/fabric-ui/page";
+import { Select } from "@/components/fabric-ui/select";
 import { Textarea } from "@/components/fabric-ui/textarea";
 import {
   Card,
@@ -17,6 +18,22 @@ import {
 } from "@/components/ui/card";
 import { graphql } from "@/gql";
 
+const NONE_REGISTRY_CREDENTIAL_VALUE = "__none__";
+
+const GET_REGISTRY_CREDENTIALS_FROM_SERVICE_SOURCE_ROUTE = graphql(`
+  query getRegistryCredentialsFromServiceSourceRoute($projectId: ID!) {
+    registryCredentials(projectId: $projectId, first: 100) {
+      edges {
+        node {
+          id
+          name
+          registry
+        }
+      }
+    }
+  }
+`);
+
 const UPDATE_SERVICE_SOURCE_FROM_SERVICE_SOURCE_ROUTE = graphql(`
   mutation updateServiceSourceFromServiceSourceRoute(
     $projectId: ID!
@@ -26,6 +43,7 @@ const UPDATE_SERVICE_SOURCE_FROM_SERVICE_SOURCE_ROUTE = graphql(`
     updateService(projectId: $projectId, id: $id, input: $input) {
       id
       image
+      registryCredentialId
       command
       args
       updatedAt
@@ -45,15 +63,41 @@ function ServiceSourceComponent() {
   const { projectId, serviceId } = Route.useParams();
   const { service } = Route.useRouteContext();
   const [image, setImage] = useState(service.image);
+  const [registryCredentialId, setRegistryCredentialId] = useState(
+    service.registryCredentialId ?? NONE_REGISTRY_CREDENTIAL_VALUE,
+  );
   const [command, setCommand] = useState(linesToValue(service.command));
   const [args, setArgs] = useState(linesToValue(service.args));
 
+  const { data } = useQuery(
+    GET_REGISTRY_CREDENTIALS_FROM_SERVICE_SOURCE_ROUTE,
+    {
+      variables: { projectId },
+      fetchPolicy: "cache-and-network",
+    },
+  );
   const [updateService, { loading }] = useMutation(
     UPDATE_SERVICE_SOURCE_FROM_SERVICE_SOURCE_ROUTE,
+  );
+  const registryCredentialItems = useMemo(
+    () => [
+      {
+        label: t("service:form.registry_credential.none"),
+        value: NONE_REGISTRY_CREDENTIAL_VALUE,
+      },
+      ...(data?.registryCredentials.edges.map((edge) => ({
+        label: `${edge.node.name} (${edge.node.registry})`,
+        value: edge.node.id,
+      })) ?? []),
+    ],
+    [data],
   );
 
   useEffect(() => {
     setImage(service.image);
+    setRegistryCredentialId(
+      service.registryCredentialId ?? NONE_REGISTRY_CREDENTIAL_VALUE,
+    );
     setCommand(linesToValue(service.command));
     setArgs(linesToValue(service.args));
   }, [service]);
@@ -73,6 +117,10 @@ function ServiceSourceComponent() {
           id: serviceId,
           input: {
             image: trimmedImage,
+            registryCredentialId:
+              registryCredentialId === NONE_REGISTRY_CREDENTIAL_VALUE
+                ? null
+                : registryCredentialId,
             command: toLines(command),
             args: toLines(args),
           },
@@ -110,6 +158,15 @@ function ServiceSourceComponent() {
               placeholder={t("service:form.image.placeholder")}
               value={image}
               onChange={(event) => setImage(event.target.value)}
+            />
+
+            <Select<string>
+              data-testid="service-registry-credential-select"
+              items={registryCredentialItems}
+              label={t("service:form.registry_credential.label")}
+              placeholder={t("service:form.registry_credential.none")}
+              value={registryCredentialId}
+              onValueChange={setRegistryCredentialId}
             />
 
             <div className="grid gap-3 sm:grid-cols-2">

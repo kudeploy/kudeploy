@@ -14,6 +14,7 @@
   "tabs": {
     "services": "Services",
     "volumes": "Volumes",
+    "registry_credentials": "Registry credentials",
     "settings": "Settings"
   },
   "volumes": {
@@ -64,6 +65,71 @@
     "toast": {
       "created": "Volume created",
       "deleted": "Volume deleted"
+    }
+  },
+  "registry_credentials": {
+    "title": "Registry credentials",
+    "description": "Registry credentials are Kubernetes image pull Secrets in this project's namespace.",
+    "create": {
+      "button": "Create credential",
+      "title": "Create registry credential",
+      "description": "Saving creates a Kubernetes Secret for pulling private images."
+    },
+    "edit": {
+      "title": "Edit registry credential",
+      "description": "Update the backing Secret without changing its Kubernetes name."
+    },
+    "form": {
+      "name": {
+        "label": "Name",
+        "placeholder": "github-container-registry",
+        "required": "Name is required"
+      },
+      "registry": {
+        "label": "Registry",
+        "placeholder": "ghcr.io",
+        "required": "Registry is required"
+      },
+      "username": {
+        "label": "Username",
+        "placeholder": "octocat",
+        "required": "Username is required"
+      },
+      "password": {
+        "label": "Password or token",
+        "create_placeholder": "Token",
+        "edit_placeholder": "Leave blank to keep current token",
+        "description": "Leave blank to keep the current password or token.",
+        "required": "Password or token is required"
+      }
+    },
+    "filter": {
+      "search": {
+        "placeholder": "Search registry credentials"
+      },
+      "name": {
+        "label": "Name",
+        "placeholder": "Credential name"
+      },
+      "registry": {
+        "label": "Registry",
+        "placeholder": "Registry host"
+      }
+    },
+    "table": {
+      "created_at": "Created",
+      "name": "Name",
+      "registry": "Registry",
+      "username": "Username"
+    },
+    "delete": {
+      "title": "Delete registry credential",
+      "description": "Delete registry credential \"{{name}}\"? Services using it may fail to pull private images."
+    },
+    "toast": {
+      "created": "Registry credential created",
+      "updated": "Registry credential updated",
+      "deleted": "Registry credential deleted"
     }
   },
   "settings": {

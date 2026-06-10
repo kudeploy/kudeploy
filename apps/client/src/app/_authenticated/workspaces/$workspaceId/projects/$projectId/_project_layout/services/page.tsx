@@ -60,6 +60,15 @@ const GET_SERVICES_FROM_SERVICES_ROUTE = graphql(`
       id
       name
     }
+    registryCredentials(projectId: $projectId, first: 100) {
+      edges {
+        node {
+          id
+          name
+          registry
+        }
+      }
+    }
     services(
       projectId: $projectId
       after: $after
@@ -76,6 +85,7 @@ const GET_SERVICES_FROM_SERVICES_ROUTE = graphql(`
           projectId
           name
           image
+          registryCredentialId
           replicas
           status
           createdAt
@@ -106,6 +116,7 @@ const CREATE_SERVICE_FROM_SERVICES_ROUTE = graphql(`
       projectId
       name
       image
+      registryCredentialId
       replicas
       command
       args
@@ -206,6 +217,24 @@ function ServicesComponent() {
 
   const services = data?.services.edges.map((edge) => edge.node) ?? [];
   const pageInfo = data?.services.pageInfo;
+  const registryCredentialOptions = useMemo(
+    () =>
+      data?.registryCredentials.edges.map((edge) => ({
+        label: `${edge.node.name} (${edge.node.registry})`,
+        value: edge.node.id,
+      })) ?? [],
+    [data],
+  );
+  const registryCredentialNamesById = useMemo(
+    () =>
+      new Map(
+        data?.registryCredentials.edges.map((edge) => [
+          edge.node.id,
+          edge.node.name,
+        ]) ?? [],
+      ),
+    [data],
+  );
 
   const filters: Array<FilterItemProps> = useMemo(
     () => [
@@ -379,6 +408,16 @@ function ServicesComponent() {
               ),
             },
             {
+              accessorKey: "registryCredentialId",
+              header: t("service:table.registry_credential"),
+              cell: ({ row }) =>
+                row.original.registryCredentialId
+                  ? (registryCredentialNamesById.get(
+                      row.original.registryCredentialId,
+                    ) ?? row.original.registryCredentialId)
+                  : "-",
+            },
+            {
               accessorKey: "replicas",
               header: t("service:table.replicas"),
               size: 100,
@@ -462,7 +501,11 @@ function ServicesComponent() {
               }}
             >
               <div className="py-4">
-                <ServiceForm value={serviceForm} onChange={setServiceForm} />
+                <ServiceForm
+                  registryCredentialOptions={registryCredentialOptions}
+                  value={serviceForm}
+                  onChange={setServiceForm}
+                />
               </div>
               <DialogFooter>
                 <Button

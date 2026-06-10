@@ -43,11 +43,13 @@ rules:
       - ""
     resources:
       - persistentvolumeclaims
+      - secrets
     verbs:
       - create
       - delete
       - get
       - list
+      - patch
       - watch
   - apiGroups:
       - kudeploy.com

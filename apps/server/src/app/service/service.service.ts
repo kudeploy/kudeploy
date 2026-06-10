@@ -4,10 +4,13 @@ import { Sonyflake } from 'sonyflake-js';
 
 import { SERVER_SIDE_APPLY_OPTIONS } from '@/app/kubernetes';
 import {
+  hasKubernetesRegistryCredentialNamePrefix,
   hasKubernetesServiceNamePrefix,
   toGraphqlProjectId,
+  toGraphqlRegistryCredentialId,
   toGraphqlServiceId,
   toKubernetesProjectName,
+  toKubernetesRegistryCredentialName,
   toKubernetesServiceName,
 } from '@/app/kubernetes/resource-names';
 import {
@@ -22,6 +25,7 @@ import {
   ProjectService,
   WORKSPACE_LABEL,
 } from '@/app/project/project.service';
+import { RegistryCredentialService } from '@/app/registry-credential/registry-credential.service';
 import { Workspace } from '@/app/workspace/workspace.entity';
 import { KubernetesConnectionManager } from '@/lib/kubernetes-graphql-connection/kubernetes-connection.manager';
 
@@ -57,6 +61,9 @@ export interface ServiceResource {
     command?: string[];
     args?: string[];
     resources?: ServiceResourceRequirements;
+    imageSecretRef?: {
+      name: string;
+    };
     ports: {
       port: number;
       targetPort?: number;
@@ -106,6 +113,7 @@ interface ServiceResourceInput {
   projectId: string;
   name: string;
   image: string;
+  registryCredentialId?: string | null;
   replicas?: number | null;
   command?: string[] | null;
   args?: string[] | null;
@@ -127,6 +135,7 @@ export class ServiceService {
     private readonly customObjectsApi: CustomObjectsApi,
     private readonly connectionManager: KubernetesConnectionManager,
     private readonly projectService: ProjectService,
+    private readonly registryCredentialService: RegistryCredentialService,
   ) {}
 
   async findServices(
@@ -198,6 +207,11 @@ export class ServiceService {
     const projectName = toKubernetesProjectName(input.projectId);
 
     await this.ensureProject(workspace, input.projectId);
+    await this.ensureRegistryCredential(
+      workspace,
+      input.projectId,
+      input.registryCredentialId,
+    );
 
     const name = toKubernetesServiceName(String(Sonyflake.next()));
     const resource = (await this.customObjectsApi.patchNamespacedCustomObject(
@@ -230,6 +244,17 @@ export class ServiceService {
       throw new NotFoundException('Service not found');
     }
 
+    const registryCredentialId =
+      input.registryCredentialId === undefined
+        ? existing.registryCredentialId
+        : input.registryCredentialId;
+
+    await this.ensureRegistryCredential(
+      workspace,
+      projectId,
+      registryCredentialId,
+    );
+
     const resource = (await this.customObjectsApi.patchNamespacedCustomObject(
       {
         group: KUDEPLOY_API_GROUP,
@@ -241,6 +266,7 @@ export class ServiceService {
           projectId,
           name: input.name ?? existing.name,
           image: input.image ?? existing.image,
+          registryCredentialId,
           replicas:
             input.replicas === undefined
               ? (existing.replicas ?? undefined)
@@ -323,6 +349,9 @@ export class ServiceService {
         resource.metadata.annotations?.[DISPLAY_NAME_ANNOTATION] ??
         resource.metadata.name,
       image: resource.spec.image,
+      registryCredentialId: this.toRegistryCredentialId(
+        resource.spec.imageSecretRef?.name,
+      ),
       replicas: resource.spec.replicas ?? null,
       ports: resource.spec.ports.map((port) => ({
         port: port.port,
@@ -355,6 +384,27 @@ export class ServiceService {
     }
   }
 
+  private async ensureRegistryCredential(
+    workspace: Workspace,
+    projectId: string,
+    registryCredentialId?: string | null,
+  ): Promise<void> {
+    if (!registryCredentialId) {
+      return;
+    }
+
+    const registryCredential =
+      await this.registryCredentialService.findRegistryCredential(
+        workspace,
+        projectId,
+        registryCredentialId,
+      );
+
+    if (!registryCredential) {
+      throw new NotFoundException('Registry credential not found');
+    }
+  }
+
   private buildServiceResource(
     workspace: Workspace,
     projectId: string,
@@ -383,6 +433,15 @@ export class ServiceService {
       },
       spec: {
         image: input.image,
+        ...(input.registryCredentialId
+          ? {
+              imageSecretRef: {
+                name: toKubernetesRegistryCredentialName(
+                  input.registryCredentialId,
+                ),
+              },
+            }
+          : {}),
         replicas: this.defaultReplicas(input.replicas),
         ...(input.command?.length ? { command: input.command } : {}),
         ...(input.args?.length ? { args: input.args } : {}),
@@ -566,6 +625,14 @@ export class ServiceService {
 
   private toDate(value?: string): Date {
     return value ? new Date(value) : new Date(0);
+  }
+
+  private toRegistryCredentialId(name?: string): string | null {
+    if (!name || !hasKubernetesRegistryCredentialNamePrefix(name)) {
+      return null;
+    }
+
+    return toGraphqlRegistryCredentialId(name);
   }
 
   private toServiceInputPorts(

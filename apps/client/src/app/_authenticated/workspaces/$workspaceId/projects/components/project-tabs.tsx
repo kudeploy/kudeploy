@@ -30,6 +30,14 @@ export function ProjectTabs({
         }),
       },
       {
+        title: t("project:tabs.registry_credentials"),
+        testId: "project-registry-credentials-tab",
+        link: linkOptions({
+          to: "/workspaces/$workspaceId/projects/$projectId/registry-credentials",
+          params: { workspaceId, projectId },
+        }),
+      },
+      {
         title: t("project:tabs.settings"),
         testId: "project-settings-tab",
         link: linkOptions({

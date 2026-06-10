@@ -14,6 +14,7 @@
   "tabs": {
     "services": "服务",
     "volumes": "存储卷",
+    "registry_credentials": "镜像凭证",
     "settings": "设置"
   },
   "volumes": {
@@ -64,6 +65,71 @@
     "toast": {
       "created": "存储卷已创建",
       "deleted": "存储卷已删除"
+    }
+  },
+  "registry_credentials": {
+    "title": "镜像凭证",
+    "description": "镜像凭证是当前项目命名空间中的 Kubernetes 镜像拉取 Secret。",
+    "create": {
+      "button": "创建凭证",
+      "title": "创建镜像凭证",
+      "description": "保存后会创建用于拉取私有镜像的 Kubernetes Secret。"
+    },
+    "edit": {
+      "title": "编辑镜像凭证",
+      "description": "更新底层 Secret，但不会改变它的 Kubernetes 名称。"
+    },
+    "form": {
+      "name": {
+        "label": "名称",
+        "placeholder": "github-container-registry",
+        "required": "请输入名称"
+      },
+      "registry": {
+        "label": "镜像仓库",
+        "placeholder": "ghcr.io",
+        "required": "请输入镜像仓库"
+      },
+      "username": {
+        "label": "用户名",
+        "placeholder": "octocat",
+        "required": "请输入用户名"
+      },
+      "password": {
+        "label": "密码或 Token",
+        "create_placeholder": "Token",
+        "edit_placeholder": "留空表示保留当前 Token",
+        "description": "留空表示保留当前密码或 Token。",
+        "required": "请输入密码或 Token"
+      }
+    },
+    "filter": {
+      "search": {
+        "placeholder": "搜索镜像凭证"
+      },
+      "name": {
+        "label": "名称",
+        "placeholder": "凭证名称"
+      },
+      "registry": {
+        "label": "镜像仓库",
+        "placeholder": "镜像仓库地址"
+      }
+    },
+    "table": {
+      "created_at": "创建时间",
+      "name": "名称",
+      "registry": "镜像仓库",
+      "username": "用户名"
+    },
+    "delete": {
+      "title": "删除镜像凭证",
+      "description": "确认删除镜像凭证「{{name}}」？使用它的服务可能无法拉取私有镜像。"
+    },
+    "toast": {
+      "created": "镜像凭证已创建",
+      "updated": "镜像凭证已保存",
+      "deleted": "镜像凭证已删除"
     }
   },
   "settings": {
