@@ -43,6 +43,13 @@ type PortValue = {
   targetPort: number | "";
 };
 
+type VolumeValue = {
+  volumeId: string;
+  mountPath: string;
+  subPath: string;
+  readOnly: boolean;
+};
+
 type ResourcesValue = {
   cpuRequest: string;
   cpuLimit: string;
@@ -51,6 +58,7 @@ type ResourcesValue = {
 };
 
 const NONE_REGISTRY_CREDENTIAL_VALUE = "__none__";
+const NONE_VOLUME_VALUE = "__none__";
 
 const GET_REGISTRY_CREDENTIALS_FROM_SERVICE_SETTINGS_ROUTE = graphql(`
   query getRegistryCredentialsFromServiceSettingsRoute($projectId: ID!) {
@@ -60,6 +68,21 @@ const GET_REGISTRY_CREDENTIALS_FROM_SERVICE_SETTINGS_ROUTE = graphql(`
           id
           name
           registry
+        }
+      }
+    }
+  }
+`);
+
+const GET_VOLUMES_FROM_SERVICE_SETTINGS_ROUTE = graphql(`
+  query getVolumesFromServiceSettingsRoute($projectId: ID!) {
+    volumes(projectId: $projectId, first: 100) {
+      edges {
+        node {
+          id
+          name
+          size
+          status
         }
       }
     }
@@ -98,6 +121,12 @@ const UPDATE_SERVICE_SETTINGS_FROM_SERVICE_SETTINGS_ROUTE = graphql(`
       env {
         key
         value
+      }
+      volumes {
+        volumeId
+        mountPath
+        subPath
+        readOnly
       }
       updatedAt
     }
@@ -139,12 +168,22 @@ function ServiceSettingsComponent() {
   const [ports, setPorts] = useState<Array<PortValue>>(
     toPortValues(service.ports),
   );
+  const [volumes, setVolumes] = useState<Array<VolumeValue>>(
+    service.volumes.map(copyVolume),
+  );
   const [healthCheck, setHealthCheck] = useState<HealthCheckValue>(
     toHealthCheckValue(service.healthCheck),
   );
 
-  const { data } = useQuery(
+  const { data: registryCredentialData } = useQuery(
     GET_REGISTRY_CREDENTIALS_FROM_SERVICE_SETTINGS_ROUTE,
+    {
+      variables: { projectId },
+      fetchPolicy: "cache-and-network",
+    },
+  );
+  const { data: volumeData } = useQuery(
+    GET_VOLUMES_FROM_SERVICE_SETTINGS_ROUTE,
     {
       variables: { projectId },
       fetchPolicy: "cache-and-network",
@@ -162,12 +201,38 @@ function ServiceSettingsComponent() {
         label: t("service:form.registry_credential.none"),
         value: NONE_REGISTRY_CREDENTIAL_VALUE,
       },
-      ...(data?.registryCredentials.edges.map((edge) => ({
+      ...(registryCredentialData?.registryCredentials.edges.map((edge) => ({
         label: `${edge.node.name} (${edge.node.registry})`,
         value: edge.node.id,
       })) ?? []),
     ],
-    [data],
+    [registryCredentialData],
+  );
+  const volumeItems = useMemo(
+    () => [
+      {
+        label: t("service:form.volume.select_placeholder"),
+        value: NONE_VOLUME_VALUE,
+      },
+      ...(volumeData?.volumes.edges.map((edge) => ({
+        label: `${edge.node.name} (${edge.node.size}Gi)`,
+        value: edge.node.id,
+      })) ?? []),
+      ...volumes
+        .filter(
+          (volume) =>
+            volume.volumeId &&
+            volume.volumeId !== NONE_VOLUME_VALUE &&
+            !volumeData?.volumes.edges.some(
+              (edge) => edge.node.id === volume.volumeId,
+            ),
+        )
+        .map((volume) => ({
+          label: volume.volumeId,
+          value: volume.volumeId,
+        })),
+    ],
+    [volumeData, volumes],
   );
 
   useEffect(() => {
@@ -182,6 +247,7 @@ function ServiceSettingsComponent() {
     setResources(toResourcesValue(service.resources));
     setEnv(service.env.map(copyEnv));
     setPorts(toPortValues(service.ports));
+    setVolumes(service.volumes.map(copyVolume));
     setHealthCheck(toHealthCheckValue(service.healthCheck));
   }, [service]);
 
@@ -195,6 +261,14 @@ function ServiceSettingsComponent() {
 
   const updatePort = (index: number, patch: Partial<PortValue>) => {
     setPorts((current) =>
+      current.map((item, currentIndex) =>
+        currentIndex === index ? { ...item, ...patch } : item,
+      ),
+    );
+  };
+
+  const updateVolume = (index: number, patch: Partial<VolumeValue>) => {
+    setVolumes((current) =>
       current.map((item, currentIndex) =>
         currentIndex === index ? { ...item, ...patch } : item,
       ),
@@ -216,6 +290,12 @@ function ServiceSettingsComponent() {
           ? {}
           : { targetPort: Number(port.targetPort) }),
       }));
+    const volumeInput = volumes.map((volume) => ({
+      volumeId: volume.volumeId,
+      mountPath: volume.mountPath.trim(),
+      ...(volume.subPath.trim() ? { subPath: volume.subPath.trim() } : {}),
+      readOnly: volume.readOnly,
+    }));
 
     if (!trimmedName) {
       toast.error(t("service:form.name.required"));
@@ -234,6 +314,20 @@ function ServiceSettingsComponent() {
 
     if (healthCheck.enabled && healthCheck.port === "") {
       toast.error(t("service:form.health_check_port_required"));
+      return;
+    }
+
+    if (
+      volumeInput.some(
+        (volume) => !volume.volumeId || volume.volumeId === NONE_VOLUME_VALUE,
+      )
+    ) {
+      toast.error(t("service:form.volume.required"));
+      return;
+    }
+
+    if (volumeInput.some((volume) => !volume.mountPath)) {
+      toast.error(t("service:form.volume.mount_path_required"));
       return;
     }
 
@@ -270,6 +364,7 @@ function ServiceSettingsComponent() {
                 key: item.key.trim(),
                 value: item.value,
               })),
+            volumes: volumeInput,
           },
         },
       });
@@ -613,6 +708,117 @@ function ServiceSettingsComponent() {
 
         <Card>
           <CardHeader>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <CardTitle>{t("service:volumes.title")}</CardTitle>
+                <CardDescription>
+                  {t("service:volumes.description")}
+                </CardDescription>
+              </div>
+              <Button
+                data-testid="service-add-volume-action"
+                disabled={volumeItems.length <= 1}
+                size="sm"
+                type="button"
+                variant="secondary"
+                onClick={() =>
+                  setVolumes((current) => [
+                    ...current,
+                    {
+                      volumeId: NONE_VOLUME_VALUE,
+                      mountPath: "",
+                      subPath: "",
+                      readOnly: false,
+                    },
+                  ])
+                }
+              >
+                <Plus />
+                {t("service:actions.add_volume")}
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {volumes.length === 0 ? (
+              <p className="text-muted-foreground text-sm">
+                {volumeItems.length <= 1
+                  ? t("service:volumes.unavailable")
+                  : t("service:volumes.empty")}
+              </p>
+            ) : (
+              volumes.map((volume, index) => (
+                <div className="rounded-md border p-3" key={index}>
+                  <div className="grid gap-3 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)_minmax(0,1fr)_auto_auto]">
+                    <div data-testid={`service-volume-select-${index}`}>
+                      <Select<string>
+                        items={volumeItems}
+                        label={t("service:form.volume.label")}
+                        placeholder={t(
+                          "service:form.volume.select_placeholder",
+                        )}
+                        value={volume.volumeId || NONE_VOLUME_VALUE}
+                        onValueChange={(volumeId) =>
+                          updateVolume(index, { volumeId })
+                        }
+                      />
+                    </div>
+                    <Input
+                      data-testid={`service-volume-mount-path-input-${index}`}
+                      label={t("service:form.volume.mount_path")}
+                      placeholder="/data"
+                      value={volume.mountPath}
+                      onChange={(event) =>
+                        updateVolume(index, { mountPath: event.target.value })
+                      }
+                    />
+                    <Input
+                      data-testid={`service-volume-sub-path-input-${index}`}
+                      label={t("service:form.volume.sub_path")}
+                      placeholder="uploads"
+                      value={volume.subPath}
+                      onChange={(event) =>
+                        updateVolume(index, { subPath: event.target.value })
+                      }
+                    />
+                    <div className="flex items-end pb-2">
+                      <label className="flex items-center gap-2 text-sm">
+                        <Switch
+                          aria-label={t("service:form.volume.read_only")}
+                          data-testid={`service-volume-read-only-input-${index}`}
+                          checked={volume.readOnly}
+                          onCheckedChange={(readOnly) =>
+                            updateVolume(index, { readOnly })
+                          }
+                        />
+                        {t("service:form.volume.read_only")}
+                      </label>
+                    </div>
+                    <div className="flex items-end">
+                      <Button
+                        aria-label={t("service:actions.remove_volume")}
+                        size="icon"
+                        type="button"
+                        variant="ghost"
+                        onClick={() =>
+                          setVolumes((current) =>
+                            current.filter(
+                              (_item, currentIndex) => currentIndex !== index,
+                            ),
+                          )
+                        }
+                      >
+                        <Trash2 />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
             <CardTitle>{t("service:form.resources")}</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3 sm:grid-cols-2">
@@ -683,6 +889,20 @@ function ServiceSettingsComponent() {
 
 function copyEnv(env: EnvValue): EnvValue {
   return { key: env.key, value: env.value };
+}
+
+function copyVolume(volume: {
+  volumeId: string;
+  mountPath: string;
+  subPath?: string | null;
+  readOnly?: boolean | null;
+}): VolumeValue {
+  return {
+    volumeId: volume.volumeId,
+    mountPath: volume.mountPath,
+    subPath: volume.subPath ?? "",
+    readOnly: volume.readOnly ?? false,
+  };
 }
 
 function linesToValue(value?: ReadonlyArray<string> | null) {

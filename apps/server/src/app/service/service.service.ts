@@ -9,9 +9,11 @@ import {
   toGraphqlProjectId,
   toGraphqlRegistryCredentialId,
   toGraphqlServiceId,
+  toGraphqlVolumeId,
   toKubernetesProjectName,
   toKubernetesRegistryCredentialName,
   toKubernetesServiceName,
+  toKubernetesVolumeName,
   toKubernetesWorkspaceName,
 } from '@/app/kubernetes/resource-names';
 import {
@@ -27,6 +29,7 @@ import {
   WORKSPACE_LABEL,
 } from '@/app/project/project.service';
 import { RegistryCredentialService } from '@/app/registry-credential/registry-credential.service';
+import { VolumeService } from '@/app/volume/volume.service';
 import { Workspace } from '@/app/workspace/workspace.entity';
 import { KubernetesConnectionManager } from '@/lib/kubernetes-graphql-connection/kubernetes-connection.manager';
 
@@ -76,6 +79,12 @@ export interface ServiceResource {
     readinessProbe?: ServiceResourceProbe;
     livenessProbe?: ServiceResourceProbe;
     startupProbe?: ServiceResourceProbe;
+    volumes?: {
+      name: string;
+      mountPath: string;
+      subPath?: string;
+      readOnly?: boolean;
+    }[];
   };
   status?: {
     activeDeploymentName?: string;
@@ -128,6 +137,12 @@ interface ServiceResourceInput {
     key: string;
     value: string;
   }[];
+  volumes?: {
+    volumeId: string;
+    mountPath: string;
+    subPath?: string | null;
+    readOnly?: boolean | null;
+  }[];
 }
 
 @Injectable()
@@ -137,6 +152,7 @@ export class ServiceService {
     private readonly connectionManager: KubernetesConnectionManager,
     private readonly projectService: ProjectService,
     private readonly registryCredentialService: RegistryCredentialService,
+    private readonly volumeService: VolumeService,
   ) {}
 
   async findServices(
@@ -213,6 +229,7 @@ export class ServiceService {
       input.projectId,
       input.registryCredentialId,
     );
+    await this.ensureVolumes(workspace, input.projectId, input.volumes);
 
     const name = toKubernetesServiceName(String(Sonyflake.next()));
     const resource = (await this.customObjectsApi.patchNamespacedCustomObject(
@@ -255,6 +272,10 @@ export class ServiceService {
       projectId,
       registryCredentialId,
     );
+    await this.ensureVolumes(workspace, projectId, input.volumes);
+
+    const volumes =
+      input.volumes === undefined ? existing.volumes : input.volumes;
 
     const resource = (await this.customObjectsApi.patchNamespacedCustomObject(
       {
@@ -290,6 +311,7 @@ export class ServiceService {
               : input.healthCheck,
           ports: input.ports ?? this.toServiceInputPorts(existing.ports),
           env: input.env ?? existing.env,
+          volumes,
         }),
         fieldManager: KUDEPLOY_FIELD_MANAGER,
         force: true,
@@ -366,6 +388,12 @@ export class ServiceService {
       args: resource.spec.args ?? [],
       resources: this.toServiceResources(resource.spec.resources),
       healthCheck: this.toServiceHealthCheck(resource.spec.readinessProbe),
+      volumes: (resource.spec.volumes ?? []).map((volume) => ({
+        volumeId: toGraphqlVolumeId(volume.name),
+        mountPath: volume.mountPath,
+        subPath: volume.subPath ?? null,
+        readOnly: volume.readOnly ?? false,
+      })),
       status: this.toServiceStatus(resource),
       activeDeploymentName: resource.status?.activeDeploymentName ?? null,
       latestDeploymentName: resource.status?.latestDeploymentName ?? null,
@@ -403,6 +431,28 @@ export class ServiceService {
 
     if (!registryCredential) {
       throw new NotFoundException('Registry credential not found');
+    }
+  }
+
+  private async ensureVolumes(
+    workspace: Workspace,
+    projectId: string,
+    volumes?: ServiceResourceInput['volumes'],
+  ): Promise<void> {
+    if (!volumes?.length) {
+      return;
+    }
+
+    for (const volume of volumes) {
+      const existing = await this.volumeService.findVolume(
+        workspace,
+        projectId,
+        volume.volumeId,
+      );
+
+      if (!existing) {
+        throw new NotFoundException('Volume not found');
+      }
     }
   }
 
@@ -460,6 +510,18 @@ export class ServiceService {
           name: env.key,
           value: env.value,
         })),
+        ...(input.volumes !== undefined
+          ? {
+              volumes: input.volumes.map((volume) => ({
+                name: toKubernetesVolumeName(volume.volumeId),
+                mountPath: volume.mountPath,
+                ...(this.nonEmpty(volume.subPath)
+                  ? { subPath: volume.subPath.trim() }
+                  : {}),
+                ...(volume.readOnly ? { readOnly: true } : {}),
+              })),
+            }
+          : {}),
       },
     };
   }

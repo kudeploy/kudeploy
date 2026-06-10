@@ -37,6 +37,12 @@
     "description": "配置暴露端口和健康检查。",
     "ports": "端口"
   },
+  "volumes": {
+    "title": "卷挂载",
+    "description": "将已有项目卷挂载到服务容器。",
+    "empty": "暂未挂载卷。",
+    "unavailable": "暂无可用项目卷。"
+  },
   "deployments": {
     "description": "查看服务发布版本、当前流量版本和底层 Kubernetes Deployment。",
     "loading": "正在加载部署版本",
@@ -149,7 +155,7 @@
     "used_of_limit": "已用 {{percent}}"
   },
   "settings": {
-    "description": "管理服务来源、环境变量、网络、副本、资源限制和删除操作。",
+    "description": "管理服务来源、环境变量、网络、卷挂载、副本、资源限制和删除操作。",
     "general": {
       "title": "基础信息",
       "description": "更新服务名称和副本数。"
@@ -203,7 +209,16 @@
     "port": "端口",
     "replicas": "副本数",
     "target_port": "目标端口",
-    "value": "值"
+    "value": "值",
+    "volume": {
+      "label": "卷",
+      "select_placeholder": "选择卷",
+      "mount_path": "挂载路径",
+      "sub_path": "子路径",
+      "read_only": "只读",
+      "required": "请选择卷",
+      "mount_path_required": "请输入挂载路径"
+    }
   },
   "filter": {
     "search": {
@@ -241,6 +256,8 @@
   },
   "actions": {
     "add_env": "添加环境变量",
-    "add_port": "添加端口"
+    "add_port": "添加端口",
+    "add_volume": "添加卷",
+    "remove_volume": "移除卷"
   }
 }

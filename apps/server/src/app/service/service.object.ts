@@ -49,6 +49,21 @@ export class ServiceHealthCheck {
 }
 
 @ObjectType()
+export class ServiceVolume {
+  @Field(() => ID)
+  volumeId!: string;
+
+  @Field(() => String)
+  mountPath!: string;
+
+  @Field(() => String, { nullable: true })
+  subPath?: string | null;
+
+  @Field(() => Boolean)
+  readOnly!: boolean;
+}
+
+@ObjectType()
 export class Service {
   @Field(() => ID)
   id!: string;
@@ -85,6 +100,9 @@ export class Service {
 
   @Field(() => ServiceHealthCheck, { nullable: true })
   healthCheck?: ServiceHealthCheck | null;
+
+  @Field(() => [ServiceVolume])
+  volumes!: ServiceVolume[];
 
   @Field(() => ServiceStatus)
   status!: ServiceStatus;

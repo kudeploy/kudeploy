@@ -47,6 +47,22 @@ type MockService = {
     key: string;
     value: string;
   }>;
+  volumes: Array<{
+    volumeId: string;
+    mountPath: string;
+    subPath: string | null;
+    readOnly: boolean;
+  }>;
+};
+
+type MockVolume = {
+  id: string;
+  projectId: string;
+  name: string;
+  size: number;
+  status: "PENDING" | "BOUND" | "LOST" | "UNKNOWN";
+  createdAt: string;
+  updatedAt: string;
 };
 
 type MockDeployment = {
@@ -206,6 +222,15 @@ test.describe("workspace Projects and Services", () => {
     await page.getByTestId("service-env-key-input-0").fill("NODE_ENV");
     await page.getByTestId("service-env-value-input-0").fill("production");
     await page.getByTestId("service-target-port-input-0").fill("8081");
+    await page.getByTestId("service-add-volume-action").click();
+    await page
+      .getByTestId("service-volume-select-0")
+      .locator('[data-slot="select-trigger"]')
+      .click();
+    await page.getByRole("option", { name: /Data/ }).click();
+    await page.getByTestId("service-volume-mount-path-input-0").fill("/data");
+    await page.getByTestId("service-volume-sub-path-input-0").fill("uploads");
+    await page.getByTestId("service-volume-read-only-input-0").click();
     await page.getByTestId("service-save-action").click();
     await expect
       .poll(() => graphqlMock.serviceUpdateRequests.length)
@@ -215,6 +240,14 @@ test.describe("workspace Projects and Services", () => {
       image: "ghcr.io/kudeploy/api:v2",
       env: [{ key: "NODE_ENV", value: "production" }],
       ports: [{ port: 80, targetPort: 8081 }],
+      volumes: [
+        {
+          volumeId: "volume-data",
+          mountPath: "/data",
+          subPath: "uploads",
+          readOnly: true,
+        },
+      ],
     });
     await expect(page.getByTestId("service-name-input")).toHaveValue(
       "API Edited",
@@ -556,6 +589,7 @@ test.describe("workspace Projects and Services", () => {
 async function mockProjectsAndServicesGraphql(page: Page) {
   const projects: Array<MockProject> = [];
   const services: Array<MockService> = [];
+  const volumes: Array<MockVolume> = [];
   const deployments: Array<MockDeployment> = [];
   const serviceLogRequests: Array<Record<string, any>> = [];
   const serviceUpdateRequests: Array<Record<string, any>> = [];
@@ -592,6 +626,15 @@ async function mockProjectsAndServicesGraphql(page: Page) {
           updatedAt: now,
         };
         projects.push(project);
+        volumes.push({
+          id: "volume-data",
+          projectId: project.id,
+          name: "Data",
+          size: 10,
+          status: "BOUND",
+          createdAt: now,
+          updatedAt: now,
+        });
         await fulfill(route, {
           createProject: project,
         });
@@ -657,6 +700,7 @@ async function mockProjectsAndServicesGraphql(page: Page) {
             }),
           ),
           env: input.env ?? [],
+          volumes: input.volumes ?? [],
         };
         services.push(service);
         deployments.push(createDeploymentSnapshot(service, 1, "deployment-v1"));
@@ -674,6 +718,16 @@ async function mockProjectsAndServicesGraphql(page: Page) {
                 service.projectId === variables.projectId &&
                 service.id === variables.id,
             ) ?? null,
+        });
+        return;
+      }
+      case "getVolumesFromServiceSettingsRoute": {
+        await fulfill(route, {
+          volumes: connection(
+            volumes.filter(
+              (volume) => volume.projectId === variables.projectId,
+            ),
+          ),
         });
         return;
       }
@@ -836,6 +890,7 @@ async function mockProjectsAndServicesGraphql(page: Page) {
             );
           }
           if ("env" in input) service.env = input.env ?? [];
+          if ("volumes" in input) service.volumes = input.volumes ?? [];
           service.updatedAt = now;
 
           if ("image" in input) {

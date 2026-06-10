@@ -37,6 +37,12 @@
     "description": "Configure exposed ports and health checks.",
     "ports": "Ports"
   },
+  "volumes": {
+    "title": "Volume mounts",
+    "description": "Mount existing project volumes into the service container.",
+    "empty": "No volumes mounted.",
+    "unavailable": "No project volumes available."
+  },
   "deployments": {
     "description": "Review service releases, the active traffic version, and the backing Kubernetes Deployment.",
     "loading": "Loading deployments",
@@ -151,7 +157,7 @@
     "used_of_limit": "{{percent}} used"
   },
   "settings": {
-    "description": "Manage service source, environment, networking, scale, resources, and deletion.",
+    "description": "Manage service source, environment, networking, volumes, scale, resources, and deletion.",
     "general": {
       "title": "General",
       "description": "Update the service name and replica count."
@@ -205,7 +211,16 @@
     "port": "Port",
     "replicas": "Replicas",
     "target_port": "Target",
-    "value": "Value"
+    "value": "Value",
+    "volume": {
+      "label": "Volume",
+      "select_placeholder": "Select volume",
+      "mount_path": "Mount path",
+      "sub_path": "Sub path",
+      "read_only": "Read-only",
+      "required": "Select a volume",
+      "mount_path_required": "Mount path is required"
+    }
   },
   "filter": {
     "search": {
@@ -243,6 +258,8 @@
   },
   "actions": {
     "add_env": "Add env",
-    "add_port": "Add port"
+    "add_port": "Add port",
+    "add_volume": "Add volume",
+    "remove_volume": "Remove volume"
   }
 }

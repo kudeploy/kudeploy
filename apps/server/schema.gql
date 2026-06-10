@@ -132,6 +132,7 @@ input CreateServiceInput {
   registryCredentialId: ID
   replicas: Int
   resources: ServiceResourcesInput
+  volumes: [ServiceVolumeInput!]
 }
 
 input CreateVolumeInput {
@@ -1094,6 +1095,7 @@ type Service {
   resources: ServiceResources
   status: ServiceStatus!
   updatedAt: DateTime!
+  volumes: [ServiceVolume!]!
 }
 
 type ServiceConnection {
@@ -1250,6 +1252,20 @@ enum ServiceStatus {
   UNKNOWN
 }
 
+type ServiceVolume {
+  mountPath: String!
+  readOnly: Boolean!
+  subPath: String
+  volumeId: ID!
+}
+
+input ServiceVolumeInput {
+  mountPath: String!
+  readOnly: Boolean
+  subPath: String
+  volumeId: ID!
+}
+
 input UpdateApiKeyInput {
   name: String
 }
@@ -1276,6 +1292,7 @@ input UpdateServiceInput {
   registryCredentialId: ID
   replicas: Int
   resources: ServiceResourcesInput
+  volumes: [ServiceVolumeInput!]
 }
 
 input UpdateWorkspaceInput {

@@ -186,6 +186,7 @@ export type CreateServiceInput = {
   registryCredentialId?: InputMaybe<Scalars["ID"]["input"]>;
   replicas?: InputMaybe<Scalars["Int"]["input"]>;
   resources?: InputMaybe<ServiceResourcesInput>;
+  volumes?: InputMaybe<Array<ServiceVolumeInput>>;
 };
 
 export type CreateVolumeInput = {
@@ -865,6 +866,7 @@ export type Service = {
   resources?: Maybe<ServiceResources>;
   status: ServiceStatus;
   updatedAt: Scalars["DateTime"]["output"];
+  volumes: Array<ServiceVolume>;
 };
 
 export type ServiceLogsArgs = {
@@ -1013,6 +1015,21 @@ export enum ServiceStatus {
   UNKNOWN = "UNKNOWN",
 }
 
+export type ServiceVolume = {
+  __typename?: "ServiceVolume";
+  mountPath: Scalars["String"]["output"];
+  readOnly: Scalars["Boolean"]["output"];
+  subPath?: Maybe<Scalars["String"]["output"]>;
+  volumeId: Scalars["ID"]["output"];
+};
+
+export type ServiceVolumeInput = {
+  mountPath: Scalars["String"]["input"];
+  readOnly?: InputMaybe<Scalars["Boolean"]["input"]>;
+  subPath?: InputMaybe<Scalars["String"]["input"]>;
+  volumeId: Scalars["ID"]["input"];
+};
+
 export type UpdateApiKeyInput = {
   name?: InputMaybe<Scalars["String"]["input"]>;
 };
@@ -1039,6 +1056,7 @@ export type UpdateServiceInput = {
   registryCredentialId?: InputMaybe<Scalars["ID"]["input"]>;
   replicas?: InputMaybe<Scalars["Int"]["input"]>;
   resources?: InputMaybe<ServiceResourcesInput>;
+  volumes?: InputMaybe<Array<ServiceVolumeInput>>;
 };
 
 export type UpdateWorkspaceInput = {
@@ -2394,6 +2412,27 @@ export type GetRegistryCredentialsFromServiceSettingsRouteQuery = {
   };
 };
 
+export type GetVolumesFromServiceSettingsRouteQueryVariables = Exact<{
+  projectId: Scalars["ID"]["input"];
+}>;
+
+export type GetVolumesFromServiceSettingsRouteQuery = {
+  __typename?: "Query";
+  volumes: {
+    __typename?: "VolumeConnection";
+    edges: Array<{
+      __typename?: "VolumeEdge";
+      node: {
+        __typename?: "Volume";
+        id: string;
+        name: string;
+        size: number;
+        status: VolumeStatus;
+      };
+    }>;
+  };
+};
+
 export type UpdateServiceSettingsFromServiceSettingsRouteMutationVariables =
   Exact<{
     projectId: Scalars["ID"]["input"];
@@ -2432,6 +2471,13 @@ export type UpdateServiceSettingsFromServiceSettingsRouteMutation = {
       targetPort?: number | null;
     }>;
     env: Array<{ __typename?: "ServiceEnvVar"; key: string; value: string }>;
+    volumes: Array<{
+      __typename?: "ServiceVolume";
+      volumeId: string;
+      mountPath: string;
+      subPath?: string | null;
+      readOnly: boolean;
+    }>;
   };
 };
 
@@ -2534,6 +2580,13 @@ export type GetServiceFromServiceLayoutQuery = {
       targetPort?: number | null;
     }>;
     env: Array<{ __typename?: "ServiceEnvVar"; key: string; value: string }>;
+    volumes: Array<{
+      __typename?: "ServiceVolume";
+      volumeId: string;
+      mountPath: string;
+      subPath?: string | null;
+      readOnly: boolean;
+    }>;
   } | null;
 };
 
@@ -7861,6 +7914,95 @@ export const GetRegistryCredentialsFromServiceSettingsRouteDocument = {
   GetRegistryCredentialsFromServiceSettingsRouteQuery,
   GetRegistryCredentialsFromServiceSettingsRouteQueryVariables
 >;
+export const GetVolumesFromServiceSettingsRouteDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "getVolumesFromServiceSettingsRoute" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "projectId" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "volumes" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "projectId" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "projectId" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "first" },
+                value: { kind: "IntValue", value: "100" },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "edges" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "node" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "id" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "name" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "size" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "status" },
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  GetVolumesFromServiceSettingsRouteQuery,
+  GetVolumesFromServiceSettingsRouteQueryVariables
+>;
 export const UpdateServiceSettingsFromServiceSettingsRouteDocument = {
   kind: "Document",
   definitions: [
@@ -8010,6 +8152,31 @@ export const UpdateServiceSettingsFromServiceSettingsRouteDocument = {
                     selections: [
                       { kind: "Field", name: { kind: "Name", value: "key" } },
                       { kind: "Field", name: { kind: "Name", value: "value" } },
+                    ],
+                  },
+                },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "volumes" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "volumeId" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "mountPath" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "subPath" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "readOnly" },
+                      },
                     ],
                   },
                 },
@@ -8372,6 +8539,31 @@ export const GetServiceFromServiceLayoutDocument = {
                     selections: [
                       { kind: "Field", name: { kind: "Name", value: "key" } },
                       { kind: "Field", name: { kind: "Name", value: "value" } },
+                    ],
+                  },
+                },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "volumes" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "volumeId" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "mountPath" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "subPath" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "readOnly" },
+                      },
                     ],
                   },
                 },
