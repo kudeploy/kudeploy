@@ -40,6 +40,8 @@ import {
   getPreviousPageSearch,
 } from "@/lib/connection-search";
 
+import { formatVolumeFilterValue } from "./volume-filter";
+
 const GET_VOLUMES_FROM_PROJECT_VOLUMES_ROUTE = graphql(`
   query getVolumesFromProjectVolumesRoute(
     $projectId: ID!
@@ -157,12 +159,7 @@ function ProjectVolumesComponent() {
       projectId,
       ...pick(search, ["after", "before", "first", "last"]),
       query,
-      filter: formatFilterValues(filterValues, (field, value) => {
-        if (field === "name") {
-          return { $fulltext: value };
-        }
-        return value;
-      }),
+      filter: formatFilterValues(filterValues, formatVolumeFilterValue),
       orderBy: {
         field: search?.orderBy?.field ?? VolumeOrderField.CREATED_AT,
         direction: search?.orderBy?.direction ?? OrderDirection.DESC,

@@ -28,6 +28,16 @@ rules:
       - get
       - create
   - apiGroups:
+      - ""
+    resources:
+      - persistentvolumeclaims
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - watch
+  - apiGroups:
       - kudeploy.com
     resources:
       - buildruns
