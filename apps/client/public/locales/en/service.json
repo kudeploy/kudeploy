@@ -34,7 +34,7 @@
     "empty": "No environment variables configured."
   },
   "network": {
-    "description": "Configure exposed ports and health checks.",
+    "description": "Configure service ports.",
     "ports": "Ports"
   },
   "volumes": {

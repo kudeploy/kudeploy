@@ -34,7 +34,7 @@
     "empty": "暂未配置环境变量。"
   },
   "network": {
-    "description": "配置暴露端口和健康检查。",
+    "description": "配置服务端口。",
     "ports": "端口"
   },
   "volumes": {
