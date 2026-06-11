@@ -463,6 +463,7 @@ var _ = Describe("Deployment Controller", func() {
 	It("marks the Kudeploy Deployment ready when the Kubernetes Deployment is available", func() {
 		deployment := newDeployment()
 		kubernetesDeployment := buildKubernetesDeployment(deployment, replicasFor(deployment))
+		kubernetesDeployment.Status.ObservedGeneration = kubernetesDeployment.Generation
 		kubernetesDeployment.Status.Conditions = []appsv1.DeploymentCondition{
 			{
 				Type:   appsv1.DeploymentAvailable,
@@ -481,6 +482,66 @@ var _ = Describe("Deployment Controller", func() {
 			HaveField("Type", "Ready"),
 			HaveField("Status", metav1.ConditionTrue),
 			HaveField("Reason", "KubernetesDeploymentAvailable"),
+		)))
+	})
+
+	It("keeps the Kudeploy Deployment progressing while the Kubernetes Deployment has not observed the latest generation", func() {
+		deployment := newDeployment()
+		deployment.Spec.Replicas = ptrInt32(3)
+		kubernetesDeployment := buildKubernetesDeployment(deployment, ptrInt32(1))
+		kubernetesDeployment.Generation = 2
+		kubernetesDeployment.Status.ObservedGeneration = 1
+		kubernetesDeployment.Status.Replicas = 1
+		kubernetesDeployment.Status.ReadyReplicas = 1
+		kubernetesDeployment.Status.AvailableReplicas = 1
+		kubernetesDeployment.Status.UpdatedReplicas = 1
+		kubernetesDeployment.Status.Conditions = []appsv1.DeploymentCondition{
+			{
+				Type:   appsv1.DeploymentAvailable,
+				Status: corev1.ConditionTrue,
+				Reason: "MinimumReplicasAvailable",
+			},
+		}
+		reconciler := newReconciler(deployment, kubernetesDeployment)
+
+		_, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: deploymentKey})
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(reconciler.Get(ctx, deploymentKey, deployment)).To(Succeed())
+		Expect(deployment.Status.Conditions).To(ContainElement(SatisfyAll(
+			HaveField("Type", "Ready"),
+			HaveField("Status", metav1.ConditionFalse),
+			HaveField("Reason", "KubernetesDeploymentProgressing"),
+		)))
+	})
+
+	It("keeps the Kudeploy Deployment progressing while the Kubernetes Deployment is still scaling down", func() {
+		deployment := newDeployment()
+		deployment.Spec.Replicas = ptrInt32(0)
+		kubernetesDeployment := buildKubernetesDeployment(deployment, ptrInt32(3))
+		kubernetesDeployment.Generation = 2
+		kubernetesDeployment.Status.ObservedGeneration = 2
+		kubernetesDeployment.Status.Replicas = 3
+		kubernetesDeployment.Status.ReadyReplicas = 3
+		kubernetesDeployment.Status.AvailableReplicas = 3
+		kubernetesDeployment.Status.UpdatedReplicas = 3
+		kubernetesDeployment.Status.Conditions = []appsv1.DeploymentCondition{
+			{
+				Type:   appsv1.DeploymentAvailable,
+				Status: corev1.ConditionTrue,
+				Reason: "MinimumReplicasAvailable",
+			},
+		}
+		reconciler := newReconciler(deployment, kubernetesDeployment)
+
+		_, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: deploymentKey})
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(reconciler.Get(ctx, deploymentKey, deployment)).To(Succeed())
+		Expect(deployment.Status.Conditions).To(ContainElement(SatisfyAll(
+			HaveField("Type", "Ready"),
+			HaveField("Status", metav1.ConditionFalse),
+			HaveField("Reason", "KubernetesDeploymentProgressing"),
 		)))
 	})
 
