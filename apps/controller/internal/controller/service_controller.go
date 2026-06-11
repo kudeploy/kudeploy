@@ -23,6 +23,7 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -101,8 +102,63 @@ func (r *ServiceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 	envHash := envSecretHash(envSecret.Data)
 
-	if service.Status.ObservedGeneration != service.Generation || service.Status.LatestEnvSecretHash != envHash {
+	if service.Status.ObservedGeneration != service.Generation {
+		releaseTemplateChanged, err := r.serviceReleaseTemplateChanged(ctx, service, envHash)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+		if !releaseTemplateChanged {
+			return r.reconcileScaleOnlyServiceUpdate(ctx, service, envHash)
+		}
 		return r.reconcileNewServiceVersion(ctx, service, envHash)
+	}
+
+	if service.Status.LatestEnvSecretHash != envHash {
+		return r.reconcileNewServiceVersion(ctx, service, envHash)
+	}
+
+	return r.reconcileServiceTraffic(ctx, service)
+}
+
+func (r *ServiceReconciler) serviceReleaseTemplateChanged(ctx context.Context, service *kudeployv1alpha1.Service, envHash string) (bool, error) {
+	if service.Status.LatestDeploymentName == "" || service.Status.LatestEnvSecretHash != envHash {
+		return true, nil
+	}
+
+	latestKudeployDeployment := &kudeployv1alpha1.Deployment{}
+	err := r.Get(ctx, client.ObjectKey{Name: service.Status.LatestDeploymentName, Namespace: service.Namespace}, latestKudeployDeployment)
+	if apierrors.IsNotFound(err) {
+		return true, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return !serviceReleaseTemplateMatchesDeployment(service, latestKudeployDeployment), nil
+}
+
+func (r *ServiceReconciler) reconcileScaleOnlyServiceUpdate(ctx context.Context, service *kudeployv1alpha1.Service, envHash string) (ctrl.Result, error) {
+	progressing, err := r.updateCurrentDeploymentReplicas(ctx, service)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	originalService := service.DeepCopy()
+	service.Status.ObservedGeneration = service.Generation
+	service.Status.LatestEnvSecretHash = envHash
+	service.Status.ServiceAccountName = runtimeServiceAccountNameFor(service.Name)
+	if progressing {
+		meta.SetStatusCondition(&service.Status.Conditions, metav1.Condition{
+			Type:    serviceReadyCondition,
+			Status:  metav1.ConditionFalse,
+			Reason:  "DeploymentProgressing",
+			Message: "Deployment is scaling to the requested replicas.",
+		})
+	}
+	if err := r.patchServiceStatus(ctx, service, originalService); err != nil {
+		return ctrl.Result{}, err
+	}
+	if progressing {
+		return ctrl.Result{}, nil
 	}
 
 	return r.reconcileServiceTraffic(ctx, service)
@@ -413,6 +469,54 @@ func (r *ServiceReconciler) patchDeploymentRoutingState(ctx context.Context, kud
 	return ignoreConflict(r.Patch(ctx, kudeployDeployment, client.MergeFrom(originalKudeployDeployment)))
 }
 
+func (r *ServiceReconciler) updateCurrentDeploymentReplicas(ctx context.Context, service *kudeployv1alpha1.Service) (bool, error) {
+	progressing := false
+	for _, deploymentName := range currentDeploymentNames(service) {
+		kudeployDeployment := &kudeployv1alpha1.Deployment{}
+		err := r.Get(ctx, client.ObjectKey{Name: deploymentName, Namespace: service.Namespace}, kudeployDeployment)
+		if apierrors.IsNotFound(err) {
+			continue
+		}
+		if err != nil {
+			return false, err
+		}
+		if !metav1.IsControlledBy(kudeployDeployment, service) ||
+			(!isKudeployDeploymentReady(kudeployDeployment) &&
+				equality.Semantic.DeepEqual(kudeployDeployment.Spec.Replicas, service.Spec.Replicas)) {
+			continue
+		}
+
+		replicasChanged := !equality.Semantic.DeepEqual(kudeployDeployment.Spec.Replicas, service.Spec.Replicas)
+		if replicasChanged {
+			originalKudeployDeployment := kudeployDeployment.DeepCopy()
+			kudeployDeployment.Spec.Replicas = service.Spec.Replicas
+			if err := r.Patch(ctx, kudeployDeployment, client.MergeFrom(originalKudeployDeployment)); err != nil {
+				return false, err
+			}
+		}
+		if err := r.markDeploymentProgressing(ctx, kudeployDeployment); err != nil {
+			return false, err
+		}
+		progressing = true
+	}
+	return progressing, nil
+}
+
+func (r *ServiceReconciler) markDeploymentProgressing(ctx context.Context, kudeployDeployment *kudeployv1alpha1.Deployment) error {
+	latestKudeployDeployment := &kudeployv1alpha1.Deployment{}
+	if err := r.Get(ctx, client.ObjectKeyFromObject(kudeployDeployment), latestKudeployDeployment); err != nil {
+		return err
+	}
+	originalKudeployDeployment := latestKudeployDeployment.DeepCopy()
+	meta.SetStatusCondition(&latestKudeployDeployment.Status.Conditions, metav1.Condition{
+		Type:    deploymentReadyCondition,
+		Status:  metav1.ConditionFalse,
+		Reason:  "KubernetesDeploymentProgressing",
+		Message: "Kubernetes Deployment is not available yet.",
+	})
+	return r.Status().Patch(ctx, latestKudeployDeployment, client.MergeFrom(originalKudeployDeployment))
+}
+
 func (r *ServiceReconciler) activeDeploymentScaledDown(ctx context.Context, service *kudeployv1alpha1.Service) (bool, error) {
 	if service.Status.ActiveDeploymentName == "" {
 		return true, nil
@@ -454,6 +558,30 @@ func serviceRequiresRecreateRollout(service *kudeployv1alpha1.Service) bool {
 
 func deploymentRequiresRecreateRollout(kudeployDeployment *kudeployv1alpha1.Deployment) bool {
 	return len(kudeployDeployment.Spec.Volumes) > 0
+}
+
+func currentDeploymentNames(service *kudeployv1alpha1.Service) []string {
+	names := make([]string, 0, 2)
+	seen := map[string]struct{}{}
+	for _, name := range []string{service.Status.LatestDeploymentName, service.Status.ActiveDeploymentName} {
+		if name == "" {
+			continue
+		}
+		if _, ok := seen[name]; ok {
+			continue
+		}
+		seen[name] = struct{}{}
+		names = append(names, name)
+	}
+	return names
+}
+
+func serviceReleaseTemplateMatchesDeployment(service *kudeployv1alpha1.Service, kudeployDeployment *kudeployv1alpha1.Deployment) bool {
+	expectedSpec := buildKudeployDeployment(service, kudeployDeployment.Spec.Version, kudeployDeployment.Name).Spec
+	actualSpec := kudeployDeployment.Spec
+	expectedSpec.Replicas = nil
+	actualSpec.Replicas = nil
+	return equality.Semantic.DeepEqual(actualSpec, expectedSpec)
 }
 
 func kubernetesDeploymentScaledDown(kubernetesDeployment *appsv1.Deployment) bool {

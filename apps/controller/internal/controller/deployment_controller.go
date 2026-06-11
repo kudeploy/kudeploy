@@ -378,6 +378,19 @@ func targetPortFor(port kudeployv1alpha1.ServicePort) int32 {
 }
 
 func isKubernetesDeploymentAvailable(kubernetesDeployment *appsv1.Deployment) bool {
+	if kubernetesDeployment.Status.ObservedGeneration < kubernetesDeployment.Generation {
+		return false
+	}
+	replicas := int32(1)
+	if kubernetesDeployment.Spec.Replicas != nil {
+		replicas = *kubernetesDeployment.Spec.Replicas
+	}
+	if kubernetesDeployment.Status.Replicas != replicas ||
+		kubernetesDeployment.Status.UpdatedReplicas != replicas ||
+		kubernetesDeployment.Status.ReadyReplicas != replicas ||
+		kubernetesDeployment.Status.AvailableReplicas != replicas {
+		return false
+	}
 	for _, condition := range kubernetesDeployment.Status.Conditions {
 		if condition.Type == appsv1.DeploymentAvailable && condition.Status == corev1.ConditionTrue {
 			return true

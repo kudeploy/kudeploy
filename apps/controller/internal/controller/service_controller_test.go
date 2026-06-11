@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -27,10 +28,12 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	kudeployv1alpha1 "github.com/kudeploy/kudeploy-controller/api/v1alpha1"
@@ -64,6 +67,19 @@ var _ = Describe("Service Controller", func() {
 				WithScheme(scheme).
 				WithStatusSubresource(&kudeployv1alpha1.Service{}, &kudeployv1alpha1.Deployment{}).
 				WithObjects(objects...).
+				Build(),
+			Scheme: scheme,
+		}
+	}
+
+	newReconcilerWithInterceptor := func(interceptorFuncs interceptor.Funcs, objects ...client.Object) *ServiceReconciler {
+		scheme := newScheme()
+		return &ServiceReconciler{
+			Client: fake.NewClientBuilder().
+				WithScheme(scheme).
+				WithStatusSubresource(&kudeployv1alpha1.Service{}, &kudeployv1alpha1.Deployment{}).
+				WithObjects(objects...).
+				WithInterceptorFuncs(interceptorFuncs).
 				Build(),
 			Scheme: scheme,
 		}
@@ -616,6 +632,297 @@ var _ = Describe("Service Controller", func() {
 		Expect(service.Status.LatestDeploymentName).To(Equal(secondDeploymentName))
 		Expect(service.Status.ActiveVersion).To(Equal(int64(1)))
 		Expect(service.Status.ActiveDeploymentName).To(Equal(firstDeploymentName))
+	})
+
+	It("updates active Deployment replicas without creating a new version for scale-only Service changes", func() {
+		service := newService()
+		service.Spec.Volumes = nil
+		service.Status.ObservedGeneration = 1
+		service.Status.LatestVersion = 1
+		service.Status.LatestDeploymentName = firstDeploymentName
+		service.Status.LatestEnvSecretHash = envSecretHash(nil)
+		service.Status.ActiveVersion = 1
+		service.Status.ActiveDeploymentName = firstDeploymentName
+
+		activeDeployment := buildKudeployDeployment(service, 1, firstDeploymentName)
+		activeDeployment.Labels = deploymentLabels(firstDeploymentName, routingStateActive)
+		activeDeployment.Status.KubernetesDeploymentName = firstDeploymentName
+		activeDeployment.Status.Conditions = []metav1.Condition{
+			{
+				Type:               "Ready",
+				Status:             metav1.ConditionTrue,
+				Reason:             "KubernetesDeploymentAvailable",
+				LastTransitionTime: metav1.Now(),
+			},
+		}
+		ownDeployment(service, activeDeployment)
+
+		service.Generation = 2
+		service.Spec.Replicas = ptrInt32(3)
+		kubernetesService := buildKubernetesService(service, map[string]string{
+			deploymentLabel: firstDeploymentName,
+		})
+		reconciler := newReconciler(service, activeDeployment, kubernetesService)
+
+		_, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: serviceKey})
+		Expect(err).NotTo(HaveOccurred())
+
+		newDeployment := &kudeployv1alpha1.Deployment{}
+		Expect(apierrors.IsNotFound(reconciler.Get(ctx, types.NamespacedName{Name: secondDeploymentName, Namespace: namespaceName}, newDeployment))).To(BeTrue())
+
+		Expect(reconciler.Get(ctx, types.NamespacedName{Name: firstDeploymentName, Namespace: namespaceName}, activeDeployment)).To(Succeed())
+		Expect(activeDeployment.Spec.Replicas).To(Equal(ptrInt32(3)))
+		Expect(activeDeployment.Labels).To(HaveKeyWithValue(routingStateLabel, routingStateActive))
+
+		Expect(reconciler.Get(ctx, serviceKey, kubernetesService)).To(Succeed())
+		Expect(kubernetesService.Spec.Selector).To(Equal(map[string]string{
+			deploymentLabel: firstDeploymentName,
+		}))
+
+		Expect(reconciler.Get(ctx, serviceKey, service)).To(Succeed())
+		Expect(service.Status.ObservedGeneration).To(Equal(int64(2)))
+		Expect(service.Status.LatestVersion).To(Equal(int64(1)))
+		Expect(service.Status.LatestDeploymentName).To(Equal(firstDeploymentName))
+		Expect(service.Status.ActiveVersion).To(Equal(int64(1)))
+		Expect(service.Status.ActiveDeploymentName).To(Equal(firstDeploymentName))
+	})
+
+	It("updates pending Deployment replicas during scale-only changes while a rollout is in progress", func() {
+		service := newService()
+		service.Spec.Volumes = nil
+		service.Spec.Image = "ghcr.io/kudeploy/whoami:v2"
+		service.Status.ObservedGeneration = 2
+		service.Status.LatestVersion = 2
+		service.Status.LatestDeploymentName = secondDeploymentName
+		service.Status.LatestEnvSecretHash = envSecretHash(nil)
+		service.Status.ActiveVersion = 1
+		service.Status.ActiveDeploymentName = firstDeploymentName
+
+		activeDeployment := &kudeployv1alpha1.Deployment{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      firstDeploymentName,
+				Namespace: namespaceName,
+				Labels:    deploymentLabels(firstDeploymentName, routingStateActive),
+			},
+			Spec: kudeployv1alpha1.DeploymentSpec{
+				ServiceName: serviceName,
+				Version:     1,
+				Replicas:    ptrInt32(1),
+				Image:       "ghcr.io/kudeploy/whoami:latest",
+				Ports:       []kudeployv1alpha1.ServicePort{{Port: 80, TargetPort: 8080}},
+			},
+		}
+		pendingDeployment := buildKudeployDeployment(service, 2, secondDeploymentName)
+		pendingDeployment.Spec.Replicas = ptrInt32(1)
+		pendingDeployment.Labels = deploymentLabels(secondDeploymentName, routingStatePending)
+		ownDeployment(service, activeDeployment)
+		ownDeployment(service, pendingDeployment)
+
+		service.Generation = 3
+		service.Spec.Replicas = ptrInt32(3)
+		kubernetesService := buildKubernetesService(service, map[string]string{
+			deploymentLabel: firstDeploymentName,
+		})
+		reconciler := newReconciler(service, activeDeployment, pendingDeployment, kubernetesService)
+
+		_, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: serviceKey})
+		Expect(err).NotTo(HaveOccurred())
+
+		newDeployment := &kudeployv1alpha1.Deployment{}
+		Expect(apierrors.IsNotFound(reconciler.Get(ctx, types.NamespacedName{Name: "whoami-00003", Namespace: namespaceName}, newDeployment))).To(BeTrue())
+
+		Expect(reconciler.Get(ctx, types.NamespacedName{Name: firstDeploymentName, Namespace: namespaceName}, activeDeployment)).To(Succeed())
+		Expect(activeDeployment.Spec.Replicas).To(Equal(ptrInt32(3)))
+		Expect(reconciler.Get(ctx, types.NamespacedName{Name: secondDeploymentName, Namespace: namespaceName}, pendingDeployment)).To(Succeed())
+		Expect(pendingDeployment.Spec.Replicas).To(Equal(ptrInt32(3)))
+
+		Expect(reconciler.Get(ctx, serviceKey, service)).To(Succeed())
+		Expect(service.Status.ObservedGeneration).To(Equal(int64(3)))
+		Expect(service.Status.LatestVersion).To(Equal(int64(2)))
+		Expect(service.Status.LatestDeploymentName).To(Equal(secondDeploymentName))
+		Expect(service.Status.ActiveDeploymentName).To(Equal(firstDeploymentName))
+	})
+
+	It("marks the Service progressing when a scale-only change increases replicas", func() {
+		service := newService()
+		service.Spec.Volumes = nil
+		service.Status.ObservedGeneration = 1
+		service.Status.LatestVersion = 1
+		service.Status.LatestDeploymentName = firstDeploymentName
+		service.Status.LatestEnvSecretHash = envSecretHash(nil)
+		service.Status.ActiveVersion = 1
+		service.Status.ActiveDeploymentName = firstDeploymentName
+
+		activeDeployment := buildKudeployDeployment(service, 1, firstDeploymentName)
+		activeDeployment.Labels = deploymentLabels(firstDeploymentName, routingStateActive)
+		activeDeployment.Status.KubernetesDeploymentName = firstDeploymentName
+		activeDeployment.Status.Conditions = []metav1.Condition{
+			{
+				Type:               "Ready",
+				Status:             metav1.ConditionTrue,
+				Reason:             "KubernetesDeploymentAvailable",
+				LastTransitionTime: metav1.Now(),
+			},
+		}
+		ownDeployment(service, activeDeployment)
+
+		service.Generation = 2
+		service.Spec.Replicas = ptrInt32(3)
+		kubernetesService := buildKubernetesService(service, map[string]string{
+			deploymentLabel: firstDeploymentName,
+		})
+		reconciler := newReconciler(service, activeDeployment, kubernetesService)
+
+		_, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: serviceKey})
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(reconciler.Get(ctx, serviceKey, service)).To(Succeed())
+		Expect(service.Status.ObservedGeneration).To(Equal(int64(2)))
+		Expect(service.Status.Conditions).To(ContainElement(SatisfyAll(
+			HaveField("Type", "Ready"),
+			HaveField("Status", metav1.ConditionFalse),
+			HaveField("Reason", "DeploymentProgressing"),
+		)))
+
+		Expect(reconciler.Get(ctx, types.NamespacedName{Name: firstDeploymentName, Namespace: namespaceName}, activeDeployment)).To(Succeed())
+		Expect(activeDeployment.Status.Conditions).To(ContainElement(SatisfyAll(
+			HaveField("Type", "Ready"),
+			HaveField("Status", metav1.ConditionFalse),
+			HaveField("Reason", "KubernetesDeploymentProgressing"),
+		)))
+	})
+
+	It("marks the Service progressing when a scale-only change decreases replicas", func() {
+		service := newService()
+		service.Spec.Volumes = nil
+		service.Spec.Replicas = ptrInt32(3)
+		service.Status.ObservedGeneration = 1
+		service.Status.LatestVersion = 1
+		service.Status.LatestDeploymentName = firstDeploymentName
+		service.Status.LatestEnvSecretHash = envSecretHash(nil)
+		service.Status.ActiveVersion = 1
+		service.Status.ActiveDeploymentName = firstDeploymentName
+
+		activeDeployment := buildKudeployDeployment(service, 1, firstDeploymentName)
+		activeDeployment.Labels = deploymentLabels(firstDeploymentName, routingStateActive)
+		activeDeployment.Status.KubernetesDeploymentName = firstDeploymentName
+		activeDeployment.Status.Conditions = []metav1.Condition{
+			{
+				Type:               "Ready",
+				Status:             metav1.ConditionTrue,
+				Reason:             "KubernetesDeploymentAvailable",
+				LastTransitionTime: metav1.Now(),
+			},
+		}
+		ownDeployment(service, activeDeployment)
+
+		service.Generation = 2
+		service.Spec.Replicas = ptrInt32(1)
+		kubernetesService := buildKubernetesService(service, map[string]string{
+			deploymentLabel: firstDeploymentName,
+		})
+		reconciler := newReconciler(service, activeDeployment, kubernetesService)
+
+		_, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: serviceKey})
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(reconciler.Get(ctx, serviceKey, service)).To(Succeed())
+		Expect(service.Status.ObservedGeneration).To(Equal(int64(2)))
+		Expect(service.Status.Conditions).To(ContainElement(SatisfyAll(
+			HaveField("Type", "Ready"),
+			HaveField("Status", metav1.ConditionFalse),
+			HaveField("Reason", "DeploymentProgressing"),
+		)))
+
+		Expect(reconciler.Get(ctx, types.NamespacedName{Name: firstDeploymentName, Namespace: namespaceName}, activeDeployment)).To(Succeed())
+		Expect(activeDeployment.Spec.Replicas).To(Equal(ptrInt32(1)))
+		Expect(activeDeployment.Status.Conditions).To(ContainElement(SatisfyAll(
+			HaveField("Type", "Ready"),
+			HaveField("Status", metav1.ConditionFalse),
+			HaveField("Reason", "KubernetesDeploymentProgressing"),
+		)))
+	})
+
+	It("re-marks the Service progressing when a scale-only retry finds replicas already patched", func() {
+		service := newService()
+		service.Spec.Volumes = nil
+		service.Spec.Replicas = ptrInt32(3)
+		service.Generation = 2
+		service.Status.ObservedGeneration = 1
+		service.Status.LatestVersion = 1
+		service.Status.LatestDeploymentName = firstDeploymentName
+		service.Status.LatestEnvSecretHash = envSecretHash(nil)
+		service.Status.ActiveVersion = 1
+		service.Status.ActiveDeploymentName = firstDeploymentName
+
+		activeDeployment := buildKudeployDeployment(service, 1, firstDeploymentName)
+		activeDeployment.Labels = deploymentLabels(firstDeploymentName, routingStateActive)
+		activeDeployment.Status.KubernetesDeploymentName = firstDeploymentName
+		activeDeployment.Status.Conditions = []metav1.Condition{
+			{
+				Type:               "Ready",
+				Status:             metav1.ConditionTrue,
+				Reason:             "KubernetesDeploymentAvailable",
+				LastTransitionTime: metav1.Now(),
+			},
+		}
+		ownDeployment(service, activeDeployment)
+		kubernetesService := buildKubernetesService(service, map[string]string{
+			deploymentLabel: firstDeploymentName,
+		})
+		reconciler := newReconciler(service, activeDeployment, kubernetesService)
+
+		_, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: serviceKey})
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(reconciler.Get(ctx, serviceKey, service)).To(Succeed())
+		Expect(service.Status.ObservedGeneration).To(Equal(int64(2)))
+		Expect(service.Status.Conditions).To(ContainElement(SatisfyAll(
+			HaveField("Type", "Ready"),
+			HaveField("Status", metav1.ConditionFalse),
+			HaveField("Reason", "DeploymentProgressing"),
+		)))
+
+		Expect(reconciler.Get(ctx, types.NamespacedName{Name: firstDeploymentName, Namespace: namespaceName}, activeDeployment)).To(Succeed())
+		Expect(activeDeployment.Status.Conditions).To(ContainElement(SatisfyAll(
+			HaveField("Type", "Ready"),
+			HaveField("Status", metav1.ConditionFalse),
+			HaveField("Reason", "KubernetesDeploymentProgressing"),
+		)))
+	})
+
+	It("does not mark scale-only Service changes observed when Deployment replica patch conflicts", func() {
+		service := newService()
+		service.Spec.Volumes = nil
+		service.Status.ObservedGeneration = 1
+		service.Status.LatestVersion = 1
+		service.Status.LatestDeploymentName = firstDeploymentName
+		service.Status.LatestEnvSecretHash = envSecretHash(nil)
+		service.Status.ActiveVersion = 1
+		service.Status.ActiveDeploymentName = firstDeploymentName
+
+		activeDeployment := buildKudeployDeployment(service, 1, firstDeploymentName)
+		activeDeployment.Labels = deploymentLabels(firstDeploymentName, routingStateActive)
+		ownDeployment(service, activeDeployment)
+
+		service.Generation = 2
+		service.Spec.Replicas = ptrInt32(3)
+		reconciler := newReconcilerWithInterceptor(interceptor.Funcs{
+			Patch: func(ctx context.Context, client client.WithWatch, obj client.Object, patch client.Patch, opts ...client.PatchOption) error {
+				if _, ok := obj.(*kudeployv1alpha1.Deployment); ok && obj.GetName() == firstDeploymentName {
+					return apierrors.NewConflict(schema.GroupResource{Group: "kudeploy.com", Resource: "deployments"}, obj.GetName(), errors.New("stale resource version"))
+				}
+				return client.Patch(ctx, obj, patch, opts...)
+			},
+		}, service, activeDeployment)
+
+		_, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: serviceKey})
+		Expect(apierrors.IsConflict(err)).To(BeTrue())
+
+		Expect(reconciler.Get(ctx, serviceKey, service)).To(Succeed())
+		Expect(service.Status.ObservedGeneration).To(Equal(int64(1)))
+		Expect(reconciler.Get(ctx, types.NamespacedName{Name: firstDeploymentName, Namespace: namespaceName}, activeDeployment)).To(Succeed())
+		Expect(activeDeployment.Spec.Replicas).To(Equal(ptrInt32(1)))
 	})
 
 	It("scales down the active Deployment before creating a new volume-backed version", func() {
