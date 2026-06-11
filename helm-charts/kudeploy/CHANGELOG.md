@@ -1,3 +1,7 @@
+## 0.12.1 (2026-06-11)
+
+This was a version bump only for helm-chart to align it with other projects, there were no code changes.
+
 ## 0.12.0 (2026-06-10)
 
 ### 🧱 Updated Dependencies

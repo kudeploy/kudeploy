@@ -1,3 +1,13 @@
+## 0.7.1 (2026-06-11)
+
+### 🩹 Fixes
+
+- **controller:** handle scale-only Service updates ([#21](https://github.com/kudeploy/kudeploy/pull/21))
+
+### ❤️ Thank You
+
+- Xudong Huang @xudongcc
+
 ## 0.7.0 (2026-06-10)
 
 ### 🚀 Features
