@@ -13,16 +13,25 @@ import { t } from "i18next";
 import { toast } from "sonner";
 import z from "zod";
 
-import type { DataFilterItemProps as FilterItemProps } from "@/components/fabric-ui/data-filter";
+import { formatVolumeFilterValue } from "./volume-filter";
+import type { DataFilterItemProps as FilterItemProps } from "@/components/thread-ui/data-filter";
 import type { GetVolumesFromProjectVolumesRouteQuery } from "@/gql/graphql";
-import { alertDialog } from "@/components/fabric-ui/alert-dialog";
-import { Badge } from "@/components/fabric-ui/badge";
-import { Button } from "@/components/fabric-ui/button";
-import { DataFilter as Filter } from "@/components/fabric-ui/data-filter";
-import { formatFilterValues } from "@/components/fabric-ui/data-filter/format-filter-values";
-import { DataTable } from "@/components/fabric-ui/data-table";
-import { Input } from "@/components/fabric-ui/input";
-import { Page } from "@/components/fabric-ui/page";
+import { alertDialog } from "@/components/thread-ui/alert-dialog";
+import { Badge } from "@/components/thread-ui/badge";
+import { Button } from "@/components/thread-ui/button";
+import { DataFilter as Filter } from "@/components/thread-ui/data-filter";
+import { formatFilterValues } from "@/lib/format-filter-values";
+import { DataTable } from "@/components/thread-ui/data-table";
+import { Input } from "@/components/thread-ui/input";
+import {
+  Page,
+  PageActions,
+  PageContent,
+  PageDescription,
+  PageHeader,
+  PagePrimaryAction,
+  PageTitle,
+} from "@/components/thread-ui/page";
 import {
   Dialog,
   DialogContent,
@@ -39,8 +48,6 @@ import {
   getNextPageSearch,
   getPreviousPageSearch,
 } from "@/lib/connection-search";
-
-import { formatVolumeFilterValue } from "./volume-filter";
 
 const GET_VOLUMES_FROM_PROJECT_VOLUMES_ROUTE = graphql(`
   query getVolumesFromProjectVolumesRoute(
@@ -183,10 +190,11 @@ function ProjectVolumesComponent() {
       {
         label: t("project:volumes.filter.name.label"),
         field: "name",
+        type: "input",
         pinned: true,
         render: ({ field: { value, onChange } }) => (
           <Input
-            defaultValue={value}
+            defaultValue={value ?? ""}
             placeholder={t("project:volumes.filter.name.placeholder")}
             onKeyDown={(event) => {
               if (event.key === "Enter") {
@@ -259,166 +267,172 @@ function ProjectVolumesComponent() {
   };
 
   return (
-    <Page
-      title={t("project:volumes.title")}
-      description={t("project:volumes.description")}
-      primaryAction={{
-        icon: <Database data-icon="inline-start" />,
-        label: t("project:volumes.create.button"),
-        onClick: () => setCreateDialogOpen(true),
-        testId: "volume-create-action",
-      }}
-    >
-      <div className="mb-4" data-testid="project-volumes-page">
-        <Filter
-          filters={filters}
-          values={filterValues}
-          onChange={(values) => {
-            navigate({
-              to: location.pathname,
-              search: {
-                ...(query ? { query } : {}),
-                ...(!isEmpty(values) ? { filter: values } : {}),
-              },
-            });
-          }}
-          search={{
-            placeholder: t("project:volumes.filter.search.placeholder"),
-            value: query,
-            onChange: (value) => {
+    <Page>
+      <PageHeader>
+        <PageTitle>{t("project:volumes.title")}</PageTitle>
+        <PageDescription>{t("project:volumes.description")}</PageDescription>
+        <PageActions>
+          <PagePrimaryAction
+            data-testid="volume-create-action"
+            onClick={() => setCreateDialogOpen(true)}
+          >
+            <Database data-icon="inline-start" />
+            {t("project:volumes.create.button")}
+          </PagePrimaryAction>
+        </PageActions>
+      </PageHeader>
+      <PageContent>
+        <div className="mb-4" data-testid="project-volumes-page">
+          <Filter
+            filters={filters}
+            values={filterValues}
+            onChange={(values) => {
               navigate({
                 to: location.pathname,
                 search: {
-                  ...(value ? { query: value } : {}),
-                  ...(!isEmpty(filterValues) ? { filter: filterValues } : {}),
+                  ...(query ? { query } : {}),
+                  ...(!isEmpty(values) ? { filter: values } : {}),
                 },
+              });
+            }}
+            search={{
+              placeholder: t("project:volumes.filter.search.placeholder"),
+              value: query,
+              onChange: (value) => {
+                navigate({
+                  to: location.pathname,
+                  search: {
+                    ...(value ? { query: value } : {}),
+                    ...(!isEmpty(filterValues) ? { filter: filterValues } : {}),
+                  },
+                });
+              },
+            }}
+          />
+        </div>
+
+        <DataTable
+          columns={[
+            {
+              accessorKey: "name",
+              header: t("project:volumes.table.name"),
+              cell: ({ row }) => (
+                <span
+                  className="font-medium"
+                  data-testid={`volume-row-${row.original.id}`}
+                >
+                  {row.original.name}
+                </span>
+              ),
+            },
+            {
+              accessorKey: "status",
+              header: t("project:volumes.table.status"),
+              size: 130,
+              cell: ({ row }) => (
+                <Badge
+                  color={volumeStatusColors[row.original.status]}
+                  data-testid="volume-status"
+                >
+                  {t(`project:volumes.status.${row.original.status}`)}
+                </Badge>
+              ),
+            },
+            {
+              accessorKey: "size",
+              header: t("project:volumes.table.size"),
+              size: 120,
+              cell: ({ row }) => `${row.original.size}Gi`,
+            },
+            {
+              accessorKey: "createdAt",
+              header: t("project:volumes.table.created_at"),
+              cell: ({ row }) =>
+                dayjs(row.original.createdAt).format("YYYY-MM-DD HH:mm"),
+            },
+          ]}
+          data={volumes}
+          pagination={{
+            hasPreviousPage: pageInfo?.hasPreviousPage,
+            hasNextPage: pageInfo?.hasNextPage,
+            onPreviousPage: () => {
+              navigate({
+                to: location.pathname,
+                search: getPreviousPageSearch(search, pageInfo),
+              });
+            },
+            onNextPage: () => {
+              navigate({
+                to: location.pathname,
+                search: getNextPageSearch(search, pageInfo),
               });
             },
           }}
+          rowActions={(row) => [
+            {
+              disabled: deleteLoading,
+              label: t("action.delete"),
+              onClick: () => handleDeleteVolume(row.original),
+            },
+          ]}
         />
-      </div>
 
-      <DataTable
-        columns={[
-          {
-            accessorKey: "name",
-            header: t("project:volumes.table.name"),
-            cell: ({ row }) => (
-              <span
-                className="font-medium"
-                data-testid={`volume-row-${row.original.id}`}
-              >
-                {row.original.name}
-              </span>
-            ),
-          },
-          {
-            accessorKey: "status",
-            header: t("project:volumes.table.status"),
-            size: 130,
-            cell: ({ row }) => (
-              <Badge
-                color={volumeStatusColors[row.original.status]}
-                data-testid="volume-status"
-              >
-                {t(`project:volumes.status.${row.original.status}`)}
-              </Badge>
-            ),
-          },
-          {
-            accessorKey: "size",
-            header: t("project:volumes.table.size"),
-            size: 120,
-            cell: ({ row }) => `${row.original.size}Gi`,
-          },
-          {
-            accessorKey: "createdAt",
-            header: t("project:volumes.table.created_at"),
-            cell: ({ row }) =>
-              dayjs(row.original.createdAt).format("YYYY-MM-DD HH:mm"),
-          },
-        ]}
-        data={volumes}
-        pagination={{
-          hasPreviousPage: pageInfo?.hasPreviousPage,
-          hasNextPage: pageInfo?.hasNextPage,
-          onPreviousPage: () => {
-            navigate({
-              to: location.pathname,
-              search: getPreviousPageSearch(search, pageInfo),
-            });
-          },
-          onNextPage: () => {
-            navigate({
-              to: location.pathname,
-              search: getNextPageSearch(search, pageInfo),
-            });
-          },
-        }}
-        rowActions={(row) => [
-          {
-            disabled: deleteLoading,
-            label: t("action.delete"),
-            onClick: () => handleDeleteVolume(row.original),
-          },
-        ]}
-      />
-
-      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{t("project:volumes.create.title")}</DialogTitle>
-            <DialogDescription>
-              {t("project:volumes.create.description")}
-            </DialogDescription>
-          </DialogHeader>
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              handleCreateVolume();
-            }}
-          >
-            <div className="grid gap-4 py-4">
-              <Input
-                data-testid="volume-name-input"
-                label={t("project:volumes.form.name.label")}
-                placeholder={t("project:volumes.form.name.placeholder")}
-                value={volumeForm.name}
-                onChange={(event) =>
-                  setVolumeForm({ ...volumeForm, name: event.target.value })
-                }
-              />
-              <Input
-                data-testid="volume-size-input"
-                label={t("project:volumes.form.size.label")}
-                min={1}
-                placeholder={t("project:volumes.form.size.placeholder")}
-                type="number"
-                value={volumeForm.size}
-                onChange={(event) =>
-                  setVolumeForm({ ...volumeForm, size: event.target.value })
-                }
-              />
-            </div>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setCreateDialogOpen(false)}
-              >
-                {t("action.cancel")}
-              </Button>
-              <Button
-                data-testid="volume-create-submit"
-                loading={createLoading}
-                type="submit"
-              >
-                {t("action.create")}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+        <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>{t("project:volumes.create.title")}</DialogTitle>
+              <DialogDescription>
+                {t("project:volumes.create.description")}
+              </DialogDescription>
+            </DialogHeader>
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                handleCreateVolume();
+              }}
+            >
+              <div className="grid gap-4 py-4">
+                <Input
+                  data-testid="volume-name-input"
+                  label={t("project:volumes.form.name.label")}
+                  placeholder={t("project:volumes.form.name.placeholder")}
+                  value={volumeForm.name}
+                  onChange={(event) =>
+                    setVolumeForm({ ...volumeForm, name: event.target.value })
+                  }
+                />
+                <Input
+                  data-testid="volume-size-input"
+                  label={t("project:volumes.form.size.label")}
+                  min={1}
+                  placeholder={t("project:volumes.form.size.placeholder")}
+                  type="number"
+                  value={volumeForm.size}
+                  onChange={(event) =>
+                    setVolumeForm({ ...volumeForm, size: event.target.value })
+                  }
+                />
+              </div>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setCreateDialogOpen(false)}
+                >
+                  {t("action.cancel")}
+                </Button>
+                <Button
+                  data-testid="volume-create-submit"
+                  loading={createLoading}
+                  type="submit"
+                >
+                  {t("action.create")}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </PageContent>
     </Page>
   );
 }

@@ -10,8 +10,15 @@ import type {
   DeploymentStatus,
   GetServiceDeploymentsFromServiceDeploymentsRouteQuery,
 } from "@/gql/graphql";
-import { Badge } from "@/components/fabric-ui/badge";
-import { Page } from "@/components/fabric-ui/page";
+import { Badge } from "@/components/thread-ui/badge";
+import { Empty } from "@/components/thread-ui/empty";
+import {
+  Page,
+  PageContent,
+  PageDescription,
+  PageHeader,
+  PageTitle,
+} from "@/components/thread-ui/page";
 import { Link } from "@/components/link";
 import {
   Card,
@@ -103,47 +110,50 @@ function ServiceDeploymentsComponent() {
   );
 
   return (
-    <Page
-      title={t("service:tabs.deployments")}
-      description={t("service:deployments.description")}
-    >
-      <div className="space-y-4" data-testid="service-deployments-page">
-        <div className="text-muted-foreground flex items-center gap-2 text-sm">
-          <Layers3 className="size-4" />
-          <span>
-            {error
-              ? t("service:deployments.error")
-              : loading && !data
-                ? t("service:deployments.loading")
-                : t("service:deployments.summary", {
-                    count: data?.deployments.totalCount ?? 0,
-                  })}
-          </span>
-        </div>
-
-        {deployments.length ? (
-          <div className="space-y-3">
-            {deployments.map((deployment) => (
-              <DeploymentCard
-                key={deployment.id}
-                deployment={deployment}
-                projectId={projectId}
-                serviceId={serviceId}
-                workspaceId={workspaceId}
-              />
-            ))}
+    <Page>
+      <PageHeader>
+        <PageTitle>{t("service:tabs.deployments")}</PageTitle>
+        <PageDescription>
+          {t("service:deployments.description")}
+        </PageDescription>
+      </PageHeader>
+      <PageContent>
+        <div className="space-y-4" data-testid="service-deployments-page">
+          <div className="text-muted-foreground flex items-center gap-2 text-sm">
+            <Layers3 className="size-4" />
+            <span>
+              {error
+                ? t("service:deployments.error")
+                : loading && !data
+                  ? t("service:deployments.loading")
+                  : t("service:deployments.summary", {
+                      count: data?.deployments.totalCount ?? 0,
+                    })}
+            </span>
           </div>
-        ) : (
-          <Card data-testid="service-deployments-empty">
-            <CardHeader>
-              <CardTitle>{t("service:deployments.empty.title")}</CardTitle>
-              <CardDescription>
-                {t("service:deployments.empty.description")}
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        )}
-      </div>
+
+          {deployments.length ? (
+            <div className="space-y-3">
+              {deployments.map((deployment) => (
+                <DeploymentCard
+                  key={deployment.id}
+                  deployment={deployment}
+                  projectId={projectId}
+                  serviceId={serviceId}
+                  workspaceId={workspaceId}
+                />
+              ))}
+            </div>
+          ) : (
+            <Empty
+              className="rounded-md border border-dashed p-8"
+              data-testid="service-deployments-empty"
+              description={t("service:deployments.empty.description")}
+              title={t("service:deployments.empty.title")}
+            />
+          )}
+        </div>
+      </PageContent>
     </Page>
   );
 }

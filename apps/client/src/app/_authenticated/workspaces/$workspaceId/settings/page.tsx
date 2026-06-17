@@ -6,9 +6,15 @@ import { toast } from "sonner";
 
 import { useCurrentWorkspaceContext } from "../contexts/current-workspace-context";
 import { useCurrentWorkspaceMemberContext } from "../contexts/current-workspace-member-context";
-import { alertDialog } from "@/components/fabric-ui/alert-dialog";
-import { Page } from "@/components/fabric-ui/page";
-import { Button } from "@/components/fabric-ui/button";
+import { alertDialog } from "@/components/thread-ui/alert-dialog";
+import { Button } from "@/components/thread-ui/button";
+import {
+  Page,
+  PageContent,
+  PageDescription,
+  PageHeader,
+  PageTitle,
+} from "@/components/thread-ui/page";
 import {
   Card,
   CardDescription,
@@ -17,7 +23,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Field, FieldGroup, FieldSet } from "@/components/ui/field";
-import { Input } from "@/components/fabric-ui/input";
+import { Input } from "@/components/thread-ui/input";
 import { graphql } from "@/gql";
 import { WorkspaceMemberRole } from "@/gql/graphql";
 
@@ -111,108 +117,113 @@ function SettingsComponent() {
   };
 
   return (
-    <Page
-      title={t("workspace:title")}
-      description={t("workspace:settings.description")}
-    >
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          form.handleSubmit();
-        }}
-      >
-        <FieldSet>
-          <FieldGroup>
-            <form.Field
-              name="name"
-              validators={{
-                onChange: ({ value }) =>
-                  !value.trim()
-                    ? t("workspace:settings.form.name.required")
-                    : undefined,
+    <Page>
+      <PageHeader>
+        <PageTitle>{t("workspace:title")}</PageTitle>
+        <PageDescription>{t("workspace:settings.description")}</PageDescription>
+      </PageHeader>
+      <PageContent>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            form.handleSubmit();
+          }}
+        >
+          <FieldSet>
+            <FieldGroup>
+              <form.Field
+                name="name"
+                validators={{
+                  onChange: ({ value }) =>
+                    !value.trim()
+                      ? t("workspace:settings.form.name.required")
+                      : undefined,
+                }}
+              >
+                {(field) => (
+                  <Input
+                    id="name"
+                    data-testid="workspace-settings-name-input"
+                    label={t("workspace:settings.form.name.label")}
+                    placeholder={t("workspace:settings.form.name.placeholder")}
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                    error={
+                      field.state.meta.errors.length > 0
+                        ? field.state.meta.errors
+                            .map((error: any) =>
+                              typeof error === "string"
+                                ? error
+                                : error?.message || error,
+                            )
+                            .join(", ")
+                        : undefined
+                    }
+                  />
+                )}
+              </form.Field>
+
+              <form.Subscribe
+                selector={(state) => [
+                  state.isDirty,
+                  state.isSubmitting,
+                  state.canSubmit,
+                ]}
+              >
+                {([isDirty, isSubmitting, canSubmit]) => (
+                  <Field orientation="horizontal">
+                    <Button
+                      type="submit"
+                      data-testid="workspace-settings-save"
+                      disabled={!isDirty || !canSubmit}
+                      loading={isSubmitting}
+                    >
+                      {t("action.save")}
+                    </Button>
+                  </Field>
+                )}
+              </form.Subscribe>
+            </FieldGroup>
+          </FieldSet>
+        </form>
+
+        <Card className="border-destructive mt-8">
+          <CardHeader>
+            <CardTitle className="text-destructive">
+              {t("workspace:settings.dangerZone.title")}
+            </CardTitle>
+            <CardDescription>
+              {t("workspace:settings.dangerZone.description")}
+            </CardDescription>
+          </CardHeader>
+          <CardFooter>
+            <Button
+              data-testid="workspace-settings-delete"
+              disabled={
+                currentWorkspaceMember.role !== WorkspaceMemberRole.OWNER
+              }
+              variant="destructive"
+              loading={deleting}
+              onClick={async () => {
+                const confirmed = await alertDialog({
+                  title: t("workspace:settings.dangerZone.title"),
+                  description: t("workspace:settings.dangerZone.description"),
+                  variant: "destructive",
+                  confirmText: t("action.delete"),
+                  cancelText: t("action.cancel"),
+                });
+                if (confirmed) {
+                  handleDelete();
+                }
               }}
             >
-              {(field) => (
-                <Input
-                  id="name"
-                  data-testid="workspace-settings-name-input"
-                  label={t("workspace:settings.form.name.label")}
-                  placeholder={t("workspace:settings.form.name.placeholder")}
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  onBlur={field.handleBlur}
-                  error={
-                    field.state.meta.errors.length > 0
-                      ? field.state.meta.errors
-                          .map((error: any) =>
-                            typeof error === "string"
-                              ? error
-                              : error?.message || error,
-                          )
-                          .join(", ")
-                      : undefined
-                  }
-                />
-              )}
-            </form.Field>
-
-            <form.Subscribe
-              selector={(state) => [
-                state.isDirty,
-                state.isSubmitting,
-                state.canSubmit,
-              ]}
-            >
-              {([isDirty, isSubmitting, canSubmit]) => (
-                <Field orientation="horizontal">
-                  <Button
-                    type="submit"
-                    data-testid="workspace-settings-save"
-                    disabled={!isDirty || !canSubmit}
-                    loading={isSubmitting}
-                  >
-                    {t("action.save")}
-                  </Button>
-                </Field>
-              )}
-            </form.Subscribe>
-          </FieldGroup>
-        </FieldSet>
-      </form>
-
-      <Card className="border-destructive mt-8">
-        <CardHeader>
-          <CardTitle className="text-destructive">
-            {t("workspace:settings.dangerZone.title")}
-          </CardTitle>
-          <CardDescription>
-            {t("workspace:settings.dangerZone.description")}
-          </CardDescription>
-        </CardHeader>
-        <CardFooter>
-          <Button
-            data-testid="workspace-settings-delete"
-            disabled={currentWorkspaceMember.role !== WorkspaceMemberRole.OWNER}
-            variant="destructive"
-            loading={deleting}
-            onClick={async () => {
-              const confirmed = await alertDialog({
-                title: t("workspace:settings.dangerZone.title"),
-                description: t("workspace:settings.dangerZone.description"),
-                variant: "destructive",
-                confirmText: t("action.delete"),
-                cancelText: t("action.cancel"),
-              });
-              if (confirmed) {
-                handleDelete();
-              }
-            }}
-          >
-            {t("workspace:settings.dangerZone.deleteButton")}
-          </Button>
-        </CardFooter>
-      </Card>
+              {t("workspace:settings.dangerZone.deleteButton")}
+            </Button>
+          </CardFooter>
+        </Card>
+      </PageContent>
     </Page>
   );
 }

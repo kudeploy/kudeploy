@@ -1,6 +1,5 @@
 import { useQuery } from "@apollo/client/react";
 import {
-  Link,
   createFileRoute,
   useLocation,
   useNavigate,
@@ -14,10 +13,17 @@ import { isEmpty, pick } from "lodash";
 import { useMemo } from "react";
 import { zhCN } from "react-day-picker/locale";
 import { useCurrentWorkspaceMemberContext } from "../contexts/current-workspace-member-context";
-import type { DataFilterItemProps as FilterItemProps } from "@/components/fabric-ui/data-filter";
-import { DataFilter as Filter } from "@/components/fabric-ui/data-filter";
-import { Page } from "@/components/fabric-ui/page";
-import { DataTable } from "@/components/fabric-ui/data-table";
+import type { DataFilterItemProps as FilterItemProps } from "@/components/thread-ui/data-filter";
+import { DataFilter as Filter } from "@/components/thread-ui/data-filter";
+import {
+  Page,
+  PageActions,
+  PageContent,
+  PageHeader,
+  PagePrimaryAction,
+  PageTitle,
+} from "@/components/thread-ui/page";
+import { DataTable } from "@/components/thread-ui/data-table";
 import {
   Tooltip,
   TooltipContent,
@@ -35,7 +41,7 @@ import {
   getNextPageSearch,
   getPreviousPageSearch,
 } from "@/lib/connection-search";
-import { formatFilterValues } from "@/components/fabric-ui/data-filter/format-filter-values";
+import { formatFilterValues } from "@/lib/format-filter-values";
 import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
 
@@ -151,6 +157,7 @@ function MemberGroupsComponent() {
       {
         label: t("workspace-member-group:filter.items.name.label"),
         field: "name",
+        type: "input",
         pinned: true,
         render: ({ field: { value, onChange } }) => {
           return (
@@ -158,7 +165,7 @@ function MemberGroupsComponent() {
               placeholder={t(
                 "workspace-member-group:filter.items.name.placeholder",
               )}
-              defaultValue={value}
+              defaultValue={value ?? ""}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
@@ -173,24 +180,37 @@ function MemberGroupsComponent() {
       {
         label: t("workspace-member-group:filter.items.created_at.label"),
         field: "created_at",
+        type: "select",
+        options: [],
         pinned: true,
-        render: ({ field }) => (
-          <Calendar
-            className="p-0"
-            mode="range"
-            locale={zhCN}
-            selected={{ from: field.value?.[0], to: field.value?.[1] }}
-            onSelect={(dateRange) => {
-              if (dateRange) {
-                field.onChange([dateRange.from, dateRange.to]);
-              }
-            }}
-            disabled={(date) => dayjs(date).isAfter(dayjs())}
-            numberOfMonths={2}
-          />
-        ),
-        renderValue: ({ value }: { value: Array<string> }) => {
-          return value
+        render: ({ field }) => {
+          const dates = Array.isArray(field.value) ? field.value : [];
+
+          return (
+            <Calendar
+              className="p-0"
+              mode="range"
+              locale={zhCN}
+              selected={{
+                from: dates[0] ? new Date(dates[0]) : undefined,
+                to: dates[1] ? new Date(dates[1]) : undefined,
+              }}
+              onSelect={(dateRange) => {
+                if (dateRange) {
+                  field.onChange(
+                    [dateRange.from, dateRange.to]
+                      .filter((date): date is Date => date instanceof Date)
+                      .map((date) => date.toISOString()),
+                  );
+                }
+              }}
+              disabled={(date) => dayjs(date).isAfter(dayjs())}
+              numberOfMonths={2}
+            />
+          );
+        },
+        renderValue: ({ value }) => {
+          return (value ?? [])
             .map((date) => dayjs(date).format("YYYY-MM-DD"))
             .join(",");
         },
@@ -199,155 +219,163 @@ function MemberGroupsComponent() {
   }, []);
 
   return (
-    <Page
-      title={t("workspace-member-group:title")}
-      primaryAction={
-        canCreateAndViewDetail
-          ? {
-              label: t("action.create"),
-              testId: "member-group-create-action",
-              render: (
-                <Link
-                  to="/workspaces/$workspaceId/member-groups/create"
-                  params={{ workspaceId }}
-                />
-              ),
-            }
-          : undefined
-      }
-    >
-      <div className="mb-4" data-testid="member-groups-page">
-        <Filter
-          filters={filters}
-          values={filterValues}
-          onChange={(values) => {
-            navigate({
-              to: location.pathname,
-              search: {
-                ...(query ? { query } : {}),
-                ...(!isEmpty(values) ? { filter: values } : {}),
-              },
-            });
-          }}
-          search={{
-            placeholder: t("workspace-member-group:filter.search.placeholder"),
-            value: query,
-            onChange: (value) => {
+    <Page>
+      <PageHeader>
+        <PageTitle>{t("workspace-member-group:title")}</PageTitle>
+        {canCreateAndViewDetail && (
+          <PageActions>
+            <PagePrimaryAction
+              data-testid="member-group-create-action"
+              onClick={() =>
+                navigate({
+                  to: "/workspaces/$workspaceId/member-groups/create",
+                  params: { workspaceId },
+                })
+              }
+            >
+              {t("action.create")}
+            </PagePrimaryAction>
+          </PageActions>
+        )}
+      </PageHeader>
+      <PageContent>
+        <div className="mb-4" data-testid="member-groups-page">
+          <Filter
+            filters={filters}
+            values={filterValues}
+            onChange={(values) => {
               navigate({
                 to: location.pathname,
                 search: {
-                  ...(value ? { query: value } : {}),
-                  ...(!isEmpty(filterValues) ? { filter: filterValues } : {}),
+                  ...(query ? { query } : {}),
+                  ...(!isEmpty(values) ? { filter: values } : {}),
                 },
+              });
+            }}
+            search={{
+              placeholder: t(
+                "workspace-member-group:filter.search.placeholder",
+              ),
+              value: query,
+              onChange: (value) => {
+                navigate({
+                  to: location.pathname,
+                  search: {
+                    ...(value ? { query: value } : {}),
+                    ...(!isEmpty(filterValues) ? { filter: filterValues } : {}),
+                  },
+                });
+              },
+            }}
+          />
+        </div>
+
+        <DataTable
+          columns={[
+            {
+              accessorKey: "name",
+              header: t("workspace-member-group:table.name"),
+              cell: ({ row }) => {
+                const memberGroup = row.original;
+                return (
+                  <span data-testid={`member-group-row-${memberGroup.name}`}>
+                    {memberGroup.name}
+                  </span>
+                );
+              },
+            },
+            {
+              accessorKey: "description",
+              header: t("workspace-member-group:table.description"),
+              cell: ({ row }) => {
+                const description = row.original.description;
+
+                if (!description) {
+                  return (
+                    <span className="text-muted-foreground">{description}</span>
+                  );
+                }
+
+                return (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger
+                        render={
+                          <div className="line-clamp-1 max-w-[200px] truncate">
+                            {description}
+                          </div>
+                        }
+                      />
+                      <TooltipContent>
+                        <p className="max-w-md wrap-break-word">
+                          {description}
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                );
+              },
+            },
+            {
+              accessorKey: "createdAt",
+              header: t("workspace-member-group:table.createdAt"),
+              cell: ({ row }) => {
+                return row.original.createdAt
+                  ? dayjs(row.original.createdAt).format("YYYY-MM-DD")
+                  : "-";
+              },
+            },
+          ]}
+          onRowClick={
+            canCreateAndViewDetail
+              ? (row) => {
+                  navigate({
+                    to: "/workspaces/$workspaceId/member-groups/$memberGroupId",
+                    params: {
+                      workspaceId,
+                      memberGroupId: row.original.id,
+                    },
+                  });
+                }
+              : undefined
+          }
+          rowActions={
+            canCreateAndViewDetail
+              ? (row) => [
+                  {
+                    label: t("action.edit"),
+                    onClick: () => {
+                      navigate({
+                        to: "/workspaces/$workspaceId/member-groups/$memberGroupId",
+                        params: {
+                          workspaceId,
+                          memberGroupId: row.original.id,
+                        },
+                      });
+                    },
+                  },
+                ]
+              : undefined
+          }
+          data={memberGroups}
+          pagination={{
+            hasPreviousPage: pageInfo?.hasPreviousPage,
+            hasNextPage: pageInfo?.hasNextPage,
+            onPreviousPage: () => {
+              navigate({
+                to: location.pathname,
+                search: getPreviousPageSearch(search, pageInfo),
+              });
+            },
+            onNextPage: () => {
+              navigate({
+                to: location.pathname,
+                search: getNextPageSearch(search, pageInfo),
               });
             },
           }}
         />
-      </div>
-
-      <DataTable
-        columns={[
-          {
-            accessorKey: "name",
-            header: t("workspace-member-group:table.name"),
-            cell: ({ row }) => {
-              const memberGroup = row.original;
-              return (
-                <span data-testid={`member-group-row-${memberGroup.name}`}>
-                  {memberGroup.name}
-                </span>
-              );
-            },
-          },
-          {
-            accessorKey: "description",
-            header: t("workspace-member-group:table.description"),
-            cell: ({ row }) => {
-              const description = row.original.description;
-
-              if (!description) {
-                return (
-                  <span className="text-muted-foreground">{description}</span>
-                );
-              }
-
-              return (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger
-                      render={
-                        <div className="line-clamp-1 max-w-[200px] truncate">
-                          {description}
-                        </div>
-                      }
-                    />
-                    <TooltipContent>
-                      <p className="max-w-md wrap-break-word">{description}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              );
-            },
-          },
-          {
-            accessorKey: "createdAt",
-            header: t("workspace-member-group:table.createdAt"),
-            cell: ({ row }) => {
-              return row.original.createdAt
-                ? dayjs(row.original.createdAt).format("YYYY-MM-DD")
-                : "-";
-            },
-          },
-        ]}
-        onRowClick={
-          canCreateAndViewDetail
-            ? (row) => {
-                navigate({
-                  to: "/workspaces/$workspaceId/member-groups/$memberGroupId",
-                  params: {
-                    workspaceId,
-                    memberGroupId: row.original.id,
-                  },
-                });
-              }
-            : undefined
-        }
-        rowActions={
-          canCreateAndViewDetail
-            ? (row) => [
-                {
-                  label: t("action.edit"),
-                  onClick: () => {
-                    navigate({
-                      to: "/workspaces/$workspaceId/member-groups/$memberGroupId",
-                      params: {
-                        workspaceId,
-                        memberGroupId: row.original.id,
-                      },
-                    });
-                  },
-                },
-              ]
-            : undefined
-        }
-        data={memberGroups}
-        pagination={{
-          hasPreviousPage: pageInfo?.hasPreviousPage,
-          hasNextPage: pageInfo?.hasNextPage,
-          onPreviousPage: () => {
-            navigate({
-              to: location.pathname,
-              search: getPreviousPageSearch(search, pageInfo),
-            });
-          },
-          onNextPage: () => {
-            navigate({
-              to: location.pathname,
-              search: getNextPageSearch(search, pageInfo),
-            });
-          },
-        }}
-      />
+      </PageContent>
     </Page>
   );
 }

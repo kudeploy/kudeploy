@@ -1,10 +1,11 @@
 import { Plus, Trash2 } from "lucide-react";
 import { t } from "i18next";
 
-import { Button } from "@/components/fabric-ui/button";
-import { Input } from "@/components/fabric-ui/input";
-import { Select } from "@/components/fabric-ui/select";
-import { Textarea } from "@/components/fabric-ui/textarea";
+import { Button } from "@/components/thread-ui/button";
+import { Input } from "@/components/thread-ui/input";
+import { Select } from "@/components/thread-ui/select";
+import { Textarea } from "@/components/thread-ui/textarea";
+import { ServiceHealthCheckType } from "@/gql/graphql";
 import { Switch } from "@/components/ui/switch";
 
 const NONE_REGISTRY_CREDENTIAL_VALUE = "__none__";
@@ -28,7 +29,7 @@ export type ServiceResourcesFormValue = {
 
 export type ServiceHealthCheckFormValue = {
   enabled: boolean;
-  type: "HTTP" | "TCP";
+  type: ServiceHealthCheckType;
   port: number | "";
   path: string;
 };
@@ -133,6 +134,7 @@ export function ServiceForm({
           onChange({
             ...value,
             registryCredentialId:
+              !registryCredentialId ||
               registryCredentialId === NONE_REGISTRY_CREDENTIAL_VALUE
                 ? null
                 : registryCredentialId,
@@ -236,15 +238,19 @@ export function ServiceForm({
 
         {value.healthCheck.enabled && (
           <div className="grid gap-3 sm:grid-cols-3">
-            <Select<"HTTP" | "TCP">
+            <Select<ServiceHealthCheckType>
               disabled={disabled}
               items={[
-                { label: "HTTP", value: "HTTP" },
-                { label: "TCP", value: "TCP" },
+                { label: "HTTP", value: ServiceHealthCheckType.HTTP },
+                { label: "TCP", value: ServiceHealthCheckType.TCP },
               ]}
               label={t("service:form.health_check_type")}
               value={value.healthCheck.type}
-              onValueChange={(type) => updateHealthCheck({ type })}
+              onValueChange={(type) => {
+                if (type) {
+                  updateHealthCheck({ type });
+                }
+              }}
             />
             <Input
               disabled={disabled}
@@ -259,7 +265,7 @@ export function ServiceForm({
                 })
               }
             />
-            {value.healthCheck.type === "HTTP" && (
+            {value.healthCheck.type === ServiceHealthCheckType.HTTP && (
               <Input
                 disabled={disabled}
                 label={t("service:form.health_check_path")}
@@ -427,7 +433,8 @@ export function toServiceInput(value: ServiceFormValue) {
         ? {
             type: value.healthCheck.type,
             port: Number(value.healthCheck.port),
-            ...(value.healthCheck.type === "HTTP" && value.healthCheck.path
+            ...(value.healthCheck.type === ServiceHealthCheckType.HTTP &&
+            value.healthCheck.path
               ? { path: value.healthCheck.path.trim() }
               : {}),
           }
@@ -465,7 +472,7 @@ export function initialServiceFormValue(): ServiceFormValue {
     },
     healthCheck: {
       enabled: false,
-      type: "HTTP",
+      type: ServiceHealthCheckType.HTTP,
       port: "",
       path: "/healthz",
     },

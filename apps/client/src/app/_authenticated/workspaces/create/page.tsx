@@ -2,9 +2,9 @@ import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useForm } from "@tanstack/react-form";
 import { useMutation } from "@apollo/client/react";
 import { t } from "i18next";
-import { Button } from "@/components/fabric-ui/button";
+import { Button } from "@/components/thread-ui/button";
 
-import { Input } from "@/components/fabric-ui/input";
+import { Input } from "@/components/thread-ui/input";
 import {
   Field,
   FieldDescription,

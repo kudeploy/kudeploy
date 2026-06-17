@@ -9,12 +9,21 @@ import { t } from "i18next";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { alertDialog } from "@/components/fabric-ui/alert-dialog";
-import { Button } from "@/components/fabric-ui/button";
-import { Input } from "@/components/fabric-ui/input";
-import { Page } from "@/components/fabric-ui/page";
-import { Select } from "@/components/fabric-ui/select";
-import { Textarea } from "@/components/fabric-ui/textarea";
+import { alertDialog } from "@/components/thread-ui/alert-dialog";
+import { Button } from "@/components/thread-ui/button";
+import { Empty } from "@/components/thread-ui/empty";
+import { Input } from "@/components/thread-ui/input";
+import {
+  Page,
+  PageActions,
+  PageContent,
+  PageDescription,
+  PageHeader,
+  PageSecondaryAction,
+  PageTitle,
+} from "@/components/thread-ui/page";
+import { Select } from "@/components/thread-ui/select";
+import { Textarea } from "@/components/thread-ui/textarea";
 import {
   Card,
   CardContent,
@@ -25,6 +34,7 @@ import {
 } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { graphql } from "@/gql";
+import { ServiceHealthCheckType } from "@/gql/graphql";
 
 type EnvValue = {
   key: string;
@@ -33,7 +43,7 @@ type EnvValue = {
 
 type HealthCheckValue = {
   enabled: boolean;
-  type: "HTTP" | "TCP";
+  type: ServiceHealthCheckType;
   port: number | "";
   path: string;
 };
@@ -368,7 +378,8 @@ function ServiceSettingsComponent() {
                 ? {
                     type: healthCheck.type,
                     port: Number(healthCheck.port),
-                    ...(healthCheck.type === "HTTP" && healthCheck.path
+                    ...(healthCheck.type === ServiceHealthCheckType.HTTP &&
+                    healthCheck.path
                       ? { path: healthCheck.path.trim() }
                       : {}),
                   }
@@ -418,161 +429,373 @@ function ServiceSettingsComponent() {
   };
 
   return (
-    <Page
-      title={t("service:tabs.settings")}
-      description={t("service:settings.description")}
-      primaryAction={{
-        disabled: updateLoading,
-        label: t("action.save"),
-        onClick: handleSave,
-        testId: "service-save-action",
-      }}
-      secondaryActions={[
-        {
-          disabled: deleteLoading,
-          label: t("action.delete"),
-          onClick: handleDelete,
-          testId: "service-delete-action",
-        },
-      ]}
-    >
-      <div className="space-y-5" data-testid="service-settings-page">
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("service:settings.general.title")}</CardTitle>
-            <CardDescription>
-              {t("service:settings.general.description")}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-5 sm:grid-cols-3">
-            <Input
-              className="sm:col-span-2"
-              data-testid="service-name-input"
-              label={t("service:form.name.label")}
-              placeholder={t("service:form.name.placeholder")}
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-            />
-
-            <Input
-              className="sm:col-span-1"
-              data-testid="service-replicas-input"
-              label={t("service:form.replicas")}
-              max={100}
-              min={0}
-              type="number"
-              value={replicas}
-              onChange={(event) =>
-                setReplicas(
-                  event.target.value === "" ? "" : Number(event.target.value),
-                )
-              }
-            />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("service:source.title")}</CardTitle>
-            <CardDescription>{t("service:source.description")}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            <div className="grid gap-5 sm:grid-cols-3">
+    <Page>
+      <PageHeader>
+        <PageTitle>{t("service:tabs.settings")}</PageTitle>
+        <PageDescription>{t("service:settings.description")}</PageDescription>
+        <PageActions>
+          <PageSecondaryAction
+            destructive
+            data-testid="service-delete-action"
+            disabled={deleteLoading}
+            onAction={handleDelete}
+          >
+            {t("action.delete")}
+          </PageSecondaryAction>
+          <Button
+            data-slot="page-primary-action"
+            data-testid="service-save-action"
+            disabled={updateLoading}
+            onClick={handleSave}
+          >
+            {t("action.save")}
+          </Button>
+        </PageActions>
+      </PageHeader>
+      <PageContent>
+        <div className="space-y-5" data-testid="service-settings-page">
+          <Card>
+            <CardHeader>
+              <CardTitle>{t("service:settings.general.title")}</CardTitle>
+              <CardDescription>
+                {t("service:settings.general.description")}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-5 sm:grid-cols-3">
               <Input
                 className="sm:col-span-2"
-                data-testid="service-image-input"
-                label={t("service:form.image.label")}
-                placeholder={t("service:form.image.placeholder")}
-                value={image}
-                onChange={(event) => setImage(event.target.value)}
+                data-testid="service-name-input"
+                label={t("service:form.name.label")}
+                placeholder={t("service:form.name.placeholder")}
+                value={name}
+                onChange={(event) => setName(event.target.value)}
               />
 
-              <Select<string>
+              <Input
                 className="sm:col-span-1"
-                data-testid="service-registry-credential-select"
-                items={registryCredentialItems}
-                label={t("service:form.registry_credential.label")}
-                placeholder={t("service:form.registry_credential.none")}
-                value={registryCredentialId}
-                onValueChange={setRegistryCredentialId}
-              />
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Textarea
-                data-testid="service-command-input"
-                label={t("service:form.command.label")}
-                placeholder={t("service:form.command.placeholder")}
-                value={command}
-                onChange={(event) => setCommand(event.target.value)}
-              />
-              <Textarea
-                data-testid="service-args-input"
-                label={t("service:form.args.label")}
-                placeholder={t("service:form.args.placeholder")}
-                value={args}
-                onChange={(event) => setArgs(event.target.value)}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <CardTitle>{t("service:environment.title")}</CardTitle>
-                <CardDescription>
-                  {t("service:environment.description")}
-                </CardDescription>
-              </div>
-              <Button
-                data-testid="service-add-env-action"
-                size="sm"
-                type="button"
-                variant="secondary"
-                onClick={() =>
-                  setEnv((current) => [...current, { key: "", value: "" }])
+                data-testid="service-replicas-input"
+                label={t("service:form.replicas")}
+                max={100}
+                min={0}
+                type="number"
+                value={replicas}
+                onChange={(event) =>
+                  setReplicas(
+                    event.target.value === "" ? "" : Number(event.target.value),
+                  )
                 }
-              >
-                <Plus />
-                {t("service:actions.add_env")}
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {env.length === 0 ? (
-              <p className="text-muted-foreground text-sm">
-                {t("service:environment.empty")}
-              </p>
-            ) : (
-              env.map((item, index) => (
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>{t("service:source.title")}</CardTitle>
+              <CardDescription>
+                {t("service:source.description")}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="grid gap-5 sm:grid-cols-3">
+                <Input
+                  className="sm:col-span-2"
+                  data-testid="service-image-input"
+                  label={t("service:form.image.label")}
+                  placeholder={t("service:form.image.placeholder")}
+                  value={image}
+                  onChange={(event) => setImage(event.target.value)}
+                />
+
+                <Select<string>
+                  className="sm:col-span-1"
+                  data-testid="service-registry-credential-select"
+                  items={registryCredentialItems}
+                  label={t("service:form.registry_credential.label")}
+                  placeholder={t("service:form.registry_credential.none")}
+                  value={registryCredentialId}
+                  onValueChange={(value) =>
+                    setRegistryCredentialId(
+                      value ?? NONE_REGISTRY_CREDENTIAL_VALUE,
+                    )
+                  }
+                />
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Textarea
+                  data-testid="service-command-input"
+                  label={t("service:form.command.label")}
+                  placeholder={t("service:form.command.placeholder")}
+                  value={command}
+                  onChange={(event) => setCommand(event.target.value)}
+                />
+                <Textarea
+                  data-testid="service-args-input"
+                  label={t("service:form.args.label")}
+                  placeholder={t("service:form.args.placeholder")}
+                  value={args}
+                  onChange={(event) => setArgs(event.target.value)}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <CardTitle>{t("service:environment.title")}</CardTitle>
+                  <CardDescription>
+                    {t("service:environment.description")}
+                  </CardDescription>
+                </div>
+                <Button
+                  data-testid="service-add-env-action"
+                  size="sm"
+                  type="button"
+                  variant="secondary"
+                  onClick={() =>
+                    setEnv((current) => [...current, { key: "", value: "" }])
+                  }
+                >
+                  <Plus />
+                  {t("service:actions.add_env")}
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {env.length === 0 ? (
+                <Empty
+                  className="rounded-md border border-dashed p-4"
+                  title={t("service:environment.empty")}
+                />
+              ) : (
+                env.map((item, index) => (
+                  <div
+                    className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_2.25rem] items-end gap-2"
+                    key={index}
+                  >
+                    <Input
+                      data-testid={`service-env-key-input-${index}`}
+                      label={t("service:form.key")}
+                      value={item.key}
+                      onChange={(event) =>
+                        updateEnv(index, { key: event.target.value })
+                      }
+                    />
+                    <Input
+                      data-testid={`service-env-value-input-${index}`}
+                      label={t("service:form.value")}
+                      value={item.value}
+                      onChange={(event) =>
+                        updateEnv(index, { value: event.target.value })
+                      }
+                    />
+                    <Button
+                      size="icon"
+                      type="button"
+                      variant="ghost"
+                      onClick={() =>
+                        setEnv((current) =>
+                          current.filter(
+                            (_item, currentIndex) => currentIndex !== index,
+                          ),
+                        )
+                      }
+                    >
+                      <Trash2 />
+                    </Button>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <CardTitle>{t("service:volumes.title")}</CardTitle>
+                  <CardDescription>
+                    {t("service:volumes.description")}
+                  </CardDescription>
+                </div>
+                <Button
+                  data-testid="service-add-volume-action"
+                  disabled={volumeItems.length <= 1}
+                  size="sm"
+                  type="button"
+                  variant="secondary"
+                  onClick={() =>
+                    setVolumes((current) => [
+                      ...current,
+                      {
+                        volumeId: NONE_VOLUME_VALUE,
+                        mountPath: "",
+                        subPath: "",
+                        readOnly: false,
+                      },
+                    ])
+                  }
+                >
+                  <Plus />
+                  {t("service:actions.add_volume")}
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {volumes.length === 0 ? (
+                <Empty
+                  className="rounded-md border border-dashed p-4"
+                  title={
+                    volumeItems.length <= 1
+                      ? t("service:volumes.unavailable")
+                      : t("service:volumes.empty")
+                  }
+                />
+              ) : (
+                volumes.map((volume, index) => (
+                  <div className="rounded-md border p-3" key={index}>
+                    <div className="grid gap-3 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)_minmax(0,1fr)_auto_auto]">
+                      <div data-testid={`service-volume-select-${index}`}>
+                        <Select<string>
+                          items={volumeItems}
+                          label={t("service:form.volume.label")}
+                          placeholder={t(
+                            "service:form.volume.select_placeholder",
+                          )}
+                          value={volume.volumeId || NONE_VOLUME_VALUE}
+                          onValueChange={(volumeId) =>
+                            updateVolume(index, {
+                              volumeId: volumeId ?? NONE_VOLUME_VALUE,
+                            })
+                          }
+                        />
+                      </div>
+                      <Input
+                        data-testid={`service-volume-sub-path-input-${index}`}
+                        label={t("service:form.volume.sub_path")}
+                        placeholder="/"
+                        value={volume.subPath}
+                        onChange={(event) =>
+                          updateVolume(index, { subPath: event.target.value })
+                        }
+                      />
+                      <Input
+                        data-testid={`service-volume-mount-path-input-${index}`}
+                        label={t("service:form.volume.mount_path")}
+                        placeholder="/data"
+                        value={volume.mountPath}
+                        onChange={(event) =>
+                          updateVolume(index, { mountPath: event.target.value })
+                        }
+                      />
+                      <div className="flex items-end pb-2">
+                        <label className="flex items-center gap-2 text-sm">
+                          <Switch
+                            aria-label={t("service:form.volume.read_only")}
+                            data-testid={`service-volume-read-only-input-${index}`}
+                            checked={volume.readOnly}
+                            onCheckedChange={(readOnly) =>
+                              updateVolume(index, { readOnly })
+                            }
+                          />
+                          {t("service:form.volume.read_only")}
+                        </label>
+                      </div>
+                      <div className="flex items-end">
+                        <Button
+                          aria-label={t("service:actions.remove_volume")}
+                          size="icon"
+                          type="button"
+                          variant="ghost"
+                          onClick={() =>
+                            setVolumes((current) =>
+                              current.filter(
+                                (_item, currentIndex) => currentIndex !== index,
+                              ),
+                            )
+                          }
+                        >
+                          <Trash2 />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <CardTitle>{t("service:network.ports")}</CardTitle>
+                  <CardDescription>
+                    {t("service:network.description")}
+                  </CardDescription>
+                </div>
+                <Button
+                  data-testid="service-add-port-action"
+                  size="sm"
+                  type="button"
+                  variant="secondary"
+                  onClick={() =>
+                    setPorts((current) => [
+                      ...current,
+                      { port: "", targetPort: "" },
+                    ])
+                  }
+                >
+                  <Plus />
+                  {t("service:actions.add_port")}
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {ports.map((port, index) => (
                 <div
                   className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_2.25rem] items-end gap-2"
                   key={index}
                 >
                   <Input
-                    data-testid={`service-env-key-input-${index}`}
-                    label={t("service:form.key")}
-                    value={item.key}
+                    data-testid={`service-port-input-${index}`}
+                    label={t("service:form.port")}
+                    min={1}
+                    type="number"
+                    value={port.port}
                     onChange={(event) =>
-                      updateEnv(index, { key: event.target.value })
+                      updatePort(index, {
+                        port:
+                          event.target.value === ""
+                            ? ""
+                            : Number(event.target.value),
+                      })
                     }
                   />
                   <Input
-                    data-testid={`service-env-value-input-${index}`}
-                    label={t("service:form.value")}
-                    value={item.value}
+                    data-testid={`service-target-port-input-${index}`}
+                    label={t("service:form.target_port")}
+                    min={1}
+                    type="number"
+                    value={port.targetPort}
                     onChange={(event) =>
-                      updateEnv(index, { value: event.target.value })
+                      updatePort(index, {
+                        targetPort:
+                          event.target.value === ""
+                            ? ""
+                            : Number(event.target.value),
+                      })
                     }
                   />
                   <Button
+                    disabled={ports.length === 1}
                     size="icon"
                     type="button"
                     variant="ghost"
                     onClick={() =>
-                      setEnv((current) =>
+                      setPorts((current) =>
                         current.filter(
                           (_item, currentIndex) => currentIndex !== index,
                         ),
@@ -582,342 +805,151 @@ function ServiceSettingsComponent() {
                     <Trash2 />
                   </Button>
                 </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
+              ))}
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <CardTitle>{t("service:volumes.title")}</CardTitle>
-                <CardDescription>
-                  {t("service:volumes.description")}
-                </CardDescription>
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between gap-3">
+                <CardTitle>{t("service:form.health_check")}</CardTitle>
+                <Switch
+                  data-testid="service-health-check-enabled"
+                  checked={healthCheck.enabled}
+                  onCheckedChange={(enabled) =>
+                    setHealthCheck((current) => ({ ...current, enabled }))
+                  }
+                />
               </div>
-              <Button
-                data-testid="service-add-volume-action"
-                disabled={volumeItems.length <= 1}
-                size="sm"
-                type="button"
-                variant="secondary"
-                onClick={() =>
-                  setVolumes((current) => [
-                    ...current,
-                    {
-                      volumeId: NONE_VOLUME_VALUE,
-                      mountPath: "",
-                      subPath: "",
-                      readOnly: false,
-                    },
-                  ])
-                }
-              >
-                <Plus />
-                {t("service:actions.add_volume")}
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {volumes.length === 0 ? (
-              <p className="text-muted-foreground text-sm">
-                {volumeItems.length <= 1
-                  ? t("service:volumes.unavailable")
-                  : t("service:volumes.empty")}
-              </p>
-            ) : (
-              volumes.map((volume, index) => (
-                <div className="rounded-md border p-3" key={index}>
-                  <div className="grid gap-3 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)_minmax(0,1fr)_auto_auto]">
-                    <div data-testid={`service-volume-select-${index}`}>
-                      <Select<string>
-                        items={volumeItems}
-                        label={t("service:form.volume.label")}
-                        placeholder={t(
-                          "service:form.volume.select_placeholder",
-                        )}
-                        value={volume.volumeId || NONE_VOLUME_VALUE}
-                        onValueChange={(volumeId) =>
-                          updateVolume(index, { volumeId })
-                        }
-                      />
-                    </div>
-                    <Input
-                      data-testid={`service-volume-sub-path-input-${index}`}
-                      label={t("service:form.volume.sub_path")}
-                      placeholder="/"
-                      value={volume.subPath}
-                      onChange={(event) =>
-                        updateVolume(index, { subPath: event.target.value })
-                      }
-                    />
-                    <Input
-                      data-testid={`service-volume-mount-path-input-${index}`}
-                      label={t("service:form.volume.mount_path")}
-                      placeholder="/data"
-                      value={volume.mountPath}
-                      onChange={(event) =>
-                        updateVolume(index, { mountPath: event.target.value })
-                      }
-                    />
-                    <div className="flex items-end pb-2">
-                      <label className="flex items-center gap-2 text-sm">
-                        <Switch
-                          aria-label={t("service:form.volume.read_only")}
-                          data-testid={`service-volume-read-only-input-${index}`}
-                          checked={volume.readOnly}
-                          onCheckedChange={(readOnly) =>
-                            updateVolume(index, { readOnly })
-                          }
-                        />
-                        {t("service:form.volume.read_only")}
-                      </label>
-                    </div>
-                    <div className="flex items-end">
-                      <Button
-                        aria-label={t("service:actions.remove_volume")}
-                        size="icon"
-                        type="button"
-                        variant="ghost"
-                        onClick={() =>
-                          setVolumes((current) =>
-                            current.filter(
-                              (_item, currentIndex) => currentIndex !== index,
-                            ),
-                          )
-                        }
-                      >
-                        <Trash2 />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <CardTitle>{t("service:network.ports")}</CardTitle>
-                <CardDescription>
-                  {t("service:network.description")}
-                </CardDescription>
-              </div>
-              <Button
-                data-testid="service-add-port-action"
-                size="sm"
-                type="button"
-                variant="secondary"
-                onClick={() =>
-                  setPorts((current) => [
-                    ...current,
-                    { port: "", targetPort: "" },
-                  ])
-                }
-              >
-                <Plus />
-                {t("service:actions.add_port")}
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {ports.map((port, index) => (
-              <div
-                className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_2.25rem] items-end gap-2"
-                key={index}
-              >
+            </CardHeader>
+            {healthCheck.enabled && (
+              <CardContent className="grid gap-3 sm:grid-cols-3">
+                <Select<ServiceHealthCheckType>
+                  items={[
+                    { label: "HTTP", value: ServiceHealthCheckType.HTTP },
+                    { label: "TCP", value: ServiceHealthCheckType.TCP },
+                  ]}
+                  label={t("service:form.health_check_type")}
+                  value={healthCheck.type}
+                  onValueChange={(type) => {
+                    if (type) {
+                      setHealthCheck((current) => ({ ...current, type }));
+                    }
+                  }}
+                />
                 <Input
-                  data-testid={`service-port-input-${index}`}
-                  label={t("service:form.port")}
+                  label={t("service:form.health_check_port")}
                   min={1}
                   type="number"
-                  value={port.port}
+                  value={healthCheck.port}
                   onChange={(event) =>
-                    updatePort(index, {
+                    setHealthCheck((current) => ({
+                      ...current,
                       port:
                         event.target.value === ""
                           ? ""
                           : Number(event.target.value),
-                    })
-                  }
-                />
-                <Input
-                  data-testid={`service-target-port-input-${index}`}
-                  label={t("service:form.target_port")}
-                  min={1}
-                  type="number"
-                  value={port.targetPort}
-                  onChange={(event) =>
-                    updatePort(index, {
-                      targetPort:
-                        event.target.value === ""
-                          ? ""
-                          : Number(event.target.value),
-                    })
-                  }
-                />
-                <Button
-                  disabled={ports.length === 1}
-                  size="icon"
-                  type="button"
-                  variant="ghost"
-                  onClick={() =>
-                    setPorts((current) =>
-                      current.filter(
-                        (_item, currentIndex) => currentIndex !== index,
-                      ),
-                    )
-                  }
-                >
-                  <Trash2 />
-                </Button>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between gap-3">
-              <CardTitle>{t("service:form.health_check")}</CardTitle>
-              <Switch
-                data-testid="service-health-check-enabled"
-                checked={healthCheck.enabled}
-                onCheckedChange={(enabled) =>
-                  setHealthCheck((current) => ({ ...current, enabled }))
-                }
-              />
-            </div>
-          </CardHeader>
-          {healthCheck.enabled && (
-            <CardContent className="grid gap-3 sm:grid-cols-3">
-              <Select<"HTTP" | "TCP">
-                items={[
-                  { label: "HTTP", value: "HTTP" },
-                  { label: "TCP", value: "TCP" },
-                ]}
-                label={t("service:form.health_check_type")}
-                value={healthCheck.type}
-                onValueChange={(type) =>
-                  setHealthCheck((current) => ({ ...current, type }))
-                }
-              />
-              <Input
-                label={t("service:form.health_check_port")}
-                min={1}
-                type="number"
-                value={healthCheck.port}
-                onChange={(event) =>
-                  setHealthCheck((current) => ({
-                    ...current,
-                    port:
-                      event.target.value === ""
-                        ? ""
-                        : Number(event.target.value),
-                  }))
-                }
-              />
-              {healthCheck.type === "HTTP" && (
-                <Input
-                  label={t("service:form.health_check_path")}
-                  placeholder="/healthz"
-                  value={healthCheck.path}
-                  onChange={(event) =>
-                    setHealthCheck((current) => ({
-                      ...current,
-                      path: event.target.value,
                     }))
                   }
                 />
-              )}
-            </CardContent>
-          )}
-        </Card>
+                {healthCheck.type === ServiceHealthCheckType.HTTP && (
+                  <Input
+                    label={t("service:form.health_check_path")}
+                    placeholder="/healthz"
+                    value={healthCheck.path}
+                    onChange={(event) =>
+                      setHealthCheck((current) => ({
+                        ...current,
+                        path: event.target.value,
+                      }))
+                    }
+                  />
+                )}
+              </CardContent>
+            )}
+          </Card>
 
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between gap-3">
-              <CardTitle>{t("service:form.resources")}</CardTitle>
-              <Switch
-                aria-label={t("service:form.resources")}
-                data-testid="service-resources-enabled"
-                checked={resourcesEnabled}
-                onCheckedChange={setResourcesEnabled}
-              />
-            </div>
-          </CardHeader>
-          {resourcesEnabled && (
-            <CardContent className="grid gap-3 sm:grid-cols-2">
-              <Input
-                data-testid="service-cpu-request-input"
-                label={t("service:form.cpu_request")}
-                placeholder="250m"
-                value={resources.cpuRequest}
-                onChange={(event) =>
-                  updateResources({ cpuRequest: event.target.value })
-                }
-              />
-              <Input
-                data-testid="service-cpu-limit-input"
-                label={t("service:form.cpu_limit")}
-                placeholder="500m"
-                value={resources.cpuLimit}
-                onChange={(event) =>
-                  updateResources({ cpuLimit: event.target.value })
-                }
-              />
-              <Input
-                data-testid="service-memory-request-input"
-                label={t("service:form.memory_request")}
-                placeholder="256Mi"
-                value={resources.memoryRequest}
-                onChange={(event) =>
-                  updateResources({ memoryRequest: event.target.value })
-                }
-              />
-              <Input
-                data-testid="service-memory-limit-input"
-                label={t("service:form.memory_limit")}
-                placeholder="512Mi"
-                value={resources.memoryLimit}
-                onChange={(event) =>
-                  updateResources({ memoryLimit: event.target.value })
-                }
-              />
-            </CardContent>
-          )}
-          <CardFooter className="justify-end @md/page:hidden">
-            <Button disabled={updateLoading} onClick={handleSave}>
-              {t("action.save")}
-            </Button>
-          </CardFooter>
-        </Card>
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between gap-3">
+                <CardTitle>{t("service:form.resources")}</CardTitle>
+                <Switch
+                  aria-label={t("service:form.resources")}
+                  data-testid="service-resources-enabled"
+                  checked={resourcesEnabled}
+                  onCheckedChange={setResourcesEnabled}
+                />
+              </div>
+            </CardHeader>
+            {resourcesEnabled && (
+              <CardContent className="grid gap-3 sm:grid-cols-2">
+                <Input
+                  data-testid="service-cpu-request-input"
+                  label={t("service:form.cpu_request")}
+                  placeholder="250m"
+                  value={resources.cpuRequest}
+                  onChange={(event) =>
+                    updateResources({ cpuRequest: event.target.value })
+                  }
+                />
+                <Input
+                  data-testid="service-cpu-limit-input"
+                  label={t("service:form.cpu_limit")}
+                  placeholder="500m"
+                  value={resources.cpuLimit}
+                  onChange={(event) =>
+                    updateResources({ cpuLimit: event.target.value })
+                  }
+                />
+                <Input
+                  data-testid="service-memory-request-input"
+                  label={t("service:form.memory_request")}
+                  placeholder="256Mi"
+                  value={resources.memoryRequest}
+                  onChange={(event) =>
+                    updateResources({ memoryRequest: event.target.value })
+                  }
+                />
+                <Input
+                  data-testid="service-memory-limit-input"
+                  label={t("service:form.memory_limit")}
+                  placeholder="512Mi"
+                  value={resources.memoryLimit}
+                  onChange={(event) =>
+                    updateResources({ memoryLimit: event.target.value })
+                  }
+                />
+              </CardContent>
+            )}
+            <CardFooter className="justify-end @md/page:hidden">
+              <Button disabled={updateLoading} onClick={handleSave}>
+                {t("action.save")}
+              </Button>
+            </CardFooter>
+          </Card>
 
-        <Card className="border-destructive">
-          <CardHeader>
-            <CardTitle className="text-destructive">
-              {t("service:settings.danger_zone.title")}
-            </CardTitle>
-            <CardDescription>
-              {t("service:settings.danger_zone.description")}
-            </CardDescription>
-          </CardHeader>
-          <CardFooter>
-            <Button
-              data-testid="service-delete-action-mobile"
-              disabled={deleteLoading}
-              variant="destructive"
-              onClick={handleDelete}
-            >
-              {t("service:settings.danger_zone.delete_button")}
-            </Button>
-          </CardFooter>
-        </Card>
-      </div>
+          <Card className="border-destructive">
+            <CardHeader>
+              <CardTitle className="text-destructive">
+                {t("service:settings.danger_zone.title")}
+              </CardTitle>
+              <CardDescription>
+                {t("service:settings.danger_zone.description")}
+              </CardDescription>
+            </CardHeader>
+            <CardFooter>
+              <Button
+                data-testid="service-delete-action-mobile"
+                disabled={deleteLoading}
+                variant="destructive"
+                onClick={handleDelete}
+              >
+                {t("service:settings.danger_zone.delete_button")}
+              </Button>
+            </CardFooter>
+          </Card>
+        </div>
+      </PageContent>
     </Page>
   );
 }
@@ -953,14 +985,14 @@ function toLines(value: string) {
 
 function toHealthCheckValue(
   healthCheck?: {
-    type: "HTTP" | "TCP";
+    type: ServiceHealthCheckType;
     port: number;
     path?: string | null;
   } | null,
 ): HealthCheckValue {
   return {
     enabled: !!healthCheck,
-    type: healthCheck?.type ?? "HTTP",
+    type: healthCheck?.type ?? ServiceHealthCheckType.HTTP,
     port: healthCheck?.port ?? "",
     path: healthCheck?.path ?? "/healthz",
   };

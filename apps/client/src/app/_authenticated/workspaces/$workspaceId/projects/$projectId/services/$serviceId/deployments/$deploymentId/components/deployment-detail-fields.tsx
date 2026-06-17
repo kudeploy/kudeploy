@@ -2,7 +2,7 @@ import { t } from "i18next";
 import type { ReactNode } from "react";
 
 import type { DeploymentStatus } from "@/gql/graphql";
-import { Badge } from "@/components/fabric-ui/badge";
+import { Badge } from "@/components/thread-ui/badge";
 
 const statusColors = {
   FAILED: "red",

@@ -13,12 +13,19 @@ import { t } from "i18next";
 
 import { useCurrentWorkspaceMemberContext } from "../../contexts/current-workspace-member-context";
 import type { UpdateWorkspaceMemberInput } from "@/gql/graphql";
-import { alertDialog } from "@/components/fabric-ui/alert-dialog";
-import { Page } from "@/components/fabric-ui/page";
-import { Button } from "@/components/fabric-ui/button";
+import { alertDialog } from "@/components/thread-ui/alert-dialog";
+import { Button } from "@/components/thread-ui/button";
+import {
+  Page,
+  PageActions,
+  PageContent,
+  PageHeader,
+  PageSecondaryAction,
+  PageTitle,
+} from "@/components/thread-ui/page";
 import { Field, FieldGroup, FieldSet } from "@/components/ui/field";
-import { Input } from "@/components/fabric-ui/input";
-import { RadioGroup } from "@/components/fabric-ui/radio-group";
+import { Input } from "@/components/thread-ui/input";
+import { RadioGroup } from "@/components/thread-ui/radio-group";
 import { graphql } from "@/gql";
 import {
   WorkspaceMemberRole,
@@ -360,177 +367,184 @@ function MemberComponent() {
   };
 
   return (
-    <Page
-      variant="compact"
-      title={member.name}
-      secondaryActions={
-        canCopyInviteLink || canRemove
-          ? [
-              ...(canCopyInviteLink && inviteLink
-                ? [
-                    {
-                      label: t(
-                        "workspace-member:details.actions.copy_invite_link",
-                      ),
-                      testId: "workspace-member-copy-invite-link-action",
-                      onClick: () => handleCopyInviteLink(inviteLink),
-                    },
-                  ]
-                : []),
-              ...(canRemove
-                ? [
-                    {
-                      label: t(
-                        "workspace-member:details.actions.delete_member",
-                      ),
-                      testId: "workspace-member-delete-action",
-                      onClick: handleRemoveClick,
-                    },
-                  ]
-                : []),
-            ]
-          : undefined
-      }
-    >
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          form.handleSubmit();
-        }}
-      >
-        <FieldSet>
-          <FieldGroup>
-            <form.Field
-              name="name"
-              validators={{
-                onChange: z
-                  .string()
-                  .min(1, t("workspace-member:details.form.name.required"))
-                  .max(255, t("workspace-member:details.form.name.too_long")),
-              }}
-            >
-              {(field) => (
-                <Input
-                  id={field.name}
-                  name={field.name}
-                  label={t("workspace-member:details.form.name.label")}
-                  description={t(
-                    "workspace-member:details.form.name.description",
-                  )}
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  error={
-                    field.state.meta.isTouched && !field.state.meta.isValid
-                      ? field.state.meta.errors.map((error: any) => typeof error === "string" ? error : error?.message || error).join(", ")
-                      : undefined
-                  }
-                  aria-required="true"
-                  required
-                  autoComplete="off"
-                />
-              )}
-            </form.Field>
-
-            <form.Field
-              name="email"
-              validators={{
-                onChange: z
-                  .string()
-                  .email(t("workspace-member:details.form.email.invalid"))
-                  .or(z.literal("")),
-              }}
-            >
-              {(field) => (
-                <Input
-                  id={field.name}
-                  name={field.name}
-                  type="email"
-                  label={t("workspace-member:details.form.email.label")}
-                  placeholder={t(
-                    "workspace-member:details.form.email.placeholder",
-                  )}
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  error={
-                    field.state.meta.isTouched && !field.state.meta.isValid
-                      ? field.state.meta.errors.map((error: any) => typeof error === "string" ? error : error?.message || error).join(", ")
-                      : undefined
-                  }
-                  autoComplete="email"
-                  className="w-full"
-                />
-              )}
-            </form.Field>
-
-            <form.Field name="role">
-              {(field) => (
-                <RadioGroup
-                  label={t("workspace-member:details.form.role.label")}
-                  items={Object.values(WorkspaceMemberRole)
-                    .filter(
-                      (role) =>
-                        role !== WorkspaceMemberRole.OWNER ||
-                        field.state.value === WorkspaceMemberRole.OWNER,
-                    )
-                    .map((role) => ({
-                      label: getRoleLabel(role),
-                      value: role,
-                      disabled:
-                        role === WorkspaceMemberRole.OWNER || !canEditRole,
-                    }))}
-                  value={field.state.value}
-                  onValueChange={(value: WorkspaceMemberRole) => {
-                    field.handleChange(value);
-
-                    if (value === WorkspaceMemberRole.MEMBER) {
-                      form.setFieldValue(
-                        "permissions",
-                        member?.permissions || [],
-                      );
-                    } else {
-                      form.setFieldValue("permissions", allPermissions);
+    <Page variant="compact">
+      <PageHeader>
+        <PageTitle>{member.name}</PageTitle>
+        {((canCopyInviteLink && inviteLink) || canRemove) && (
+          <PageActions>
+            {canCopyInviteLink && inviteLink && (
+              <PageSecondaryAction
+                data-testid="workspace-member-copy-invite-link-action"
+                onAction={() => handleCopyInviteLink(inviteLink)}
+              >
+                {t("workspace-member:details.actions.copy_invite_link")}
+              </PageSecondaryAction>
+            )}
+            {canRemove && (
+              <PageSecondaryAction
+                destructive
+                data-testid="workspace-member-delete-action"
+                onAction={handleRemoveClick}
+              >
+                {t("workspace-member:details.actions.delete_member")}
+              </PageSecondaryAction>
+            )}
+          </PageActions>
+        )}
+      </PageHeader>
+      <PageContent>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            form.handleSubmit();
+          }}
+        >
+          <FieldSet>
+            <FieldGroup>
+              <form.Field
+                name="name"
+                validators={{
+                  onChange: z
+                    .string()
+                    .min(1, t("workspace-member:details.form.name.required"))
+                    .max(255, t("workspace-member:details.form.name.too_long")),
+                }}
+              >
+                {(field) => (
+                  <Input
+                    id={field.name}
+                    name={field.name}
+                    label={t("workspace-member:details.form.name.label")}
+                    description={t(
+                      "workspace-member:details.form.name.description",
+                    )}
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    error={
+                      field.state.meta.isTouched && !field.state.meta.isValid
+                        ? field.state.meta.errors
+                            .map((error: any) =>
+                              typeof error === "string"
+                                ? error
+                                : error?.message || error,
+                            )
+                            .join(", ")
+                        : undefined
                     }
-                  }}
-                  disabled={!canEditRole}
-                />
-              )}
-            </form.Field>
+                    aria-required="true"
+                    required
+                    autoComplete="off"
+                  />
+                )}
+              </form.Field>
 
-            <form.Field name="permissions">
-              {(field) => (
-                <PermissionCheckboxGroup
-                  value={field.state.value}
-                  onChange={field.handleChange}
-                  disabled={updateLoading || isOwnerOrAdmin}
-                />
-              )}
-            </form.Field>
+              <form.Field
+                name="email"
+                validators={{
+                  onChange: z
+                    .string()
+                    .email(t("workspace-member:details.form.email.invalid"))
+                    .or(z.literal("")),
+                }}
+              >
+                {(field) => (
+                  <Input
+                    id={field.name}
+                    name={field.name}
+                    type="email"
+                    label={t("workspace-member:details.form.email.label")}
+                    placeholder={t(
+                      "workspace-member:details.form.email.placeholder",
+                    )}
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    error={
+                      field.state.meta.isTouched && !field.state.meta.isValid
+                        ? field.state.meta.errors
+                            .map((error: any) =>
+                              typeof error === "string"
+                                ? error
+                                : error?.message || error,
+                            )
+                            .join(", ")
+                        : undefined
+                    }
+                    autoComplete="email"
+                    className="w-full"
+                  />
+                )}
+              </form.Field>
 
-            <form.Subscribe
-              selector={(state) => [
-                state.isDirty,
-                state.isSubmitting,
-                state.canSubmit,
-              ]}
-            >
-              {([isDirty, isSubmitting, canSubmit]) => (
-                <Field orientation="horizontal">
-                  <Button
-                    type="submit"
-                    disabled={!isDirty || !canSubmit}
-                    loading={isSubmitting}
-                  >
-                    {t("action.save")}
-                  </Button>
-                </Field>
-              )}
-            </form.Subscribe>
-          </FieldGroup>
-        </FieldSet>
-      </form>
+              <form.Field name="role">
+                {(field) => (
+                  <RadioGroup
+                    label={t("workspace-member:details.form.role.label")}
+                    items={Object.values(WorkspaceMemberRole)
+                      .filter(
+                        (role) =>
+                          role !== WorkspaceMemberRole.OWNER ||
+                          field.state.value === WorkspaceMemberRole.OWNER,
+                      )
+                      .map((role) => ({
+                        label: getRoleLabel(role),
+                        value: role,
+                        disabled:
+                          role === WorkspaceMemberRole.OWNER || !canEditRole,
+                      }))}
+                    value={field.state.value}
+                    onValueChange={(value: WorkspaceMemberRole) => {
+                      field.handleChange(value);
+
+                      if (value === WorkspaceMemberRole.MEMBER) {
+                        form.setFieldValue(
+                          "permissions",
+                          member?.permissions || [],
+                        );
+                      } else {
+                        form.setFieldValue("permissions", allPermissions);
+                      }
+                    }}
+                    disabled={!canEditRole}
+                  />
+                )}
+              </form.Field>
+
+              <form.Field name="permissions">
+                {(field) => (
+                  <PermissionCheckboxGroup
+                    value={field.state.value}
+                    onChange={field.handleChange}
+                    disabled={updateLoading || isOwnerOrAdmin}
+                  />
+                )}
+              </form.Field>
+
+              <form.Subscribe
+                selector={(state) => [
+                  state.isDirty,
+                  state.isSubmitting,
+                  state.canSubmit,
+                ]}
+              >
+                {([isDirty, isSubmitting, canSubmit]) => (
+                  <Field orientation="horizontal">
+                    <Button
+                      type="submit"
+                      disabled={!isDirty || !canSubmit}
+                      loading={isSubmitting}
+                    >
+                      {t("action.save")}
+                    </Button>
+                  </Field>
+                )}
+              </form.Subscribe>
+            </FieldGroup>
+          </FieldSet>
+        </form>
+      </PageContent>
     </Page>
   );
 }

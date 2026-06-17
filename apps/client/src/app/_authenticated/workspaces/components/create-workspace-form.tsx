@@ -5,8 +5,8 @@ import { z } from "zod";
 
 import { useMutation } from "@apollo/client/react";
 import { useNavigate } from "@tanstack/react-router";
-import { Button } from "@/components/fabric-ui/button";
-import { Input } from "@/components/fabric-ui/input";
+import { Button } from "@/components/thread-ui/button";
+import { Input } from "@/components/thread-ui/input";
 import { graphql } from "@/gql";
 
 const CREATE_WORKSPACE_FROM_CREATE_WORKSPACE_FORM = graphql(`

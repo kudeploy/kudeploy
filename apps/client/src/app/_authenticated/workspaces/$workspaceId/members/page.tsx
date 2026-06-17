@@ -14,11 +14,19 @@ import z from "zod";
 import { isEmpty, pick } from "lodash";
 import { useCurrentWorkspaceMemberContext } from "../contexts/current-workspace-member-context";
 import { InviteMemberDialog } from "./components/invite-member-dialog";
-import type { DataFilterItemProps as FilterItemProps } from "@/components/fabric-ui/data-filter";
-import { DataFilter as Filter } from "@/components/fabric-ui/data-filter";
-import { alertDialog } from "@/components/fabric-ui/alert-dialog";
-import { Page } from "@/components/fabric-ui/page";
-import { DataTable } from "@/components/fabric-ui/data-table";
+import type { DataFilterItemProps as FilterItemProps } from "@/components/thread-ui/data-filter";
+import { DataFilter as Filter } from "@/components/thread-ui/data-filter";
+import { alertDialog } from "@/components/thread-ui/alert-dialog";
+import {
+  Page,
+  PageActions,
+  PageContent,
+  PageDescription,
+  PageHeader,
+  PagePrimaryAction,
+  PageTitle,
+} from "@/components/thread-ui/page";
+import { DataTable } from "@/components/thread-ui/data-table";
 import { graphql } from "@/gql";
 import {
   WorkspaceMemberOrderField,
@@ -34,11 +42,11 @@ import {
 import { truncateEmail } from "@/utils/truncate-email";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { formatFilterValues } from "@/components/fabric-ui/data-filter/format-filter-values";
+import { formatFilterValues } from "@/lib/format-filter-values";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
-import { Badge } from "@/components/fabric-ui/badge";
+import { Badge } from "@/components/thread-ui/badge";
 
 const GET_WORKSPACE_MEMBERS_FROM_MEMBERS_ROUTE = graphql(`
   query getWorkspaceMembersFromMembersRoute(
@@ -229,12 +237,13 @@ function MembersComponent() {
       {
         label: t("workspace-member:filter.items.name.label"),
         field: "name",
+        type: "input",
         pinned: true,
         render: ({ field: { value, onChange } }) => {
           return (
             <Input
               placeholder={t("workspace-member:filter.items.name.placeholder")}
-              defaultValue={value}
+              defaultValue={value ?? ""}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
@@ -249,12 +258,13 @@ function MembersComponent() {
       {
         label: t("workspace-member:filter.items.email.label"),
         field: "email",
+        type: "input",
         pinned: true,
         render: ({ field: { value, onChange } }) => {
           return (
             <Input
               placeholder={t("workspace-member:filter.items.email.placeholder")}
-              defaultValue={value}
+              defaultValue={value ?? ""}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
@@ -269,23 +279,29 @@ function MembersComponent() {
       {
         label: t("workspace-member:filter.items.status.label"),
         field: "status",
+        type: "select",
+        options: [],
         pinned: true,
-        render: ({ field: { value = [], onChange } }) => {
+        render: ({ field: { value, onChange } }) => {
+          const selectedStatuses = value ?? [];
+
           return (
             <div className="space-y-2">
               {[...Object.values(WorkspaceMemberStatus)].map((status) => (
                 <div key={status} className="flex gap-2">
                   <Checkbox
                     id={`filter-${status.toLowerCase()}-checkbox`}
-                    checked={value.includes(status)}
+                    checked={selectedStatuses.includes(status)}
                     onCheckedChange={(checked) => {
                       if (checked) {
-                        onChange(value?.length ? [...value, status] : [status]);
+                        onChange(
+                          selectedStatuses.length
+                            ? [...selectedStatuses, status]
+                            : [status],
+                        );
                       } else {
                         onChange(
-                          value.filter(
-                            (t: WorkspaceMemberStatus) => t !== status,
-                          ),
+                          selectedStatuses.filter((item) => item !== status),
                         );
                       }
                     }}
@@ -299,8 +315,8 @@ function MembersComponent() {
             </div>
           );
         },
-        renderValue: ({ value }: { value: Array<string> }) => {
-          return value
+        renderValue: ({ value }) => {
+          return (value ?? [])
             .map((status) => {
               return statusMap[status as WorkspaceMemberStatus];
             })
@@ -310,21 +326,27 @@ function MembersComponent() {
       {
         label: t("workspace-member:filter.items.role.label"),
         field: "role",
+        type: "select",
+        options: [],
         pinned: true,
-        render: ({ field: { value = [], onChange } }) => {
+        render: ({ field: { value, onChange } }) => {
+          const selectedRoles = value ?? [];
+
           return (
             <div className="space-y-2">
               {Object.values(WorkspaceMemberRole).map((role) => (
                 <div key={role} className="flex gap-2">
                   <Checkbox
                     id={`filter-${role.toLowerCase()}-checkbox`}
-                    checked={value.includes(role)}
+                    checked={selectedRoles.includes(role)}
                     onCheckedChange={(checked) => {
                       if (checked) {
-                        onChange(value?.length ? [...value, role] : [role]);
+                        onChange(
+                          selectedRoles.length ? [...selectedRoles, role] : [role],
+                        );
                       } else {
                         onChange(
-                          value.filter((t: WorkspaceMemberRole) => t !== role),
+                          selectedRoles.filter((item) => item !== role),
                         );
                       }
                     }}
@@ -339,30 +361,45 @@ function MembersComponent() {
           );
         },
         renderValue: ({ value }) => {
-          return value.map(getRoleLabel).join(",");
+          return (value ?? [])
+            .map((role) => getRoleLabel(role as WorkspaceMemberRole))
+            .join(",");
         },
       },
       {
         label: t("workspace-member:filter.items.created_at.label"),
         field: "created_at",
+        type: "select",
+        options: [],
         pinned: true,
-        render: ({ field }) => (
-          <Calendar
-            className="p-0"
-            mode="range"
-            locale={zhCN}
-            selected={{ from: field.value?.[0], to: field.value?.[1] }}
-            onSelect={(dateRange) => {
-              if (dateRange) {
-                field.onChange([dateRange.from, dateRange.to]);
-              }
-            }}
-            disabled={(date) => dayjs(date).isAfter(dayjs())}
-            numberOfMonths={2}
-          />
-        ),
-        renderValue: ({ value }: { value: Array<string> }) => {
-          return value
+        render: ({ field }) => {
+          const dates = Array.isArray(field.value) ? field.value : [];
+
+          return (
+            <Calendar
+              className="p-0"
+              mode="range"
+              locale={zhCN}
+              selected={{
+                from: dates[0] ? new Date(dates[0]) : undefined,
+                to: dates[1] ? new Date(dates[1]) : undefined,
+              }}
+              onSelect={(dateRange) => {
+                if (dateRange) {
+                  field.onChange(
+                    [dateRange.from, dateRange.to]
+                      .filter((date): date is Date => date instanceof Date)
+                      .map((date) => date.toISOString()),
+                  );
+                }
+              }}
+              disabled={(date) => dayjs(date).isAfter(dayjs())}
+              numberOfMonths={2}
+            />
+          );
+        },
+        renderValue: ({ value }) => {
+          return (value ?? [])
             .map((date) => dayjs(date).format("YYYY-MM-DD"))
             .join(",");
         },
@@ -450,181 +487,187 @@ function MembersComponent() {
   };
 
   return (
-    <Page
-      title={t("workspace-member:title")}
-      description={t("workspace-member:description")}
-      primaryAction={{
-        label: t("workspace-member:invite.button"),
-        onClick: () => setInviteOpen(true),
-        testId: "workspace-members-invite-action",
-      }}
-    >
-      <div className="mb-4" data-testid="workspace-members-page">
-        <Filter
-          filters={filters}
-          values={filterValues}
-          onChange={(values) => {
-            navigate({
-              to: location.pathname,
-              search: {
-                ...(query ? { query } : {}),
-                ...(!isEmpty(values) ? { filter: values } : {}),
-              },
-            });
-          }}
-          search={{
-            placeholder: t("workspace-member:filter.search.placeholder"),
-            value: query,
-            onChange: (value) => {
+    <Page>
+      <PageHeader>
+        <PageTitle>{t("workspace-member:title")}</PageTitle>
+        <PageDescription>{t("workspace-member:description")}</PageDescription>
+        <PageActions>
+          <PagePrimaryAction
+            data-testid="workspace-members-invite-action"
+            onClick={() => setInviteOpen(true)}
+          >
+            {t("workspace-member:invite.button")}
+          </PagePrimaryAction>
+        </PageActions>
+      </PageHeader>
+      <PageContent>
+        <div className="mb-4" data-testid="workspace-members-page">
+          <Filter
+            filters={filters}
+            values={filterValues}
+            onChange={(values) => {
               navigate({
                 to: location.pathname,
                 search: {
-                  ...(value ? { query: value } : {}),
-                  ...(!isEmpty(filterValues) ? { filter: filterValues } : {}),
+                  ...(query ? { query } : {}),
+                  ...(!isEmpty(values) ? { filter: values } : {}),
                 },
+              });
+            }}
+            search={{
+              placeholder: t("workspace-member:filter.search.placeholder"),
+              value: query,
+              onChange: (value) => {
+                navigate({
+                  to: location.pathname,
+                  search: {
+                    ...(value ? { query: value } : {}),
+                    ...(!isEmpty(filterValues) ? { filter: filterValues } : {}),
+                  },
+                });
+              },
+            }}
+          />
+        </div>
+
+        <DataTable
+          columns={[
+            {
+              accessorKey: "name",
+              header: t("workspace-member:table.name"),
+              cell: ({ row }) => {
+                const member = row.original;
+                return (
+                  <div
+                    data-testid={`workspace-member-row-${
+                      member.email ?? member.user?.email ?? member.id
+                    }`}
+                    className={cn(
+                      "flex flex-col",
+                      currentWorkspaceMember.role ===
+                        WorkspaceMemberRole.MEMBER &&
+                        "pointer-events-none opacity-50",
+                    )}
+                  >
+                    <span className="font-medium">{member.name}</span>
+                    <span className="text-muted-foreground text-xs">
+                      {truncateEmail(member.email ?? "") ?? "-"}
+                    </span>
+                  </div>
+                );
+              },
+            },
+            {
+              accessorKey: "role",
+              header: t("workspace-member:table.role"),
+              cell: ({ row }) => {
+                return (
+                  <Badge variant="outline">
+                    {getRoleLabel(row.original.role)}
+                  </Badge>
+                );
+              },
+            },
+            {
+              accessorKey: "status",
+              header: t("workspace-member:table.status"),
+              cell: ({ row }) => {
+                const status = row.original.status;
+
+                const statusColorMap: Record<
+                  WorkspaceMemberStatus,
+                  "green" | "yellow" | "red" | "gray"
+                > = {
+                  [WorkspaceMemberStatus.ACTIVE]: "green",
+                  [WorkspaceMemberStatus.INVITING]: "yellow",
+                  [WorkspaceMemberStatus.INVITE_EXPIRED]: "red",
+                  [WorkspaceMemberStatus.DISABLED]: "gray",
+                };
+
+                const color = status ? statusColorMap[status] : "green";
+
+                return (
+                  <Badge
+                    color={color}
+                    data-testid={
+                      status
+                        ? `workspace-member-status-${status.toLowerCase()}`
+                        : undefined
+                    }
+                  >
+                    {getStatusLabel(status)}
+                  </Badge>
+                );
+              },
+            },
+            {
+              accessorKey: "createdAt",
+              header: t("workspace-member:table.joined"),
+              cell: ({ row }) => {
+                return dayjs(row.original.createdAt).format("YYYY-MM-DD");
+              },
+            },
+          ]}
+          onRowClick={(row) => {
+            navigate({
+              to: "/workspaces/$workspaceId/members/$memberId",
+              params: {
+                workspaceId,
+                memberId: row.original.id,
+              },
+            });
+          }}
+          rowActions={(row) => [
+            ...(row.original.status === WorkspaceMemberStatus.ACTIVE ||
+            row.original.status === WorkspaceMemberStatus.DISABLED
+              ? [
+                  {
+                    disabled: updateStatusLoading,
+                    label:
+                      row.original.status === WorkspaceMemberStatus.DISABLED
+                        ? t("action.enable")
+                        : t("action.disable"),
+                    onClick: () =>
+                      handleToggleMemberStatus(
+                        row.original.id,
+                        row.original.status,
+                      ),
+                  },
+                ]
+              : []),
+            {
+              disabled: removeMemberLoading,
+              label: t("action.delete"),
+              onClick: () => handleRemoveMemberClick(row.original.id),
+            },
+          ]}
+          data={members}
+          pagination={{
+            hasPreviousPage: pageInfo?.hasPreviousPage,
+            hasNextPage: pageInfo?.hasNextPage,
+            onPreviousPage: () => {
+              navigate({
+                to: location.pathname,
+                search: getPreviousPageSearch(search, pageInfo),
+              });
+            },
+            onNextPage: () => {
+              navigate({
+                to: location.pathname,
+                search: getNextPageSearch(search, pageInfo),
               });
             },
           }}
         />
-      </div>
 
-      <DataTable
-        columns={[
-          {
-            accessorKey: "name",
-            header: t("workspace-member:table.name"),
-            cell: ({ row }) => {
-              const member = row.original;
-              return (
-                <div
-                  data-testid={`workspace-member-row-${
-                    member.email ?? member.user?.email ?? member.id
-                  }`}
-                  className={cn(
-                    "flex flex-col",
-                    currentWorkspaceMember.role ===
-                      WorkspaceMemberRole.MEMBER &&
-                      "pointer-events-none opacity-50",
-                  )}
-                >
-                  <span className="font-medium">{member.name}</span>
-                  <span className="text-muted-foreground text-xs">
-                    {truncateEmail(member.email ?? "") ?? "-"}
-                  </span>
-                </div>
-              );
-            },
-          },
-          {
-            accessorKey: "role",
-            header: t("workspace-member:table.role"),
-            cell: ({ row }) => {
-              return (
-                <Badge variant="outline">
-                  {getRoleLabel(row.original.role)}
-                </Badge>
-              );
-            },
-          },
-          {
-            accessorKey: "status",
-            header: t("workspace-member:table.status"),
-            cell: ({ row }) => {
-              const status = row.original.status;
-
-              const statusColorMap: Record<
-                WorkspaceMemberStatus,
-                "green" | "yellow" | "red" | "gray"
-              > = {
-                [WorkspaceMemberStatus.ACTIVE]: "green",
-                [WorkspaceMemberStatus.INVITING]: "yellow",
-                [WorkspaceMemberStatus.INVITE_EXPIRED]: "red",
-                [WorkspaceMemberStatus.DISABLED]: "gray",
-              };
-
-              const color = status ? statusColorMap[status] : "green";
-
-              return (
-                <Badge
-                  color={color}
-                  data-testid={
-                    status
-                      ? `workspace-member-status-${status.toLowerCase()}`
-                      : undefined
-                  }
-                >
-                  {getStatusLabel(status)}
-                </Badge>
-              );
-            },
-          },
-          {
-            accessorKey: "createdAt",
-            header: t("workspace-member:table.joined"),
-            cell: ({ row }) => {
-              return dayjs(row.original.createdAt).format("YYYY-MM-DD");
-            },
-          },
-        ]}
-        onRowClick={(row) => {
-          navigate({
-            to: "/workspaces/$workspaceId/members/$memberId",
-            params: {
-              workspaceId,
-              memberId: row.original.id,
-            },
-          });
-        }}
-        rowActions={(row) => [
-          ...(row.original.status === WorkspaceMemberStatus.ACTIVE ||
-          row.original.status === WorkspaceMemberStatus.DISABLED
-            ? [
-                {
-                  disabled: updateStatusLoading,
-                  label:
-                    row.original.status === WorkspaceMemberStatus.DISABLED
-                      ? t("action.enable")
-                      : t("action.disable"),
-                  onClick: () =>
-                    handleToggleMemberStatus(
-                      row.original.id,
-                      row.original.status,
-                    ),
-                },
-              ]
-            : []),
-          {
-            disabled: removeMemberLoading,
-            label: t("action.delete"),
-            onClick: () => handleRemoveMemberClick(row.original.id),
-          },
-        ]}
-        data={members}
-        pagination={{
-          hasPreviousPage: pageInfo?.hasPreviousPage,
-          hasNextPage: pageInfo?.hasNextPage,
-          onPreviousPage: () => {
-            navigate({
-              to: location.pathname,
-              search: getPreviousPageSearch(search, pageInfo),
-            });
-          },
-          onNextPage: () => {
-            navigate({
-              to: location.pathname,
-              search: getNextPageSearch(search, pageInfo),
-            });
-          },
-        }}
-      />
-
-      <InviteMemberDialog
-        inviteOpen={inviteOpen}
-        onInviteOpenChange={setInviteOpen}
-        onSuccess={() => {
-          refetch();
-        }}
-      />
+        <InviteMemberDialog
+          inviteOpen={inviteOpen}
+          onInviteOpenChange={setInviteOpen}
+          onSuccess={() => {
+            refetch();
+          }}
+        />
+      </PageContent>
     </Page>
   );
 }

@@ -1,13 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { t } from "i18next";
 import { CreateWorkspaceForm } from "./components/create-workspace-form";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Empty } from "@/components/thread-ui/empty";
 import { graphql } from "@/gql";
 
 const GET_FIRST_WORKSPACE_FROM_WORKSPACES_ROUTE = graphql(`
@@ -45,17 +39,17 @@ export const Route = createFileRoute("/_authenticated/workspaces/")({
 function ErrorComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-md" data-testid="workspace-empty-state">
-        <CardHeader>
-          <CardTitle>{t("workspace:empty.title")}</CardTitle>
-
-          <CardDescription>{t("workspace:empty.description")}</CardDescription>
-        </CardHeader>
-
-        <CardContent>
-          <CreateWorkspaceForm />
-        </CardContent>
-      </Card>
+      <div
+        className="w-full max-w-md space-y-6"
+        data-testid="workspace-empty-state"
+      >
+        <Empty
+          className="p-0"
+          description={t("workspace:empty.description")}
+          title={t("workspace:empty.title")}
+        />
+        <CreateWorkspaceForm />
+      </div>
     </div>
   );
 }

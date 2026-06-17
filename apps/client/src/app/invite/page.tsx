@@ -9,7 +9,7 @@ import z from "zod";
 import { t } from "i18next";
 
 import { graphql } from "@/gql";
-import { Button } from "@/components/fabric-ui/button";
+import { Button } from "@/components/thread-ui/button";
 import {
   Card,
   CardContent,
@@ -17,7 +17,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/fabric-ui/input";
+import { Input } from "@/components/thread-ui/input";
 
 const INVITE_TOKEN_KEY = "workspace_invite_token";
 

@@ -13,15 +13,23 @@ import { t } from "i18next";
 import { toast } from "sonner";
 import z from "zod";
 
-import type { DataFilterItemProps as FilterItemProps } from "@/components/fabric-ui/data-filter";
+import type { DataFilterItemProps as FilterItemProps } from "@/components/thread-ui/data-filter";
 import type { GetRegistryCredentialsFromProjectRegistryCredentialsRouteQuery } from "@/gql/graphql";
-import { alertDialog } from "@/components/fabric-ui/alert-dialog";
-import { Button } from "@/components/fabric-ui/button";
-import { DataFilter as Filter } from "@/components/fabric-ui/data-filter";
-import { formatFilterValues } from "@/components/fabric-ui/data-filter/format-filter-values";
-import { DataTable } from "@/components/fabric-ui/data-table";
-import { Input } from "@/components/fabric-ui/input";
-import { Page } from "@/components/fabric-ui/page";
+import { alertDialog } from "@/components/thread-ui/alert-dialog";
+import { Button } from "@/components/thread-ui/button";
+import { DataFilter as Filter } from "@/components/thread-ui/data-filter";
+import { formatFilterValues } from "@/lib/format-filter-values";
+import { DataTable } from "@/components/thread-ui/data-table";
+import { Input } from "@/components/thread-ui/input";
+import {
+  Page,
+  PageActions,
+  PageContent,
+  PageDescription,
+  PageHeader,
+  PagePrimaryAction,
+  PageTitle,
+} from "@/components/thread-ui/page";
 import {
   Dialog,
   DialogContent,
@@ -221,10 +229,11 @@ function ProjectRegistryCredentialsComponent() {
       {
         label: t("project:registry_credentials.filter.name.label"),
         field: "name",
+        type: "input",
         pinned: true,
         render: ({ field: { value, onChange } }) => (
           <Input
-            defaultValue={value}
+            defaultValue={value ?? ""}
             placeholder={t(
               "project:registry_credentials.filter.name.placeholder",
             )}
@@ -240,9 +249,10 @@ function ProjectRegistryCredentialsComponent() {
       {
         label: t("project:registry_credentials.filter.registry.label"),
         field: "registry",
+        type: "input",
         render: ({ field: { value, onChange } }) => (
           <Input
-            defaultValue={value}
+            defaultValue={value ?? ""}
             placeholder={t(
               "project:registry_credentials.filter.registry.placeholder",
             )}
@@ -367,196 +377,204 @@ function ProjectRegistryCredentialsComponent() {
   };
 
   return (
-    <Page
-      title={t("project:registry_credentials.title")}
-      description={t("project:registry_credentials.description")}
-      primaryAction={{
-        icon: <KeyRound data-icon="inline-start" />,
-        label: t("project:registry_credentials.create.button"),
-        onClick: () => setCreateDialogOpen(true),
-        testId: "registry-credential-create-action",
-      }}
-    >
-      <div className="mb-4" data-testid="project-registry-credentials-page">
-        <Filter
-          filters={filters}
-          values={filterValues}
-          onChange={(values) => {
-            navigate({
-              to: location.pathname,
-              search: {
-                ...(query ? { query } : {}),
-                ...(!isEmpty(values) ? { filter: values } : {}),
-              },
-            });
-          }}
-          search={{
-            placeholder: t(
-              "project:registry_credentials.filter.search.placeholder",
-            ),
-            value: query,
-            onChange: (value) => {
+    <Page>
+      <PageHeader>
+        <PageTitle>{t("project:registry_credentials.title")}</PageTitle>
+        <PageDescription>
+          {t("project:registry_credentials.description")}
+        </PageDescription>
+        <PageActions>
+          <PagePrimaryAction
+            data-testid="registry-credential-create-action"
+            onClick={() => setCreateDialogOpen(true)}
+          >
+            <KeyRound data-icon="inline-start" />
+            {t("project:registry_credentials.create.button")}
+          </PagePrimaryAction>
+        </PageActions>
+      </PageHeader>
+      <PageContent>
+        <div className="mb-4" data-testid="project-registry-credentials-page">
+          <Filter
+            filters={filters}
+            values={filterValues}
+            onChange={(values) => {
               navigate({
                 to: location.pathname,
                 search: {
-                  ...(value ? { query: value } : {}),
-                  ...(!isEmpty(filterValues) ? { filter: filterValues } : {}),
+                  ...(query ? { query } : {}),
+                  ...(!isEmpty(values) ? { filter: values } : {}),
                 },
+              });
+            }}
+            search={{
+              placeholder: t(
+                "project:registry_credentials.filter.search.placeholder",
+              ),
+              value: query,
+              onChange: (value) => {
+                navigate({
+                  to: location.pathname,
+                  search: {
+                    ...(value ? { query: value } : {}),
+                    ...(!isEmpty(filterValues) ? { filter: filterValues } : {}),
+                  },
+                });
+              },
+            }}
+          />
+        </div>
+
+        <DataTable
+          columns={[
+            {
+              accessorKey: "name",
+              header: t("project:registry_credentials.table.name"),
+              cell: ({ row }) => (
+                <span
+                  className="font-medium"
+                  data-testid={`registry-credential-row-${row.original.id}`}
+                >
+                  {row.original.name}
+                </span>
+              ),
+            },
+            {
+              accessorKey: "registry",
+              header: t("project:registry_credentials.table.registry"),
+              cell: ({ row }) => (
+                <span className="text-muted-foreground line-clamp-1 text-xs break-all">
+                  {row.original.registry}
+                </span>
+              ),
+            },
+            {
+              accessorKey: "username",
+              header: t("project:registry_credentials.table.username"),
+            },
+            {
+              accessorKey: "createdAt",
+              header: t("project:registry_credentials.table.created_at"),
+              cell: ({ row }) =>
+                dayjs(row.original.createdAt).format("YYYY-MM-DD HH:mm"),
+            },
+          ]}
+          data={registryCredentials}
+          pagination={{
+            hasPreviousPage: pageInfo?.hasPreviousPage,
+            hasNextPage: pageInfo?.hasNextPage,
+            onPreviousPage: () => {
+              navigate({
+                to: location.pathname,
+                search: getPreviousPageSearch(search, pageInfo),
+              });
+            },
+            onNextPage: () => {
+              navigate({
+                to: location.pathname,
+                search: getNextPageSearch(search, pageInfo),
               });
             },
           }}
+          rowActions={(row) => [
+            {
+              disabled: updateLoading,
+              label: t("action.edit"),
+              onClick: () => handleOpenEdit(row.original),
+            },
+            {
+              disabled: deleteLoading,
+              label: t("action.delete"),
+              onClick: () => handleDeleteRegistryCredential(row.original),
+            },
+          ]}
         />
-      </div>
 
-      <DataTable
-        columns={[
-          {
-            accessorKey: "name",
-            header: t("project:registry_credentials.table.name"),
-            cell: ({ row }) => (
-              <span
-                className="font-medium"
-                data-testid={`registry-credential-row-${row.original.id}`}
-              >
-                {row.original.name}
-              </span>
-            ),
-          },
-          {
-            accessorKey: "registry",
-            header: t("project:registry_credentials.table.registry"),
-            cell: ({ row }) => (
-              <span className="text-muted-foreground line-clamp-1 text-xs break-all">
-                {row.original.registry}
-              </span>
-            ),
-          },
-          {
-            accessorKey: "username",
-            header: t("project:registry_credentials.table.username"),
-          },
-          {
-            accessorKey: "createdAt",
-            header: t("project:registry_credentials.table.created_at"),
-            cell: ({ row }) =>
-              dayjs(row.original.createdAt).format("YYYY-MM-DD HH:mm"),
-          },
-        ]}
-        data={registryCredentials}
-        pagination={{
-          hasPreviousPage: pageInfo?.hasPreviousPage,
-          hasNextPage: pageInfo?.hasNextPage,
-          onPreviousPage: () => {
-            navigate({
-              to: location.pathname,
-              search: getPreviousPageSearch(search, pageInfo),
-            });
-          },
-          onNextPage: () => {
-            navigate({
-              to: location.pathname,
-              search: getNextPageSearch(search, pageInfo),
-            });
-          },
-        }}
-        rowActions={(row) => [
-          {
-            disabled: updateLoading,
-            label: t("action.edit"),
-            onClick: () => handleOpenEdit(row.original),
-          },
-          {
-            disabled: deleteLoading,
-            label: t("action.delete"),
-            onClick: () => handleDeleteRegistryCredential(row.original),
-          },
-        ]}
-      />
+        <Dialog
+          open={createDialogOpen}
+          onOpenChange={handleCreateDialogOpenChange}
+        >
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>
+                {t("project:registry_credentials.create.title")}
+              </DialogTitle>
+              <DialogDescription>
+                {t("project:registry_credentials.create.description")}
+              </DialogDescription>
+            </DialogHeader>
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                handleCreateRegistryCredential();
+              }}
+            >
+              <RegistryCredentialFormFields
+                mode="create"
+                value={registryCredentialForm}
+                onChange={setRegistryCredentialForm}
+              />
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => handleCreateDialogOpenChange(false)}
+                >
+                  {t("action.cancel")}
+                </Button>
+                <Button
+                  data-testid="registry-credential-create-submit"
+                  loading={createLoading}
+                  type="submit"
+                >
+                  {t("action.create")}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
 
-      <Dialog
-        open={createDialogOpen}
-        onOpenChange={handleCreateDialogOpenChange}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>
-              {t("project:registry_credentials.create.title")}
-            </DialogTitle>
-            <DialogDescription>
-              {t("project:registry_credentials.create.description")}
-            </DialogDescription>
-          </DialogHeader>
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              handleCreateRegistryCredential();
-            }}
-          >
-            <RegistryCredentialFormFields
-              mode="create"
-              value={registryCredentialForm}
-              onChange={setRegistryCredentialForm}
-            />
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => handleCreateDialogOpenChange(false)}
-              >
-                {t("action.cancel")}
-              </Button>
-              <Button
-                data-testid="registry-credential-create-submit"
-                loading={createLoading}
-                type="submit"
-              >
-                {t("action.create")}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={editDialogOpen} onOpenChange={handleEditDialogOpenChange}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>
-              {t("project:registry_credentials.edit.title")}
-            </DialogTitle>
-            <DialogDescription>
-              {t("project:registry_credentials.edit.description")}
-            </DialogDescription>
-          </DialogHeader>
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              handleUpdateRegistryCredential();
-            }}
-          >
-            <RegistryCredentialFormFields
-              mode="edit"
-              value={registryCredentialForm}
-              onChange={setRegistryCredentialForm}
-            />
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => handleEditDialogOpenChange(false)}
-              >
-                {t("action.cancel")}
-              </Button>
-              <Button
-                data-testid="registry-credential-edit-submit"
-                loading={updateLoading}
-                type="submit"
-              >
-                {t("action.save")}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+        <Dialog open={editDialogOpen} onOpenChange={handleEditDialogOpenChange}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>
+                {t("project:registry_credentials.edit.title")}
+              </DialogTitle>
+              <DialogDescription>
+                {t("project:registry_credentials.edit.description")}
+              </DialogDescription>
+            </DialogHeader>
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                handleUpdateRegistryCredential();
+              }}
+            >
+              <RegistryCredentialFormFields
+                mode="edit"
+                value={registryCredentialForm}
+                onChange={setRegistryCredentialForm}
+              />
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => handleEditDialogOpenChange(false)}
+                >
+                  {t("action.cancel")}
+                </Button>
+                <Button
+                  data-testid="registry-credential-edit-submit"
+                  loading={updateLoading}
+                  type="submit"
+                >
+                  {t("action.save")}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </PageContent>
     </Page>
   );
 }

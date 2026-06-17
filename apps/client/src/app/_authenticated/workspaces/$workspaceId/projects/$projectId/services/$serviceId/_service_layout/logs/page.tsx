@@ -8,6 +8,7 @@ import { t } from "i18next";
 import type { RefObject } from "react";
 
 import type { GetServiceLogsFromServiceLogsRouteQuery } from "@/gql/graphql";
+import { Empty } from "@/components/thread-ui/empty";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { graphql } from "@/gql";
@@ -437,12 +438,11 @@ function LogEntries({
           ) : (
             <div role="rowgroup">
               <div className={LOG_ROW_LAYOUT} role="row">
-                <div
-                  className="border-border text-muted-foreground flex h-96 flex-1 items-center justify-center border-dashed text-center text-sm"
+                <Empty
+                  className="h-96 flex-1 rounded-none border-0 p-4"
                   role="cell"
-                >
-                  {t("service:logs.empty")}
-                </div>
+                  title={t("service:logs.empty")}
+                />
               </div>
             </div>
           )}

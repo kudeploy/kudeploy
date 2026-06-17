@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { t } from "i18next";
 
 import type { WorkspacePermission } from "@/gql/graphql";
-import { CheckboxGroup } from "@/components/fabric-ui/checkbox-group";
+import { CheckboxGroup } from "@/components/thread-ui/checkbox-group";
 import { workspacePermissions } from "@/lib/workspace-permissions";
 
 export interface PermissionCheckboxGroupProps {
@@ -35,9 +35,7 @@ export function PermissionCheckboxGroup({
     <CheckboxGroup
       label={t("workspace-member-group:detail.form.permissions_field.label")}
       value={value}
-      onValueChange={(newValue) =>
-        onChange(newValue as Array<WorkspacePermission>)
-      }
+      onValueChange={(newValue) => onChange(newValue)}
       disabled={disabled}
       parent={{
         label: t("permission:all.name"),

@@ -14,15 +14,23 @@ import { toast } from "sonner";
 import z from "zod";
 
 import { StatusBadge } from "./components/status-badge";
-import type { DataFilterItemProps as FilterItemProps } from "@/components/fabric-ui/data-filter";
+import type { DataFilterItemProps as FilterItemProps } from "@/components/thread-ui/data-filter";
 import type { GetProjectsFromProjectsRouteQuery } from "@/gql/graphql";
-import { alertDialog } from "@/components/fabric-ui/alert-dialog";
-import { Button } from "@/components/fabric-ui/button";
-import { DataFilter as Filter } from "@/components/fabric-ui/data-filter";
-import { formatFilterValues } from "@/components/fabric-ui/data-filter/format-filter-values";
-import { DataTable } from "@/components/fabric-ui/data-table";
-import { Input } from "@/components/fabric-ui/input";
-import { Page } from "@/components/fabric-ui/page";
+import { alertDialog } from "@/components/thread-ui/alert-dialog";
+import { Button } from "@/components/thread-ui/button";
+import { DataFilter as Filter } from "@/components/thread-ui/data-filter";
+import { formatFilterValues } from "@/lib/format-filter-values";
+import { DataTable } from "@/components/thread-ui/data-table";
+import { Input } from "@/components/thread-ui/input";
+import {
+  Page,
+  PageActions,
+  PageContent,
+  PageDescription,
+  PageHeader,
+  PagePrimaryAction,
+  PageTitle,
+} from "@/components/thread-ui/page";
 import {
   Dialog,
   DialogContent,
@@ -164,10 +172,11 @@ function ProjectsComponent() {
       {
         label: t("project:filter.name.label"),
         field: "name",
+        type: "input",
         pinned: true,
         render: ({ field: { value, onChange } }) => (
           <Input
-            defaultValue={value}
+            defaultValue={value ?? ""}
             placeholder={t("project:filter.name.placeholder")}
             onKeyDown={(event) => {
               if (event.key === "Enter") {
@@ -238,157 +247,163 @@ function ProjectsComponent() {
   };
 
   return (
-    <Page
-      title={t("project:title")}
-      description={t("project:description")}
-      primaryAction={{
-        icon: <FolderPlus data-icon="inline-start" />,
-        label: t("project:create.button"),
-        onClick: () => setCreateDialogOpen(true),
-        testId: "project-create-action",
-      }}
-    >
-      <div className="mb-4" data-testid="projects-page">
-        <Filter
-          filters={filters}
-          values={filterValues}
-          onChange={(values) => {
-            navigate({
-              to: location.pathname,
-              search: {
-                ...(query ? { query } : {}),
-                ...(!isEmpty(values) ? { filter: values } : {}),
-              },
-            });
-          }}
-          search={{
-            placeholder: t("project:filter.search.placeholder"),
-            value: query,
-            onChange: (value) => {
+    <Page>
+      <PageHeader>
+        <PageTitle>{t("project:title")}</PageTitle>
+        <PageDescription>{t("project:description")}</PageDescription>
+        <PageActions>
+          <PagePrimaryAction
+            data-testid="project-create-action"
+            onClick={() => setCreateDialogOpen(true)}
+          >
+            <FolderPlus data-icon="inline-start" />
+            {t("project:create.button")}
+          </PagePrimaryAction>
+        </PageActions>
+      </PageHeader>
+      <PageContent>
+        <div className="mb-4" data-testid="projects-page">
+          <Filter
+            filters={filters}
+            values={filterValues}
+            onChange={(values) => {
               navigate({
                 to: location.pathname,
                 search: {
-                  ...(value ? { query: value } : {}),
-                  ...(!isEmpty(filterValues) ? { filter: filterValues } : {}),
+                  ...(query ? { query } : {}),
+                  ...(!isEmpty(values) ? { filter: values } : {}),
                 },
+              });
+            }}
+            search={{
+              placeholder: t("project:filter.search.placeholder"),
+              value: query,
+              onChange: (value) => {
+                navigate({
+                  to: location.pathname,
+                  search: {
+                    ...(value ? { query: value } : {}),
+                    ...(!isEmpty(filterValues) ? { filter: filterValues } : {}),
+                  },
+                });
+              },
+            }}
+          />
+        </div>
+
+        <DataTable
+          columns={[
+            {
+              accessorKey: "name",
+              header: t("project:table.name"),
+              cell: ({ row }) => (
+                <span
+                  className="font-medium"
+                  data-testid={`project-row-${row.original.id}`}
+                >
+                  {row.original.name}
+                </span>
+              ),
+            },
+            {
+              accessorKey: "status",
+              header: t("project:table.status"),
+              size: 130,
+              cell: ({ row }) => (
+                <StatusBadge namespace="project" status={row.original.status} />
+              ),
+            },
+            {
+              accessorKey: "createdAt",
+              header: t("project:table.created_at"),
+              cell: ({ row }) =>
+                dayjs(row.original.createdAt).format("YYYY-MM-DD HH:mm"),
+            },
+          ]}
+          data={projects}
+          pagination={{
+            hasPreviousPage: pageInfo?.hasPreviousPage,
+            hasNextPage: pageInfo?.hasNextPage,
+            onPreviousPage: () => {
+              navigate({
+                to: location.pathname,
+                search: getPreviousPageSearch(search, pageInfo),
+              });
+            },
+            onNextPage: () => {
+              navigate({
+                to: location.pathname,
+                search: getNextPageSearch(search, pageInfo),
               });
             },
           }}
+          rowActions={(row) => [
+            {
+              label: t("action.edit"),
+              onClick: () =>
+                navigate({
+                  to: "/workspaces/$workspaceId/projects/$projectId",
+                  params: { workspaceId, projectId: row.original.id },
+                }),
+            },
+            {
+              disabled: deleteLoading,
+              label: t("action.delete"),
+              onClick: () => handleDeleteProject(row.original),
+            },
+          ]}
+          onRowClick={(row) =>
+            navigate({
+              to: "/workspaces/$workspaceId/projects/$projectId",
+              params: { workspaceId, projectId: row.original.id },
+            })
+          }
         />
-      </div>
 
-      <DataTable
-        columns={[
-          {
-            accessorKey: "name",
-            header: t("project:table.name"),
-            cell: ({ row }) => (
-              <span
-                className="font-medium"
-                data-testid={`project-row-${row.original.id}`}
-              >
-                {row.original.name}
-              </span>
-            ),
-          },
-          {
-            accessorKey: "status",
-            header: t("project:table.status"),
-            size: 130,
-            cell: ({ row }) => (
-              <StatusBadge namespace="project" status={row.original.status} />
-            ),
-          },
-          {
-            accessorKey: "createdAt",
-            header: t("project:table.created_at"),
-            cell: ({ row }) =>
-              dayjs(row.original.createdAt).format("YYYY-MM-DD HH:mm"),
-          },
-        ]}
-        data={projects}
-        pagination={{
-          hasPreviousPage: pageInfo?.hasPreviousPage,
-          hasNextPage: pageInfo?.hasNextPage,
-          onPreviousPage: () => {
-            navigate({
-              to: location.pathname,
-              search: getPreviousPageSearch(search, pageInfo),
-            });
-          },
-          onNextPage: () => {
-            navigate({
-              to: location.pathname,
-              search: getNextPageSearch(search, pageInfo),
-            });
-          },
-        }}
-        rowActions={(row) => [
-          {
-            label: t("action.edit"),
-            onClick: () =>
-              navigate({
-                to: "/workspaces/$workspaceId/projects/$projectId",
-                params: { workspaceId, projectId: row.original.id },
-              }),
-          },
-          {
-            disabled: deleteLoading,
-            label: t("action.delete"),
-            onClick: () => handleDeleteProject(row.original),
-          },
-        ]}
-        onRowClick={(row) =>
-          navigate({
-            to: "/workspaces/$workspaceId/projects/$projectId",
-            params: { workspaceId, projectId: row.original.id },
-          })
-        }
-      />
-
-      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t("project:create.title")}</DialogTitle>
-            <DialogDescription>
-              {t("project:create.description")}
-            </DialogDescription>
-          </DialogHeader>
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              handleCreateProject();
-            }}
-          >
-            <div className="py-4">
-              <Input
-                autoFocus
-                data-testid="project-name-input"
-                label={t("project:form.name.label")}
-                placeholder={t("project:form.name.placeholder")}
-                value={newProjectName}
-                onChange={(event) => setNewProjectName(event.target.value)}
-              />
-            </div>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setCreateDialogOpen(false)}
-              >
-                {t("action.cancel")}
-              </Button>
-              <Button
-                data-testid="project-create-submit"
-                loading={createLoading}
-                type="submit"
-              >
-                {t("action.create")}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+        <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{t("project:create.title")}</DialogTitle>
+              <DialogDescription>
+                {t("project:create.description")}
+              </DialogDescription>
+            </DialogHeader>
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                handleCreateProject();
+              }}
+            >
+              <div className="py-4">
+                <Input
+                  autoFocus
+                  data-testid="project-name-input"
+                  label={t("project:form.name.label")}
+                  placeholder={t("project:form.name.placeholder")}
+                  value={newProjectName}
+                  onChange={(event) => setNewProjectName(event.target.value)}
+                />
+              </div>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setCreateDialogOpen(false)}
+                >
+                  {t("action.cancel")}
+                </Button>
+                <Button
+                  data-testid="project-create-submit"
+                  loading={createLoading}
+                  type="submit"
+                >
+                  {t("action.create")}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </PageContent>
     </Page>
   );
 }

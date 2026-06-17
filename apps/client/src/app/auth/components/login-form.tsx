@@ -8,8 +8,8 @@ import { z } from "zod";
 import type { ChangeEvent, ComponentProps, FormEvent } from "react";
 
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/fabric-ui/button";
-import { Input } from "@/components/fabric-ui/input";
+import { Button } from "@/components/thread-ui/button";
+import { Input } from "@/components/thread-ui/input";
 import {
   Card,
   CardContent,

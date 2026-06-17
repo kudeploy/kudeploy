@@ -8,7 +8,13 @@ import { io } from "socket.io-client";
 import { useXTerm } from "react-xtermjs";
 import type { Socket } from "socket.io-client";
 
-import { Page } from "@/components/fabric-ui/page";
+import {
+  Page,
+  PageContent,
+  PageDescription,
+  PageHeader,
+  PageTitle,
+} from "@/components/thread-ui/page";
 import {
   Card,
   CardAction,
@@ -160,58 +166,61 @@ function ServiceTerminalComponent() {
   }, [instance, projectId, serviceId, workspaceId]);
 
   return (
-    <Page
-      title={t("service:tabs.terminal")}
-      description={t("service:terminal.description")}
-    >
-      <div className="space-y-4" data-testid="service-terminal-page">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TerminalIcon className="size-4" />
-              {t("service:terminal.title")}
-            </CardTitle>
-            <CardDescription>{service.name}</CardDescription>
-            <CardAction>
+    <Page>
+      <PageHeader>
+        <PageTitle>{t("service:tabs.terminal")}</PageTitle>
+        <PageDescription>{t("service:terminal.description")}</PageDescription>
+      </PageHeader>
+      <PageContent>
+        <div className="space-y-4" data-testid="service-terminal-page">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TerminalIcon className="size-4" />
+                {t("service:terminal.title")}
+              </CardTitle>
+              <CardDescription>{service.name}</CardDescription>
+              <CardAction>
+                <div
+                  className="text-muted-foreground flex items-center gap-2 text-sm"
+                  data-testid="service-terminal-status"
+                >
+                  <span
+                    className={
+                      status === "connected"
+                        ? "size-2 rounded-full bg-emerald-500"
+                        : status === "connecting"
+                          ? "size-2 rounded-full bg-amber-500"
+                          : "size-2 rounded-full bg-red-500"
+                    }
+                  />
+                  {t(`service:terminal.status.${status}`)}
+                </div>
+              </CardAction>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {error && (
+                <div
+                  className="bg-destructive/10 text-destructive rounded-md px-3 py-2 text-sm"
+                  data-testid="service-terminal-error"
+                >
+                  {error}
+                </div>
+              )}
               <div
-                className="text-muted-foreground flex items-center gap-2 text-sm"
-                data-testid="service-terminal-status"
-              >
-                <span
-                  className={
-                    status === "connected"
-                      ? "size-2 rounded-full bg-emerald-500"
-                      : status === "connecting"
-                        ? "size-2 rounded-full bg-amber-500"
-                        : "size-2 rounded-full bg-red-500"
+                className="h-[min(60vh,560px)] min-h-96 overflow-hidden rounded-lg bg-black p-2"
+                onPointerDown={() => {
+                  if (terminalReadyRef.current) {
+                    instance?.focus();
                   }
-                />
-                {t(`service:terminal.status.${status}`)}
-              </div>
-            </CardAction>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {error && (
-              <div
-                className="bg-destructive/10 text-destructive rounded-md px-3 py-2 text-sm"
-                data-testid="service-terminal-error"
+                }}
               >
-                {error}
+                <div ref={ref} className="size-full" />
               </div>
-            )}
-            <div
-              className="h-[min(60vh,560px)] min-h-96 overflow-hidden rounded-lg bg-black p-2"
-              onPointerDown={() => {
-                if (terminalReadyRef.current) {
-                  instance?.focus();
-                }
-              }}
-            >
-              <div ref={ref} className="size-full" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
+        </div>
+      </PageContent>
     </Page>
   );
 }

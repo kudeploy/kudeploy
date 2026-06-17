@@ -14,16 +14,24 @@ import { isEmpty, pick } from "lodash";
 import { toast } from "sonner";
 import z from "zod";
 
-import type { DataFilterItemProps as FilterItemProps } from "@/components/fabric-ui/data-filter";
+import type { DataFilterItemProps as FilterItemProps } from "@/components/thread-ui/data-filter";
 import type { GetDomainsFromDomainsRouteQuery } from "@/gql/graphql";
-import { alertDialog } from "@/components/fabric-ui/alert-dialog";
-import { Badge } from "@/components/fabric-ui/badge";
-import { Button } from "@/components/fabric-ui/button";
-import { DataFilter as Filter } from "@/components/fabric-ui/data-filter";
-import { formatFilterValues } from "@/components/fabric-ui/data-filter/format-filter-values";
-import { DataTable } from "@/components/fabric-ui/data-table";
-import { Input } from "@/components/fabric-ui/input";
-import { Page } from "@/components/fabric-ui/page";
+import { alertDialog } from "@/components/thread-ui/alert-dialog";
+import { Badge } from "@/components/thread-ui/badge";
+import { Button } from "@/components/thread-ui/button";
+import { DataFilter as Filter } from "@/components/thread-ui/data-filter";
+import { formatFilterValues } from "@/lib/format-filter-values";
+import { DataTable } from "@/components/thread-ui/data-table";
+import { Input } from "@/components/thread-ui/input";
+import {
+  Page,
+  PageActions,
+  PageContent,
+  PageDescription,
+  PageHeader,
+  PagePrimaryAction,
+  PageTitle,
+} from "@/components/thread-ui/page";
 import {
   Dialog,
   DialogContent,
@@ -229,11 +237,12 @@ function DomainsComponent() {
       {
         label: t("domain:filter.items.name.label"),
         field: "name",
+        type: "input",
         pinned: true,
         render: ({ field: { value, onChange } }) => (
           <Input
             placeholder={t("domain:filter.items.name.placeholder")}
-            defaultValue={value}
+            defaultValue={value ?? ""}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 e.preventDefault();
@@ -301,229 +310,235 @@ function DomainsComponent() {
   };
 
   return (
-    <Page
-      title={t("domain:title")}
-      description={t("domain:description")}
-      primaryAction={{
-        icon: <Globe data-icon="inline-start" />,
-        label: t("domain:create.button"),
-        onClick: () => setCreateDialogOpen(true),
-        testId: "domain-create-action",
-      }}
-    >
-      <div className="mb-4" data-testid="domains-page">
-        <Filter
-          filters={filters}
-          values={filterValues}
-          onChange={(values) => {
-            navigate({
-              to: location.pathname,
-              search: {
-                ...(query ? { query } : {}),
-                ...(!isEmpty(values) ? { filter: values } : {}),
-              },
-            });
-          }}
-          search={{
-            placeholder: t("domain:filter.search.placeholder"),
-            value: query,
-            onChange: (value) => {
+    <Page>
+      <PageHeader>
+        <PageTitle>{t("domain:title")}</PageTitle>
+        <PageDescription>{t("domain:description")}</PageDescription>
+        <PageActions>
+          <PagePrimaryAction
+            data-testid="domain-create-action"
+            onClick={() => setCreateDialogOpen(true)}
+          >
+            <Globe data-icon="inline-start" />
+            {t("domain:create.button")}
+          </PagePrimaryAction>
+        </PageActions>
+      </PageHeader>
+      <PageContent>
+        <div className="mb-4" data-testid="domains-page">
+          <Filter
+            filters={filters}
+            values={filterValues}
+            onChange={(values) => {
               navigate({
                 to: location.pathname,
                 search: {
-                  ...(value ? { query: value } : {}),
-                  ...(!isEmpty(filterValues) ? { filter: filterValues } : {}),
+                  ...(query ? { query } : {}),
+                  ...(!isEmpty(values) ? { filter: values } : {}),
                 },
+              });
+            }}
+            search={{
+              placeholder: t("domain:filter.search.placeholder"),
+              value: query,
+              onChange: (value) => {
+                navigate({
+                  to: location.pathname,
+                  search: {
+                    ...(value ? { query: value } : {}),
+                    ...(!isEmpty(filterValues) ? { filter: filterValues } : {}),
+                  },
+                });
+              },
+            }}
+          />
+        </div>
+
+        <DataTable
+          columns={[
+            {
+              accessorKey: "name",
+              header: t("domain:table.name"),
+              cell: ({ row }) => (
+                <span
+                  className="font-medium"
+                  data-testid={`domain-row-${row.original.id}`}
+                >
+                  {row.original.name}
+                </span>
+              ),
+            },
+            {
+              accessorKey: "status",
+              header: t("domain:table.status"),
+              size: 100,
+              cell: ({ row }) => {
+                const status = getDomainStatus(row.original.status);
+
+                return (
+                  <Badge
+                    color={status.color}
+                    data-testid={`domain-status-${row.original.id}`}
+                  >
+                    {t(`domain:status.${status.label}`)}
+                  </Badge>
+                );
+              },
+            },
+            {
+              accessorKey: "verificationToken",
+              header: t("domain:table.txt_record"),
+              size: 360,
+              cell: ({ row }) => {
+                const domain = row.original;
+                const copied = copiedDomainId === domain.id;
+                const txtName = getDomainVerificationTxtName(domain);
+                const txtValue = getDomainVerificationTxtValue(domain);
+
+                return (
+                  <div className="flex min-w-0 flex-col gap-2">
+                    <div className="text-muted-foreground text-xs">
+                      {t("domain:txt.name")}:{" "}
+                      <code className="text-foreground break-all">
+                        {txtName}
+                      </code>
+                    </div>
+                    <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs">
+                      <span className="text-muted-foreground">
+                        {t("domain:txt.value")}:
+                      </span>
+                      <code className="bg-muted text-foreground rounded px-2 py-1 break-all">
+                        {txtValue}
+                      </code>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleCopyVerificationValue(domain)}
+                      >
+                        {copied ? (
+                          <Check data-icon="inline-start" />
+                        ) : (
+                          <Copy data-icon="inline-start" />
+                        )}
+                        {copied ? t("domain:txt.copied") : t("domain:txt.copy")}
+                      </Button>
+                    </div>
+                  </div>
+                );
+              },
+            },
+            {
+              accessorKey: "verifiedAt",
+              header: t("domain:table.verified_at"),
+              cell: ({ row }) =>
+                row.original.verifiedAt
+                  ? dayjs(row.original.verifiedAt).format("YYYY-MM-DD HH:mm")
+                  : t("domain:not_verified"),
+            },
+            {
+              accessorKey: "createdAt",
+              header: t("domain:table.created_at"),
+              cell: ({ row }) =>
+                dayjs(row.original.createdAt).format("YYYY-MM-DD"),
+            },
+          ]}
+          data={domains}
+          pagination={{
+            hasPreviousPage: pageInfo?.hasPreviousPage,
+            hasNextPage: pageInfo?.hasNextPage,
+            onPreviousPage: () => {
+              navigate({
+                to: location.pathname,
+                search: getPreviousPageSearch(search, pageInfo),
+              });
+            },
+            onNextPage: () => {
+              navigate({
+                to: location.pathname,
+                search: getNextPageSearch(search, pageInfo),
               });
             },
           }}
+          rowActions={(row) => [
+            {
+              disabled:
+                verifyLoading || row.original.status === DomainStatus.VERIFIED,
+              label: t("domain:action.verify"),
+              onClick: () => handleVerifyDomain(row.original),
+            },
+            {
+              disabled: deleteLoading,
+              label: t("action.delete"),
+              onClick: () => handleDeleteDomain(row.original),
+            },
+          ]}
         />
-      </div>
 
-      <DataTable
-        columns={[
-          {
-            accessorKey: "name",
-            header: t("domain:table.name"),
-            cell: ({ row }) => (
-              <span
-                className="font-medium"
-                data-testid={`domain-row-${row.original.id}`}
-              >
-                {row.original.name}
-              </span>
-            ),
-          },
-          {
-            accessorKey: "status",
-            header: t("domain:table.status"),
-            size: 100,
-            cell: ({ row }) => {
-              const status = getDomainStatus(row.original.status);
-
-              return (
-                <Badge
-                  color={status.color}
-                  data-testid={`domain-status-${row.original.id}`}
+        <Dialog
+          open={createDialogOpen}
+          onOpenChange={handleCreateDialogOpenChange}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{t("domain:create.title")}</DialogTitle>
+              <DialogDescription>
+                {t("domain:create.description")}
+              </DialogDescription>
+            </DialogHeader>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                createForm.handleSubmit();
+              }}
+            >
+              <div className="flex flex-col gap-4 py-4">
+                <createForm.Field name="name">
+                  {(field) => (
+                    <Input
+                      id="domain-name"
+                      data-testid="domain-name-input"
+                      label={t("domain:form.name.label")}
+                      placeholder={t("domain:form.name.placeholder")}
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      error={
+                        field.state.meta.errors.length > 0
+                          ? field.state.meta.errors
+                              .map((error: any) =>
+                                typeof error === "string"
+                                  ? error
+                                  : error?.message || error,
+                              )
+                              .join(", ")
+                          : undefined
+                      }
+                    />
+                  )}
+                </createForm.Field>
+              </div>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => handleCreateDialogOpenChange(false)}
                 >
-                  {t(`domain:status.${status.label}`)}
-                </Badge>
-              );
-            },
-          },
-          {
-            accessorKey: "verificationToken",
-            header: t("domain:table.txt_record"),
-            size: 360,
-            cell: ({ row }) => {
-              const domain = row.original;
-              const copied = copiedDomainId === domain.id;
-              const txtName = getDomainVerificationTxtName(domain);
-              const txtValue = getDomainVerificationTxtValue(domain);
-
-              return (
-                <div className="flex min-w-0 flex-col gap-2">
-                  <div className="text-muted-foreground text-xs">
-                    {t("domain:txt.name")}:{" "}
-                    <code className="text-foreground break-all">
-                      {txtName}
-                    </code>
-                  </div>
-                  <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs">
-                    <span className="text-muted-foreground">
-                      {t("domain:txt.value")}:
-                    </span>
-                    <code className="bg-muted text-foreground break-all rounded px-2 py-1">
-                      {txtValue}
-                    </code>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleCopyVerificationValue(domain)}
-                    >
-                      {copied ? (
-                        <Check data-icon="inline-start" />
-                      ) : (
-                        <Copy data-icon="inline-start" />
-                      )}
-                      {copied ? t("domain:txt.copied") : t("domain:txt.copy")}
-                    </Button>
-                  </div>
-                </div>
-              );
-            },
-          },
-          {
-            accessorKey: "verifiedAt",
-            header: t("domain:table.verified_at"),
-            cell: ({ row }) =>
-              row.original.verifiedAt
-                ? dayjs(row.original.verifiedAt).format("YYYY-MM-DD HH:mm")
-                : t("domain:not_verified"),
-          },
-          {
-            accessorKey: "createdAt",
-            header: t("domain:table.created_at"),
-            cell: ({ row }) =>
-              dayjs(row.original.createdAt).format("YYYY-MM-DD"),
-          },
-        ]}
-        data={domains}
-        pagination={{
-          hasPreviousPage: pageInfo?.hasPreviousPage,
-          hasNextPage: pageInfo?.hasNextPage,
-          onPreviousPage: () => {
-            navigate({
-              to: location.pathname,
-              search: getPreviousPageSearch(search, pageInfo),
-            });
-          },
-          onNextPage: () => {
-            navigate({
-              to: location.pathname,
-              search: getNextPageSearch(search, pageInfo),
-            });
-          },
-        }}
-        rowActions={(row) => [
-          {
-            disabled:
-              verifyLoading || row.original.status === DomainStatus.VERIFIED,
-            label: t("domain:action.verify"),
-            onClick: () => handleVerifyDomain(row.original),
-          },
-          {
-            disabled: deleteLoading,
-            label: t("action.delete"),
-            onClick: () => handleDeleteDomain(row.original),
-          },
-        ]}
-      />
-
-      <Dialog
-        open={createDialogOpen}
-        onOpenChange={handleCreateDialogOpenChange}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t("domain:create.title")}</DialogTitle>
-            <DialogDescription>
-              {t("domain:create.description")}
-            </DialogDescription>
-          </DialogHeader>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              createForm.handleSubmit();
-            }}
-          >
-            <div className="flex flex-col gap-4 py-4">
-              <createForm.Field name="name">
-                {(field) => (
-                  <Input
-                    id="domain-name"
-                    data-testid="domain-name-input"
-                    label={t("domain:form.name.label")}
-                    placeholder={t("domain:form.name.placeholder")}
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    error={
-                      field.state.meta.errors.length > 0
-                        ? field.state.meta.errors
-                            .map((error: any) =>
-                              typeof error === "string"
-                                ? error
-                                : error?.message || error,
-                            )
-                            .join(", ")
-                        : undefined
-                    }
-                  />
-                )}
-              </createForm.Field>
-            </div>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => handleCreateDialogOpenChange(false)}
-              >
-                {t("action.cancel")}
-              </Button>
-              <Button
-                type="submit"
-                data-testid="domain-create-submit"
-                loading={createLoading}
-              >
-                {t("action.create")}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+                  {t("action.cancel")}
+                </Button>
+                <Button
+                  type="submit"
+                  data-testid="domain-create-submit"
+                  loading={createLoading}
+                >
+                  {t("action.create")}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </PageContent>
     </Page>
   );
 }

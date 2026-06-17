@@ -11,8 +11,8 @@ import appCss from "../styles.css?url";
 import type i18n from "i18next";
 import type { ApolloClientIntegration } from "@apollo/client-integration-tanstack-start";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { ToastProvider } from "@/components/fabric-ui/toast";
-import { AlertDialogProvider } from "@/components/fabric-ui/alert-dialog";
+import { ToastProvider } from "@/components/thread-ui/toast";
+import { AlertDialogProvider } from "@/components/thread-ui/alert-dialog";
 
 export const Route = createRootRouteWithContext<
   ApolloClientIntegration.RouterContext & {

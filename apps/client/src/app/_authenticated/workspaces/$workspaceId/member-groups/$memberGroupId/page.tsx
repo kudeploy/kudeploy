@@ -12,14 +12,21 @@ import type {
   UpdateWorkspaceMemberGroupInput,
   WorkspacePermission,
 } from "@/gql/graphql";
-import { alertDialog } from "@/components/fabric-ui/alert-dialog";
+import { alertDialog } from "@/components/thread-ui/alert-dialog";
 import { WorkspaceMemberRole } from "@/gql/graphql";
 import { PermissionCheckboxGroup } from "@/components/permission-checkbox-group";
 
-import { Page } from "@/components/fabric-ui/page";
-import { Button } from "@/components/fabric-ui/button";
-import { Input } from "@/components/fabric-ui/input";
-import { Textarea } from "@/components/fabric-ui/textarea";
+import {
+  Page,
+  PageActions,
+  PageContent,
+  PageHeader,
+  PageSecondaryAction,
+  PageTitle,
+} from "@/components/thread-ui/page";
+import { Button } from "@/components/thread-ui/button";
+import { Input } from "@/components/thread-ui/input";
+import { Textarea } from "@/components/thread-ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Field, FieldGroup, FieldSet } from "@/components/ui/field";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -341,41 +348,43 @@ function MemberGroupComponent() {
 
   if (queryLoading) {
     return (
-      <Page
-        variant="compact"
-        title={t("workspace-member-group:detail.page.title")}
-      >
-        <Tabs defaultValue="settings">
-          <TabsList variant="default">
-            <TabsTrigger value="settings">
-              {t("workspace-member-group:detail.page.tabs.settings")}
-            </TabsTrigger>
-            <TabsTrigger value="members">
-              {t("workspace-member-group:detail.page.tabs.members")}
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent value="settings">
-            <FieldSet>
-              <FieldGroup>
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-16" />
-                  <Skeleton className="h-10 w-full" />
-                  <Skeleton className="h-4 w-64" />
-                </div>
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-16" />
-                  <Skeleton className="h-24 w-full" />
-                  <Skeleton className="h-4 w-64" />
-                </div>
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-16" />
-                  <Skeleton className="h-5 w-32" />
-                  <Skeleton className="h-5 w-32" />
-                </div>
-              </FieldGroup>
-            </FieldSet>
-          </TabsContent>
-        </Tabs>
+      <Page variant="compact">
+        <PageHeader>
+          <PageTitle>{t("workspace-member-group:detail.page.title")}</PageTitle>
+        </PageHeader>
+        <PageContent>
+          <Tabs defaultValue="settings">
+            <TabsList variant="default">
+              <TabsTrigger value="settings">
+                {t("workspace-member-group:detail.page.tabs.settings")}
+              </TabsTrigger>
+              <TabsTrigger value="members">
+                {t("workspace-member-group:detail.page.tabs.members")}
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="settings">
+              <FieldSet>
+                <FieldGroup>
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-16" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-4 w-64" />
+                  </div>
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-16" />
+                    <Skeleton className="h-24 w-full" />
+                    <Skeleton className="h-4 w-64" />
+                  </div>
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-16" />
+                    <Skeleton className="h-5 w-32" />
+                    <Skeleton className="h-5 w-32" />
+                  </div>
+                </FieldGroup>
+              </FieldSet>
+            </TabsContent>
+          </Tabs>
+        </PageContent>
       </Page>
     );
   }
@@ -385,160 +394,168 @@ function MemberGroupComponent() {
   }
 
   return (
-    <Page
-      variant="compact"
-      title={group.name}
-      secondaryActions={
-        canEdit
-          ? [
-              {
-                disabled: deleteLoading,
-                label: t(
-                  "workspace-member-group:detail.page.actions.delete_btn.content",
-                ),
-                testId: "member-group-delete-action",
-                onClick: async () => {
-                  const confirmed = await alertDialog({
-                    title: t(
-                      "workspace-member-group:detail.page.actions.delete_btn.dialog.title",
-                    ),
-                    description: t(
-                      "workspace-member-group:detail.page.actions.delete_btn.dialog.description",
-                    ),
-                    cancelText: t("action.cancel"),
-                    confirmText: t("action.confirm"),
-                  });
-                  if (confirmed) {
-                    handleDelete();
-                  }
-                },
-              },
-            ]
-          : undefined
-      }
-    >
-      <Tabs defaultValue="settings">
-        <TabsList>
-          <TabsTrigger value="settings">
-            {t("workspace-member-group:detail.page.tabs.settings")}
-          </TabsTrigger>
-          <TabsTrigger value="members" data-testid="member-group-members-tab">
-            {t("workspace-member-group:detail.page.tabs.members")}
-          </TabsTrigger>
-        </TabsList>
+    <Page variant="compact">
+      <PageHeader>
+        <PageTitle>{group.name}</PageTitle>
+        {canEdit && (
+          <PageActions>
+            <PageSecondaryAction
+              destructive
+              data-testid="member-group-delete-action"
+              disabled={deleteLoading}
+              onAction={async () => {
+                const confirmed = await alertDialog({
+                  title: t(
+                    "workspace-member-group:detail.page.actions.delete_btn.dialog.title",
+                  ),
+                  description: t(
+                    "workspace-member-group:detail.page.actions.delete_btn.dialog.description",
+                  ),
+                  cancelText: t("action.cancel"),
+                  confirmText: t("action.confirm"),
+                });
+                if (confirmed) {
+                  handleDelete();
+                }
+              }}
+            >
+              {t(
+                "workspace-member-group:detail.page.actions.delete_btn.content",
+              )}
+            </PageSecondaryAction>
+          </PageActions>
+        )}
+      </PageHeader>
+      <PageContent>
+        <Tabs defaultValue="settings">
+          <TabsList>
+            <TabsTrigger value="settings">
+              {t("workspace-member-group:detail.page.tabs.settings")}
+            </TabsTrigger>
+            <TabsTrigger value="members" data-testid="member-group-members-tab">
+              {t("workspace-member-group:detail.page.tabs.members")}
+            </TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="settings">
-          <form
-            id="workspace-member-group-form"
-            data-testid="member-group-form"
-            onSubmit={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              form.handleSubmit();
-            }}
-          >
-            <FieldSet>
-              <FieldGroup>
-                <form.Field name="name">
-                  {(field) => (
-                    <Input
-                      id={field.name}
-                      name={field.name}
-                      data-testid="member-group-name-input"
-                      label={t(
-                        "workspace-member-group:detail.form.name_field.label",
-                      )}
-                      description={t(
-                        "workspace-member-group:detail.form.name_field.description",
-                      )}
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      error={
-                        field.form.state.isSubmitted &&
-                        field.state.meta.errors.length > 0
-                          ? field.state.meta.errors.map((error: any) => typeof error === "string" ? error : error?.message || error).join(", ")
-                          : undefined
-                      }
-                      aria-required="true"
-                      required
-                      autoComplete="off"
-                      disabled={updateLoading}
-                    />
-                  )}
-                </form.Field>
+          <TabsContent value="settings">
+            <form
+              id="workspace-member-group-form"
+              data-testid="member-group-form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                form.handleSubmit();
+              }}
+            >
+              <FieldSet>
+                <FieldGroup>
+                  <form.Field name="name">
+                    {(field) => (
+                      <Input
+                        id={field.name}
+                        name={field.name}
+                        data-testid="member-group-name-input"
+                        label={t(
+                          "workspace-member-group:detail.form.name_field.label",
+                        )}
+                        description={t(
+                          "workspace-member-group:detail.form.name_field.description",
+                        )}
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        error={
+                          field.form.state.isSubmitted &&
+                          field.state.meta.errors.length > 0
+                            ? field.state.meta.errors
+                                .map((error: any) =>
+                                  typeof error === "string"
+                                    ? error
+                                    : error?.message || error,
+                                )
+                                .join(", ")
+                            : undefined
+                        }
+                        aria-required="true"
+                        required
+                        autoComplete="off"
+                        disabled={updateLoading}
+                      />
+                    )}
+                  </form.Field>
 
-                <form.Field name="description">
-                  {(field) => (
-                    <Textarea
-                      id={field.name}
-                      name={field.name}
-                      data-testid="member-group-description-input"
-                      label={t(
-                        "workspace-member-group:detail.form.description_field.label",
-                      )}
-                      description={t(
-                        "workspace-member-group:detail.form.description_field.description",
-                      )}
-                      placeholder={t(
-                        "workspace-member-group:detail.form.description_field.placeholder",
-                      )}
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      rows={4}
-                      disabled={updateLoading}
-                    />
-                  )}
-                </form.Field>
+                  <form.Field name="description">
+                    {(field) => (
+                      <Textarea
+                        id={field.name}
+                        name={field.name}
+                        data-testid="member-group-description-input"
+                        label={t(
+                          "workspace-member-group:detail.form.description_field.label",
+                        )}
+                        description={t(
+                          "workspace-member-group:detail.form.description_field.description",
+                        )}
+                        placeholder={t(
+                          "workspace-member-group:detail.form.description_field.placeholder",
+                        )}
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        rows={4}
+                        disabled={updateLoading}
+                      />
+                    )}
+                  </form.Field>
 
-                <form.Field name="permissions">
-                  {(field) => (
-                    <PermissionCheckboxGroup
-                      value={field.state.value}
-                      onChange={field.handleChange}
-                      disabled={updateLoading}
-                    />
-                  )}
-                </form.Field>
+                  <form.Field name="permissions">
+                    {(field) => (
+                      <PermissionCheckboxGroup
+                        value={field.state.value}
+                        onChange={field.handleChange}
+                        disabled={updateLoading}
+                      />
+                    )}
+                  </form.Field>
 
-                <form.Subscribe
-                  selector={(state) => [
-                    state.isDirty,
-                    state.isSubmitting,
-                    state.canSubmit,
-                  ]}
-                >
-                  {([isDirty, isSubmitting, canSubmit]) => (
-                    <Field orientation="horizontal">
-                      <Button
-                        type="submit"
-                        data-testid="member-group-save"
-                        disabled={!isDirty || !canSubmit}
-                        loading={isSubmitting}
-                      >
-                        {t("action.save")}
-                      </Button>
-                    </Field>
-                  )}
-                </form.Subscribe>
-              </FieldGroup>
-            </FieldSet>
-          </form>
-        </TabsContent>
+                  <form.Subscribe
+                    selector={(state) => [
+                      state.isDirty,
+                      state.isSubmitting,
+                      state.canSubmit,
+                    ]}
+                  >
+                    {([isDirty, isSubmitting, canSubmit]) => (
+                      <Field orientation="horizontal">
+                        <Button
+                          type="submit"
+                          data-testid="member-group-save"
+                          disabled={!isDirty || !canSubmit}
+                          loading={isSubmitting}
+                        >
+                          {t("action.save")}
+                        </Button>
+                      </Field>
+                    )}
+                  </form.Subscribe>
+                </FieldGroup>
+              </FieldSet>
+            </form>
+          </TabsContent>
 
-        <TabsContent value="members">
-          <WorkspaceMemberGroupMembersManager
-            addedMembers={addedMembers}
-            isCreate={false}
-            loading={false}
-            addLoading={addMemberLoading}
-            removeLoading={removeMemberLoading}
-            onAdd={handleAddMember}
-            onDelete={handleDeleteMember}
-          />
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="members">
+            <WorkspaceMemberGroupMembersManager
+              addedMembers={addedMembers}
+              isCreate={false}
+              loading={false}
+              addLoading={addMemberLoading}
+              removeLoading={removeMemberLoading}
+              onAdd={handleAddMember}
+              onDelete={handleDeleteMember}
+            />
+          </TabsContent>
+        </Tabs>
+      </PageContent>
     </Page>
   );
 }

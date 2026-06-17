@@ -17,7 +17,7 @@ import {
 import { useQuery } from "@apollo/client/react";
 import { t } from "i18next";
 import { useDebounce } from "react-use";
-import { Button } from "@/components/fabric-ui/button";
+import { Button } from "@/components/thread-ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Item,
@@ -30,14 +30,14 @@ import {
   ItemTitle,
 } from "@/components/ui/item";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Empty, EmptyDescription, EmptyTitle } from "@/components/ui/empty";
+import { Empty } from "@/components/thread-ui/empty";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { alertDialog } from "@/components/fabric-ui/alert-dialog";
+import { alertDialog } from "@/components/thread-ui/alert-dialog";
 import {
   Dialog,
   DialogClose,
@@ -394,26 +394,27 @@ export function WorkspaceMemberGroupMembersManager({
                 ))}
               </ItemGroup>
             ) : (
-              <Empty className="gap-4 p-4">
-                <Button
-                  type="button"
-                  data-testid="member-group-add-member-action"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setAddMemberDialogOpen(true)}
-                  disabled={addLoading || removeLoading}
-                >
-                  <Plus className="h-4 w-4" />
-                  {t(
+              <Empty
+                className="gap-4 p-4"
+                description={t(
+                  "workspace-member-group:detail.members.management.added_members.empty_state.description",
+                )}
+                primaryAction={{
+                  "data-testid": "member-group-add-member-action",
+                  disabled: addLoading || removeLoading,
+                  icon: <Plus className="h-4 w-4" />,
+                  label: t(
                     "workspace-member-group:detail.members.management.add_member.btn",
-                  )}
-                </Button>
-                <EmptyDescription>
-                  {t(
-                    "workspace-member-group:detail.members.management.added_members.empty_state.description",
-                  )}
-                </EmptyDescription>
-              </Empty>
+                  ),
+                  size: "sm",
+                  type: "button",
+                  variant: "outline",
+                  onClick: () => setAddMemberDialogOpen(true),
+                }}
+                title={t(
+                  "workspace-member-group:detail.members.management.added_members.empty_state.title",
+                )}
+              />
             )}
           </ScrollArea>
         </div>
@@ -578,26 +579,27 @@ export function WorkspaceMemberGroupMembersManager({
                       ))}
                     </ItemGroup>
                   ) : (
-                    <Empty className="gap-2 p-4">
-                      <EmptyTitle>
-                        {emptyStateType === "no_search_results"
-                          ? t(
-                              "workspace-member-group:detail.members.management.all_members.empty_state.no_search_results.title",
-                            )
-                          : t(
-                              "workspace-member-group:detail.members.management.all_members.empty_state.title",
-                            )}
-                      </EmptyTitle>
-                      <EmptyDescription>
-                        {emptyStateType === "no_search_results"
+                    <Empty
+                      className="gap-2 p-4"
+                      description={
+                        emptyStateType === "no_search_results"
                           ? t(
                               "workspace-member-group:detail.members.management.all_members.empty_state.no_search_results.description",
                             )
                           : t(
                               "workspace-member-group:detail.members.management.all_members.empty_state.description",
-                            )}
-                      </EmptyDescription>
-                    </Empty>
+                            )
+                      }
+                      title={
+                        emptyStateType === "no_search_results"
+                          ? t(
+                              "workspace-member-group:detail.members.management.all_members.empty_state.no_search_results.title",
+                            )
+                          : t(
+                              "workspace-member-group:detail.members.management.all_members.empty_state.title",
+                            )
+                      }
+                    />
                   )}
                 </ScrollArea>
               </div>
@@ -686,18 +688,15 @@ export function WorkspaceMemberGroupMembersManager({
                       ))}
                     </ItemGroup>
                   ) : (
-                    <Empty className="gap-2 p-4">
-                      <EmptyTitle>
-                        {t(
-                          "workspace-member-group:detail.members.management.added_members.empty_state.title",
-                        )}
-                      </EmptyTitle>
-                      <EmptyDescription>
-                        {t(
-                          "workspace-member-group:detail.members.management.added_members.empty_state.description",
-                        )}
-                      </EmptyDescription>
-                    </Empty>
+                    <Empty
+                      className="gap-2 p-4"
+                      description={t(
+                        "workspace-member-group:detail.members.management.added_members.empty_state.description",
+                      )}
+                      title={t(
+                        "workspace-member-group:detail.members.management.added_members.empty_state.title",
+                      )}
+                    />
                   )}
                 </ScrollArea>
               </div>

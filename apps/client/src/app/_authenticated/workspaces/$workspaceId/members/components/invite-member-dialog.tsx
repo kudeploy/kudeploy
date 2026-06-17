@@ -4,9 +4,9 @@ import { Copy } from "lucide-react";
 import { useForm } from "@tanstack/react-form";
 import { toast } from "sonner";
 import { t } from "i18next";
-import { Button } from "@/components/fabric-ui/button";
-import { Input } from "@/components/fabric-ui/input";
-import { RadioGroup } from "@/components/fabric-ui/radio-group";
+import { Button } from "@/components/thread-ui/button";
+import { Input } from "@/components/thread-ui/input";
+import { RadioGroup } from "@/components/thread-ui/radio-group";
 import {
   Dialog,
   DialogContent,

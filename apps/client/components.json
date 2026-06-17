@@ -19,8 +19,6 @@
   },
   "iconLibrary": "lucide",
   "registries": {
-    "@thread-ui": "https://thread-ui.vercel.app/r/{name}.json",
-    "@fabric-ui": "https://fabric-ui-kit.vercel.app/r/{name}.json",
-    "@turboost-ui": "https://ui.turboost.app/r/{name}.json"
+    "@thread-ui": "https://thread-ui.vercel.app/r/{name}.json"
   }
 }

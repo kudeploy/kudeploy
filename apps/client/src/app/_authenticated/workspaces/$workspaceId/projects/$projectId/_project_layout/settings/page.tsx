@@ -9,10 +9,16 @@ import { t } from "i18next";
 import { toast } from "sonner";
 
 import { StatusBadge } from "../../../components/status-badge";
-import { alertDialog } from "@/components/fabric-ui/alert-dialog";
-import { Button } from "@/components/fabric-ui/button";
-import { Input } from "@/components/fabric-ui/input";
-import { Page } from "@/components/fabric-ui/page";
+import { alertDialog } from "@/components/thread-ui/alert-dialog";
+import { Button } from "@/components/thread-ui/button";
+import { Input } from "@/components/thread-ui/input";
+import {
+  Page,
+  PageContent,
+  PageDescription,
+  PageHeader,
+  PageTitle,
+} from "@/components/thread-ui/page";
 import {
   Card,
   CardContent,
@@ -124,65 +130,68 @@ function ProjectSettingsComponent() {
 
   return (
     <>
-      <Page
-        title={t("project:settings.title")}
-        description={t("project:settings.description")}
-      >
-        <div className="space-y-6" data-testid="project-detail-page">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t("project:settings.update.title")}</CardTitle>
-              <CardDescription>
-                {t("project:settings.update.description")}
-              </CardDescription>
-            </CardHeader>
+      <Page>
+        <PageHeader>
+          <PageTitle>{t("project:settings.title")}</PageTitle>
+          <PageDescription>{t("project:settings.description")}</PageDescription>
+        </PageHeader>
+        <PageContent>
+          <div className="space-y-6" data-testid="project-detail-page">
+            <Card>
+              <CardHeader>
+                <CardTitle>{t("project:settings.update.title")}</CardTitle>
+                <CardDescription>
+                  {t("project:settings.update.description")}
+                </CardDescription>
+              </CardHeader>
 
-            <CardContent className="space-y-5">
-              <StatusBadge namespace="project" status={project.status} />
+              <CardContent className="space-y-5">
+                <StatusBadge namespace="project" status={project.status} />
 
-              <Input
-                data-testid="project-detail-name-input"
-                label={t("project:form.name.label")}
-                placeholder={t("project:form.name.placeholder")}
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-              />
-            </CardContent>
+                <Input
+                  data-testid="project-detail-name-input"
+                  label={t("project:form.name.label")}
+                  placeholder={t("project:form.name.placeholder")}
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                />
+              </CardContent>
 
-            <CardFooter className="justify-end">
-              <Button
-                data-testid="project-save-action"
-                disabled={updateLoading}
-                onClick={handleSave}
-              >
-                {t("action.save")}
-              </Button>
-            </CardFooter>
-          </Card>
+              <CardFooter className="justify-end">
+                <Button
+                  data-testid="project-save-action"
+                  disabled={updateLoading}
+                  onClick={handleSave}
+                >
+                  {t("action.save")}
+                </Button>
+              </CardFooter>
+            </Card>
 
-          <Card className="border-destructive">
-            <CardHeader>
-              <CardTitle className="text-destructive">
-                {t("project:settings.danger_zone.title")}
-              </CardTitle>
-              <CardDescription>
-                {t("project:settings.danger_zone.description")}
-              </CardDescription>
-            </CardHeader>
+            <Card className="border-destructive">
+              <CardHeader>
+                <CardTitle className="text-destructive">
+                  {t("project:settings.danger_zone.title")}
+                </CardTitle>
+                <CardDescription>
+                  {t("project:settings.danger_zone.description")}
+                </CardDescription>
+              </CardHeader>
 
-            <CardFooter>
-              <Button
-                data-testid="project-delete-action"
-                disabled={deleteLoading}
-                loading={deleteLoading}
-                variant="destructive"
-                onClick={handleDelete}
-              >
-                {t("project:settings.danger_zone.delete_button")}
-              </Button>
-            </CardFooter>
-          </Card>
-        </div>
+              <CardFooter>
+                <Button
+                  data-testid="project-delete-action"
+                  disabled={deleteLoading}
+                  loading={deleteLoading}
+                  variant="destructive"
+                  onClick={handleDelete}
+                >
+                  {t("project:settings.danger_zone.delete_button")}
+                </Button>
+              </CardFooter>
+            </Card>
+          </div>
+        </PageContent>
       </Page>
     </>
   );

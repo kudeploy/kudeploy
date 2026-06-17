@@ -17,7 +17,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
-import { Page } from "@/components/fabric-ui/page";
+import { Empty } from "@/components/thread-ui/empty";
+import {
+  Page,
+  PageContent,
+  PageDescription,
+  PageHeader,
+  PageTitle,
+} from "@/components/thread-ui/page";
 import {
   Select,
   SelectContent,
@@ -194,86 +201,89 @@ function ServiceMetricsComponent() {
   );
 
   return (
-    <Page
-      title={t("service:tabs.metrics")}
-      description={t("service:metrics.description")}
-    >
-      <div className="space-y-4" data-testid="service-metrics-page">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="text-muted-foreground flex items-center gap-2 text-sm">
-            <Activity className="size-4" />
-            <span>
-              {error
-                ? t("service:metrics.error")
-                : metrics?.available
-                  ? t("service:metrics.updated", {
-                      time: dayjs(updatedAt).format("HH:mm:ss"),
-                    })
-                  : loading
-                    ? t("service:metrics.loading")
-                    : t("service:metrics.unavailable")}
-            </span>
+    <Page>
+      <PageHeader>
+        <PageTitle>{t("service:tabs.metrics")}</PageTitle>
+        <PageDescription>{t("service:metrics.description")}</PageDescription>
+      </PageHeader>
+      <PageContent>
+        <div className="space-y-4" data-testid="service-metrics-page">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-muted-foreground flex items-center gap-2 text-sm">
+              <Activity className="size-4" />
+              <span>
+                {error
+                  ? t("service:metrics.error")
+                  : metrics?.available
+                    ? t("service:metrics.updated", {
+                        time: dayjs(updatedAt).format("HH:mm:ss"),
+                      })
+                    : loading
+                      ? t("service:metrics.loading")
+                      : t("service:metrics.unavailable")}
+              </span>
+            </div>
+
+            <Select
+              items={RANGE_OPTIONS.map((option) => ({
+                label: t(`service:metrics.ranges.${option.key}`),
+                value: option.key,
+              }))}
+              value={range.key}
+              onValueChange={(value) => {
+                const option = RANGE_OPTIONS.find((item) => item.key === value);
+                if (option) {
+                  setRange(option);
+                }
+              }}
+            >
+              <SelectTrigger aria-label={t("service:metrics.range")}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent align="end" alignItemWithTrigger={false}>
+                {RANGE_OPTIONS.map((option) => (
+                  <SelectItem key={option.key} value={option.key}>
+                    {t(`service:metrics.ranges.${option.key}`)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
-          <Select
-            items={RANGE_OPTIONS.map((option) => ({
-              label: t(`service:metrics.ranges.${option.key}`),
-              value: option.key,
-            }))}
-            value={range.key}
-            onValueChange={(value) => {
-              const option = RANGE_OPTIONS.find((item) => item.key === value);
-              if (option) {
-                setRange(option);
-              }
-            }}
-          >
-            <SelectTrigger aria-label={t("service:metrics.range")}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent align="end" alignItemWithTrigger={false}>
-              {RANGE_OPTIONS.map((option) => (
-                <SelectItem key={option.key} value={option.key}>
-                  {t(`service:metrics.ranges.${option.key}`)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <ResourceMetricCard
+              data={cpuData}
+              empty={t("service:metrics.empty")}
+              formatter={formatCpu}
+              icon={<Cpu className="size-4" />}
+              limit={metrics?.cpuLimitMillicores ?? null}
+              loading={loading && !metrics}
+              testId="service-cpu-metrics-card"
+              title={t("service:metrics.cpu")}
+              usage={lastValue(metrics?.cpuUsageMillicores)}
+            />
+
+            <ResourceMetricCard
+              data={memoryData}
+              empty={t("service:metrics.empty")}
+              formatter={formatBytes}
+              icon={<MemoryStick className="size-4" />}
+              limit={metrics?.memoryLimitBytes ?? null}
+              loading={loading && !metrics}
+              testId="service-memory-metrics-card"
+              title={t("service:metrics.memory")}
+              usage={lastValue(metrics?.memoryUsageBytes)}
+            />
+
+            <NetworkMetricCard
+              data={networkData}
+              loading={loading && !metrics}
+              receive={lastValue(metrics?.networkReceiveBytesPerSecond)}
+              transmit={lastValue(metrics?.networkTransmitBytesPerSecond)}
+            />
+          </div>
         </div>
-
-        <div className="grid gap-4 lg:grid-cols-2">
-          <ResourceMetricCard
-            data={cpuData}
-            empty={t("service:metrics.empty")}
-            formatter={formatCpu}
-            icon={<Cpu className="size-4" />}
-            limit={metrics?.cpuLimitMillicores ?? null}
-            loading={loading && !metrics}
-            testId="service-cpu-metrics-card"
-            title={t("service:metrics.cpu")}
-            usage={lastValue(metrics?.cpuUsageMillicores)}
-          />
-
-          <ResourceMetricCard
-            data={memoryData}
-            empty={t("service:metrics.empty")}
-            formatter={formatBytes}
-            icon={<MemoryStick className="size-4" />}
-            limit={metrics?.memoryLimitBytes ?? null}
-            loading={loading && !metrics}
-            testId="service-memory-metrics-card"
-            title={t("service:metrics.memory")}
-            usage={lastValue(metrics?.memoryUsageBytes)}
-          />
-
-          <NetworkMetricCard
-            data={networkData}
-            loading={loading && !metrics}
-            receive={lastValue(metrics?.networkReceiveBytesPerSecond)}
-            transmit={lastValue(metrics?.networkTransmitBytesPerSecond)}
-          />
-        </div>
-      </div>
+      </PageContent>
     </Page>
   );
 }
@@ -459,9 +469,10 @@ function MetricLineChart({
 
   if (!data.length) {
     return (
-      <div className="border-border text-muted-foreground flex h-56 items-center justify-center rounded-md border border-dashed text-sm">
-        {empty}
-      </div>
+      <Empty
+        className="h-56 rounded-md border border-dashed p-4"
+        title={empty}
+      />
     );
   }
 
