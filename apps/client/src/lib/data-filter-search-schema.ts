@@ -5,9 +5,10 @@ export function createDataFilterInputSearchSchema(
   valueSchema: ZodString = z.string().max(255),
   options: { fulltext?: boolean } = {},
 ) {
+  const nullableValueSchema = valueSchema.nullable();
   const operatorSchema = {
-    $eq: valueSchema.optional(),
-    $ne: valueSchema.optional(),
+    $eq: nullableValueSchema.optional(),
+    $ne: nullableValueSchema.optional(),
     ...(options.fulltext ? { $fulltext: valueSchema.optional() } : {}),
   };
 
@@ -26,6 +27,8 @@ export function createDataFilterSelectSearchSchema<
     arraySchema,
     z
       .object({
+        $eq: z.null().optional(),
+        $ne: z.null().optional(),
         $in: arraySchema.optional(),
         $nin: arraySchema.optional(),
       })
@@ -39,8 +42,8 @@ export const dataFilterDateSearchSchema = z.union([
   dateValueSchema,
   z
     .object({
-      $eq: dateValueSchema.optional(),
-      $ne: dateValueSchema.optional(),
+      $eq: dateValueSchema.nullable().optional(),
+      $ne: dateValueSchema.nullable().optional(),
       $gt: dateValueSchema.optional(),
       $gte: dateValueSchema.optional(),
       $lt: dateValueSchema.optional(),
