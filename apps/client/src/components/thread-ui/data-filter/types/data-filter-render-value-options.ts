@@ -1,4 +1,4 @@
-import type { DataFilterOperator } from "../types";
+import type { DataFilterOperator } from "./data-filter-operator";
 
 export interface DataFilterRenderValueOptions<
   TValue = unknown,

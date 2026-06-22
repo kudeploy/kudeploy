@@ -5,10 +5,83 @@ import { DataFilterDefaultNumberInputField } from "./data-filter-default-number-
 import { DataFilterDefaultSelectField } from "./data-filter-default-select-field";
 import type { FC } from "react";
 
-import type { DataFilterDefaultFieldProps } from "../interfaces/data-filter-default-field-props";
+import type {
+  DataFilterDatePickerBetweenValue,
+  DataFilterItemProps,
+  DataFilterNumberInputBetweenValue,
+  DataFilterOperator,
+} from "../types";
+
+const getInputValue = (value: unknown) => {
+  return typeof value === "string" ? value : undefined;
+};
+
+const getNumberInputRangeValue = (
+  value: Array<unknown>,
+): DataFilterNumberInputBetweenValue => {
+  return [
+    typeof value[0] === "number" ? value[0] : undefined,
+    typeof value[1] === "number" ? value[1] : undefined,
+  ];
+};
+
+const getNumberInputValue = (
+  value: unknown,
+): DataFilterNumberInputBetweenValue | number | undefined => {
+  if (Array.isArray(value)) {
+    return getNumberInputRangeValue(value);
+  }
+
+  return typeof value === "number" ? value : undefined;
+};
+
+const isDatePickerValue = (value: unknown): value is Date | string => {
+  return value instanceof Date || typeof value === "string";
+};
+
+const getDatePickerRangeValue = (
+  value: Array<unknown>,
+): DataFilterDatePickerBetweenValue => {
+  return [
+    isDatePickerValue(value[0]) ? value[0] : undefined,
+    isDatePickerValue(value[1]) ? value[1] : undefined,
+  ];
+};
+
+const getDatePickerValue = (
+  value: unknown,
+): DataFilterDatePickerBetweenValue | Date | string | undefined => {
+  if (Array.isArray(value)) {
+    return getDatePickerRangeValue(value);
+  }
+
+  return isDatePickerValue(value) ? value : undefined;
+};
+
+const getCheckboxValue = (value: unknown) => {
+  return typeof value === "boolean" ? value : undefined;
+};
+
+const getSelectValue = (value: unknown) => {
+  if (Array.isArray(value)) {
+    return value.filter((optionValue): optionValue is string => {
+      return typeof optionValue === "string";
+    });
+  }
+
+  return typeof value === "string" ? value : undefined;
+};
+
+interface DataFilterDefaultFieldProps {
+  item: DataFilterItemProps;
+  operator: DataFilterOperator;
+  value: unknown;
+  onChange: (value: unknown) => void;
+}
 
 export const DataFilterDefaultField: FC<DataFilterDefaultFieldProps> = ({
   item,
+  operator,
   value,
   onChange,
 }) => {
@@ -16,7 +89,8 @@ export const DataFilterDefaultField: FC<DataFilterDefaultFieldProps> = ({
     return (
       <DataFilterDefaultNumberInputField
         item={item}
-        value={value}
+        operator={operator}
+        value={getNumberInputValue(value)}
         onChange={onChange}
       />
     );
@@ -26,7 +100,8 @@ export const DataFilterDefaultField: FC<DataFilterDefaultFieldProps> = ({
     return (
       <DataFilterDefaultDatePickerField
         item={item}
-        value={value}
+        operator={operator}
+        value={getDatePickerValue(value)}
         onChange={onChange}
       />
     );
@@ -35,8 +110,7 @@ export const DataFilterDefaultField: FC<DataFilterDefaultFieldProps> = ({
   if (item.type === "checkbox") {
     return (
       <DataFilterDefaultCheckboxField
-        item={item}
-        value={value}
+        value={getCheckboxValue(value)}
         onChange={onChange}
       />
     );
@@ -46,7 +120,7 @@ export const DataFilterDefaultField: FC<DataFilterDefaultFieldProps> = ({
     return (
       <DataFilterDefaultSelectField
         item={item}
-        value={value}
+        value={getSelectValue(value)}
         onChange={onChange}
       />
     );
@@ -55,7 +129,7 @@ export const DataFilterDefaultField: FC<DataFilterDefaultFieldProps> = ({
   return (
     <DataFilterDefaultInputField
       item={item}
-      value={value}
+      value={getInputValue(value)}
       onChange={onChange}
     />
   );

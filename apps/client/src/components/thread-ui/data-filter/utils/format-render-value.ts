@@ -1,10 +1,10 @@
 import dayjs from "dayjs";
 import { forEach, isPlainObject, transform } from "lodash";
 
-import type { DataFilterValues } from "../types";
+type DataFilterRecord = Record<string, any>;
 
-export const formatRenderValue = (obj: DataFilterValues): DataFilterValues => {
-  return transform<DataFilterValues, DataFilterValues>(
+export const formatRenderValue = (obj: DataFilterRecord): DataFilterRecord => {
+  return transform<DataFilterRecord, DataFilterRecord>(
     obj,
     (result, value, key) => {
       if (isPlainObject(value) || Array.isArray(value)) {

@@ -14,12 +14,15 @@ import { toast } from "sonner";
 import z from "zod";
 
 import { StatusBadge } from "./components/status-badge";
-import type { DataFilterItemProps as FilterItemProps } from "@/components/thread-ui/data-filter";
+import type { DataFilterItemProps } from "@/components/thread-ui/data-filter";
 import type { GetProjectsFromProjectsRouteQuery } from "@/gql/graphql";
 import { alertDialog } from "@/components/thread-ui/alert-dialog";
 import { Button } from "@/components/thread-ui/button";
-import { DataFilter as Filter } from "@/components/thread-ui/data-filter";
-import { formatFilterValues } from "@/lib/format-filter-values";
+import { DataFilter } from "@/components/thread-ui/data-filter";
+import {
+  formatConnectionFilterValue,
+  formatFilterValues,
+} from "@/lib/format-filter-values";
 import { DataTable } from "@/components/thread-ui/data-table";
 import { Input } from "@/components/thread-ui/input";
 import {
@@ -47,6 +50,10 @@ import {
   getNextPageSearch,
   getPreviousPageSearch,
 } from "@/lib/connection-search";
+import {
+  createDataFilterInputSearchSchema,
+  dataFilterDateSearchSchema,
+} from "@/lib/data-filter-search-schema";
 
 const GET_PROJECTS_FROM_PROJECTS_ROUTE = graphql(`
   query getProjectsFromProjectsRoute(
@@ -114,7 +121,8 @@ export const Route = createFileRoute(
     createConnectionSearchSchema({
       filterSchema: z
         .object({
-          name: z.string().max(255).optional().catch(undefined),
+          name: createDataFilterInputSearchSchema().optional().catch(undefined),
+          createdAt: dataFilterDateSearchSchema.optional().catch(undefined),
         })
         .optional(),
       pageSize: 20,
@@ -137,18 +145,13 @@ function ProjectsComponent() {
   const [newProjectName, setNewProjectName] = useState("");
 
   const query = search?.query ?? "";
-  const filterValues = search?.filter ?? {};
+  const filterValues = (search?.filter ?? {}) as Record<string, unknown>;
 
   const { data, refetch } = useQuery(GET_PROJECTS_FROM_PROJECTS_ROUTE, {
     variables: {
       ...pick(search, ["after", "before", "first", "last"]),
       query,
-      filter: formatFilterValues(filterValues, (field, value) => {
-        if (field === "name") {
-          return { $fulltext: value };
-        }
-        return value;
-      }),
+      filter: formatFilterValues(filterValues, formatConnectionFilterValue),
       orderBy: {
         field: search?.orderBy?.field ?? ProjectOrderField.CREATED_AT,
         direction: search?.orderBy?.direction ?? OrderDirection.DESC,
@@ -167,25 +170,23 @@ function ProjectsComponent() {
   const projects = data?.projects.edges.map((edge) => edge.node) ?? [];
   const pageInfo = data?.projects.pageInfo;
 
-  const filters: Array<FilterItemProps> = useMemo(
+  const filters: Array<DataFilterItemProps> = useMemo(
     () => [
       {
         label: t("project:filter.name.label"),
         field: "name",
         type: "input",
-        pinned: true,
-        render: ({ field: { value, onChange } }) => (
-          <Input
-            defaultValue={value ?? ""}
-            placeholder={t("project:filter.name.placeholder")}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                onChange?.((event.target as HTMLInputElement).value);
-              }
-            }}
-          />
-        ),
+        placeholder: t("project:filter.name.placeholder"),
+        operators: ["$eq", "$ne"],
+        defaultOperator: "$eq",
+      },
+      {
+        label: t("project:filter.created_at.label"),
+        field: "createdAt",
+        type: "date-picker",
+        max: dayjs().toISOString(),
+        operators: ["$gte", "$lte"],
+        defaultOperator: "$gte",
       },
     ],
     [],
@@ -263,30 +264,20 @@ function ProjectsComponent() {
       </PageHeader>
       <PageContent>
         <div className="mb-4" data-testid="projects-page">
-          <Filter
+          <DataFilter
             filters={filters}
-            values={filterValues}
-            onChange={(values) => {
+            value={{ filter: filterValues, query }}
+            onChange={(value) => {
               navigate({
                 to: location.pathname,
                 search: {
-                  ...(query ? { query } : {}),
-                  ...(!isEmpty(values) ? { filter: values } : {}),
+                  ...(value.query ? { query: value.query } : {}),
+                  ...(!isEmpty(value.filter) ? { filter: value.filter } : {}),
                 },
               });
             }}
             search={{
               placeholder: t("project:filter.search.placeholder"),
-              value: query,
-              onChange: (value) => {
-                navigate({
-                  to: location.pathname,
-                  search: {
-                    ...(value ? { query: value } : {}),
-                    ...(!isEmpty(filterValues) ? { filter: filterValues } : {}),
-                  },
-                });
-              },
             }}
           />
         </div>

@@ -1,6 +1,9 @@
 import type { DataFilterItemBaseProps } from "./data-filter-item-base-props";
-import type { DataFilterSelectOptions } from "./data-filter-select-options";
-import type { DataFilterSelectOperator } from "../types";
+import type {
+  DataFilterResolveSelectedOptions,
+  DataFilterSelectOptions,
+} from "./data-filter-select-options";
+import type { DataFilterSelectOperator } from "./data-filter-select-operator";
 
 export interface DataFilterItemSelectProps extends DataFilterItemBaseProps<
   Array<string> | null,
@@ -8,5 +11,6 @@ export interface DataFilterItemSelectProps extends DataFilterItemBaseProps<
 > {
   type: "select";
   options: DataFilterSelectOptions;
+  resolveSelectedOptions?: DataFilterResolveSelectedOptions;
   placeholder?: string;
 }

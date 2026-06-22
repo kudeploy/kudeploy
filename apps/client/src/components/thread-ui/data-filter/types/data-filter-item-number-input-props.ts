@@ -1,8 +1,9 @@
 import type { DataFilterItemBaseProps } from "./data-filter-item-base-props";
-import type { DataFilterNumberInputOperator } from "../types";
+import type { DataFilterNumberInputBetweenValue } from "./data-filter-number-input-between-value";
+import type { DataFilterNumberInputOperator } from "./data-filter-number-input-operator";
 
 export interface DataFilterItemNumberInputProps extends DataFilterItemBaseProps<
-  number | null,
+  DataFilterNumberInputBetweenValue | number | null,
   DataFilterNumberInputOperator
 > {
   type: "number-input";

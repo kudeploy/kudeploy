@@ -14,9 +14,15 @@
   "description": "Bind and verify custom domains for this workspace.",
   "filter": {
     "items": {
+      "created_at": {
+        "label": "Created"
+      },
       "name": {
         "label": "Domain",
         "placeholder": "Search domain"
+      },
+      "status": {
+        "label": "Status"
       }
     },
     "search": {

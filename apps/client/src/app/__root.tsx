@@ -11,8 +11,8 @@ import appCss from "../styles.css?url";
 import type i18n from "i18next";
 import type { ApolloClientIntegration } from "@apollo/client-integration-tanstack-start";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { ToastProvider } from "@/components/thread-ui/toast";
-import { AlertDialogProvider } from "@/components/thread-ui/alert-dialog";
+import { AppProvider } from "@/components/thread-ui/app-provider";
+import i18next from "@/lib/i18n";
 
 export const Route = createRootRouteWithContext<
   ApolloClientIntegration.RouterContext & {
@@ -57,11 +57,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
 
       <body className="bg-background min-h-screen">
-        <AlertDialogProvider>
+        <AppProvider i18n={i18next}>
           <TooltipProvider>
-            <ToastProvider>{children}</ToastProvider>
+            {children}
           </TooltipProvider>
-        </AlertDialogProvider>
+        </AppProvider>
 
         <TanStackDevtools
           config={{

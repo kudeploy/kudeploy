@@ -14,9 +14,15 @@
   "description": "为此工作空间绑定并验证自定义域名。",
   "filter": {
     "items": {
+      "created_at": {
+        "label": "创建时间"
+      },
       "name": {
         "label": "域名",
         "placeholder": "搜索域名"
+      },
+      "status": {
+        "label": "状态"
       }
     },
     "search": {

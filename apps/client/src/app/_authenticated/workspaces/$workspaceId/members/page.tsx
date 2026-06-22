@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { zhCN } from "react-day-picker/locale";
 import { useMutation, useQuery } from "@apollo/client/react";
 import {
   createFileRoute,
@@ -14,8 +13,8 @@ import z from "zod";
 import { isEmpty, pick } from "lodash";
 import { useCurrentWorkspaceMemberContext } from "../contexts/current-workspace-member-context";
 import { InviteMemberDialog } from "./components/invite-member-dialog";
-import type { DataFilterItemProps as FilterItemProps } from "@/components/thread-ui/data-filter";
-import { DataFilter as Filter } from "@/components/thread-ui/data-filter";
+import type { DataFilterItemProps } from "@/components/thread-ui/data-filter";
+import { DataFilter } from "@/components/thread-ui/data-filter";
 import { alertDialog } from "@/components/thread-ui/alert-dialog";
 import {
   Page,
@@ -32,6 +31,7 @@ import {
   WorkspaceMemberOrderField,
   WorkspaceMemberRole,
   WorkspaceMemberStatus,
+  WorkspaceMemberType,
 } from "@/gql/graphql";
 import {
   OrderDirection,
@@ -39,13 +39,17 @@ import {
   getNextPageSearch,
   getPreviousPageSearch,
 } from "@/lib/connection-search";
+import {
+  createDataFilterInputSearchSchema,
+  createDataFilterSelectSearchSchema,
+  dataFilterDateSearchSchema,
+} from "@/lib/data-filter-search-schema";
 import { truncateEmail } from "@/utils/truncate-email";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-import { formatFilterValues } from "@/lib/format-filter-values";
+import {
+  formatConnectionFilterValue,
+  formatFilterValues,
+} from "@/lib/format-filter-values";
 import { cn } from "@/lib/utils";
-import { Input } from "@/components/ui/input";
-import { Calendar } from "@/components/ui/calendar";
 import { Badge } from "@/components/thread-ui/badge";
 
 const GET_WORKSPACE_MEMBERS_FROM_MEMBERS_ROUTE = graphql(`
@@ -125,6 +129,17 @@ const getRoleLabel = (role: WorkspaceMemberRole) => {
   }
 };
 
+const getTypeLabel = (type: WorkspaceMemberType) => {
+  switch (type) {
+    case WorkspaceMemberType.USER:
+      return t("workspace-member:type.user");
+    case WorkspaceMemberType.SERVICE_ACCOUNT:
+      return t("workspace-member:type.service_account");
+    default:
+      return type;
+  }
+};
+
 const statusMap = {
   [WorkspaceMemberStatus.INVITING]: t("workspace-member:status.inviting"),
   [WorkspaceMemberStatus.ACTIVE]: t("workspace-member:status.active"),
@@ -159,22 +174,35 @@ export const Route = createFileRoute(
     createConnectionSearchSchema({
       filterSchema: z
         .object({
-          role: z
-            .array(z.nativeEnum(WorkspaceMemberRole))
-            .max(Object.values(WorkspaceMemberRole).length)
-            .optional(),
-          name: z.string().max(255).optional().catch(undefined),
-          email: z.string().email().optional().catch(undefined),
-          status: z
-            .array(
-              z.union([
-                z.nativeEnum(WorkspaceMemberStatus),
-                z.literal("ACTIVE"),
-              ]),
-            )
-            .max(Object.values(WorkspaceMemberStatus).length + 1)
-            .optional(),
-          created_at: z.array(z.string().datetime()).length(2).optional(),
+          role: createDataFilterSelectSearchSchema(
+            z.nativeEnum(WorkspaceMemberRole),
+            Object.values(WorkspaceMemberRole).length,
+          )
+            .optional()
+            .catch(undefined),
+          type: createDataFilterSelectSearchSchema(
+            z.nativeEnum(WorkspaceMemberType),
+            Object.values(WorkspaceMemberType).length,
+          )
+            .optional()
+            .catch(undefined),
+          name: createDataFilterInputSearchSchema(z.string().max(255), {
+            fulltext: true,
+          })
+            .optional()
+            .catch(undefined),
+          email: createDataFilterInputSearchSchema(z.string().max(255), {
+            fulltext: true,
+          })
+            .optional()
+            .catch(undefined),
+          status: createDataFilterSelectSearchSchema(
+            z.union([z.nativeEnum(WorkspaceMemberStatus), z.literal("ACTIVE")]),
+            Object.values(WorkspaceMemberStatus).length + 1,
+          )
+            .optional()
+            .catch(undefined),
+          created_at: dataFilterDateSearchSchema.optional().catch(undefined),
         })
         .optional(),
       pageSize: 20,
@@ -194,7 +222,7 @@ function MembersComponent() {
   const currentWorkspaceMember = useCurrentWorkspaceMemberContext();
 
   const query = search?.query ?? "";
-  const filterValues = search?.filter ?? {};
+  const filterValues = (search?.filter ?? {}) as Record<string, unknown>;
 
   const [inviteOpen, setInviteOpen] = useState(false);
 
@@ -202,26 +230,7 @@ function MembersComponent() {
     variables: {
       ...pick(search, ["after", "before", "first", "last"]),
       query,
-      filter: formatFilterValues(filterValues, (field, value) => {
-        switch (field) {
-          case "role":
-            return { $in: value };
-          case "name": {
-            return { $fulltext: value };
-          }
-          case "status":
-            return {
-              $in: value,
-            };
-          case "created_at":
-            return {
-              $gte: value[0],
-              $lte: dayjs(value[1]).endOf("day").toISOString(),
-            };
-          default:
-            return value;
-        }
-      }),
+      filter: formatFilterValues(filterValues, formatConnectionFilterValue),
       orderBy: {
         field: search?.orderBy?.field ?? WorkspaceMemberOrderField.CREATED_AT,
         direction: search?.orderBy?.direction ?? OrderDirection.DESC,
@@ -232,177 +241,64 @@ function MembersComponent() {
   const members = data?.workspaceMembers.edges.map((edge) => edge.node) ?? [];
   const pageInfo = data?.workspaceMembers.pageInfo;
 
-  const filters: Array<FilterItemProps> = useMemo(() => {
+  const filters: Array<DataFilterItemProps> = useMemo(() => {
     return [
       {
         label: t("workspace-member:filter.items.name.label"),
         field: "name",
         type: "input",
-        pinned: true,
-        render: ({ field: { value, onChange } }) => {
-          return (
-            <Input
-              placeholder={t("workspace-member:filter.items.name.placeholder")}
-              defaultValue={value ?? ""}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-
-                  onChange?.((e.target as HTMLInputElement).value);
-                }
-              }}
-            />
-          );
-        },
+        placeholder: t("workspace-member:filter.items.name.placeholder"),
+        operators: ["$fulltext"],
+        defaultOperator: "$fulltext",
       },
       {
         label: t("workspace-member:filter.items.email.label"),
         field: "email",
         type: "input",
-        pinned: true,
-        render: ({ field: { value, onChange } }) => {
-          return (
-            <Input
-              placeholder={t("workspace-member:filter.items.email.placeholder")}
-              defaultValue={value ?? ""}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-
-                  onChange?.((e.target as HTMLInputElement).value);
-                }
-              }}
-            />
-          );
-        },
+        placeholder: t("workspace-member:filter.items.email.placeholder"),
+        operators: ["$fulltext"],
+        defaultOperator: "$fulltext",
       },
       {
         label: t("workspace-member:filter.items.status.label"),
         field: "status",
         type: "select",
-        options: [],
-        pinned: true,
-        render: ({ field: { value, onChange } }) => {
-          const selectedStatuses = value ?? [];
-
-          return (
-            <div className="space-y-2">
-              {[...Object.values(WorkspaceMemberStatus)].map((status) => (
-                <div key={status} className="flex gap-2">
-                  <Checkbox
-                    id={`filter-${status.toLowerCase()}-checkbox`}
-                    checked={selectedStatuses.includes(status)}
-                    onCheckedChange={(checked) => {
-                      if (checked) {
-                        onChange(
-                          selectedStatuses.length
-                            ? [...selectedStatuses, status]
-                            : [status],
-                        );
-                      } else {
-                        onChange(
-                          selectedStatuses.filter((item) => item !== status),
-                        );
-                      }
-                    }}
-                  />
-
-                  <Label htmlFor={`filter-${status.toLowerCase()}-checkbox`}>
-                    {statusMap[status]}
-                  </Label>
-                </div>
-              ))}
-            </div>
-          );
-        },
-        renderValue: ({ value }) => {
-          return (value ?? [])
-            .map((status) => {
-              return statusMap[status as WorkspaceMemberStatus];
-            })
-            .join(",");
-        },
+        options: Object.values(WorkspaceMemberStatus).map((status) => ({
+          label: statusMap[status],
+          value: status,
+        })),
+        operators: ["$in"],
+        defaultOperator: "$in",
       },
       {
         label: t("workspace-member:filter.items.role.label"),
         field: "role",
         type: "select",
-        options: [],
-        pinned: true,
-        render: ({ field: { value, onChange } }) => {
-          const selectedRoles = value ?? [];
-
-          return (
-            <div className="space-y-2">
-              {Object.values(WorkspaceMemberRole).map((role) => (
-                <div key={role} className="flex gap-2">
-                  <Checkbox
-                    id={`filter-${role.toLowerCase()}-checkbox`}
-                    checked={selectedRoles.includes(role)}
-                    onCheckedChange={(checked) => {
-                      if (checked) {
-                        onChange(
-                          selectedRoles.length ? [...selectedRoles, role] : [role],
-                        );
-                      } else {
-                        onChange(
-                          selectedRoles.filter((item) => item !== role),
-                        );
-                      }
-                    }}
-                  />
-
-                  <Label htmlFor={`filter-${role.toLowerCase()}-checkbox`}>
-                    {getRoleLabel(role)}
-                  </Label>
-                </div>
-              ))}
-            </div>
-          );
-        },
-        renderValue: ({ value }) => {
-          return (value ?? [])
-            .map((role) => getRoleLabel(role as WorkspaceMemberRole))
-            .join(",");
-        },
+        options: Object.values(WorkspaceMemberRole).map((role) => ({
+          label: getRoleLabel(role),
+          value: role,
+        })),
+        operators: ["$in"],
+        defaultOperator: "$in",
+      },
+      {
+        label: t("workspace-member:filter.items.type.label"),
+        field: "type",
+        type: "select",
+        options: Object.values(WorkspaceMemberType).map((type) => ({
+          label: getTypeLabel(type),
+          value: type,
+        })),
+        operators: ["$in"],
+        defaultOperator: "$in",
       },
       {
         label: t("workspace-member:filter.items.created_at.label"),
         field: "created_at",
-        type: "select",
-        options: [],
-        pinned: true,
-        render: ({ field }) => {
-          const dates = Array.isArray(field.value) ? field.value : [];
-
-          return (
-            <Calendar
-              className="p-0"
-              mode="range"
-              locale={zhCN}
-              selected={{
-                from: dates[0] ? new Date(dates[0]) : undefined,
-                to: dates[1] ? new Date(dates[1]) : undefined,
-              }}
-              onSelect={(dateRange) => {
-                if (dateRange) {
-                  field.onChange(
-                    [dateRange.from, dateRange.to]
-                      .filter((date): date is Date => date instanceof Date)
-                      .map((date) => date.toISOString()),
-                  );
-                }
-              }}
-              disabled={(date) => dayjs(date).isAfter(dayjs())}
-              numberOfMonths={2}
-            />
-          );
-        },
-        renderValue: ({ value }) => {
-          return (value ?? [])
-            .map((date) => dayjs(date).format("YYYY-MM-DD"))
-            .join(",");
-        },
+        type: "date-picker",
+        max: dayjs().toISOString(),
+        operators: ["$gte", "$lte"],
+        defaultOperator: "$gte",
       },
     ];
   }, []);
@@ -502,30 +398,20 @@ function MembersComponent() {
       </PageHeader>
       <PageContent>
         <div className="mb-4" data-testid="workspace-members-page">
-          <Filter
+          <DataFilter
             filters={filters}
-            values={filterValues}
-            onChange={(values) => {
+            value={{ filter: filterValues, query }}
+            onChange={(value) => {
               navigate({
                 to: location.pathname,
                 search: {
-                  ...(query ? { query } : {}),
-                  ...(!isEmpty(values) ? { filter: values } : {}),
+                  ...(value.query ? { query: value.query } : {}),
+                  ...(!isEmpty(value.filter) ? { filter: value.filter } : {}),
                 },
               });
             }}
             search={{
               placeholder: t("workspace-member:filter.search.placeholder"),
-              value: query,
-              onChange: (value) => {
-                navigate({
-                  to: location.pathname,
-                  search: {
-                    ...(value ? { query: value } : {}),
-                    ...(!isEmpty(filterValues) ? { filter: filterValues } : {}),
-                  },
-                });
-              },
             }}
           />
         </div>

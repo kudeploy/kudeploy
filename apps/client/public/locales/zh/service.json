@@ -225,6 +225,9 @@
     "search": {
       "placeholder": "搜索服务"
     },
+    "created_at": {
+      "label": "创建时间"
+    },
     "name": {
       "label": "名称",
       "placeholder": "服务名称"

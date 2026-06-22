@@ -41,6 +41,9 @@
       "search": {
         "placeholder": "Search volumes"
       },
+      "created_at": {
+        "label": "Created"
+      },
       "name": {
         "label": "Name",
         "placeholder": "Volume name"
@@ -107,6 +110,9 @@
       "search": {
         "placeholder": "Search registry credentials"
       },
+      "created_at": {
+        "label": "Created"
+      },
       "name": {
         "label": "Name",
         "placeholder": "Credential name"
@@ -155,6 +161,9 @@
   "filter": {
     "search": {
       "placeholder": "Search projects"
+    },
+    "created_at": {
+      "label": "Created"
     },
     "name": {
       "label": "Name",

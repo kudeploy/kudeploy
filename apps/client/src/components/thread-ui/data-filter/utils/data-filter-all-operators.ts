@@ -7,6 +7,7 @@ export const dataFilterAllOperators: Array<DataFilterOperator> = [
   "$gte",
   "$lt",
   "$lte",
+  "$between",
   "$fulltext",
   "$in",
   "$nin",

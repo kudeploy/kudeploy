@@ -22,6 +22,7 @@ import type {
 } from "@tanstack/react-table";
 import type { CSSProperties, ReactElement, ReactNode } from "react";
 
+import { useThreadUITranslation } from "@/components/thread-ui/app-provider";
 import { Empty } from "@/components/thread-ui/empty";
 import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
@@ -110,6 +111,7 @@ export function DataTable<TData extends RowData, TValue = unknown>({
   rowActions,
   onRowClick,
 }: DataTableProps<TData, TValue>) {
+  const { t } = useThreadUITranslation();
   const hasRowSelection = !!onRowSelectionChange;
   const hasRowActions = !!rowActions;
 
@@ -121,7 +123,7 @@ export function DataTable<TData extends RowData, TValue = unknown>({
               id: "$select",
               header: ({ table }) => (
                 <Checkbox
-                  aria-label="Select all rows"
+                  aria-label={t("dataTable.selectAllRows")}
                   checked={table.getIsAllPageRowsSelected()}
                   onCheckedChange={(value) =>
                     table.toggleAllPageRowsSelected(!!value)
@@ -130,7 +132,7 @@ export function DataTable<TData extends RowData, TValue = unknown>({
               ),
               cell: ({ row }) => (
                 <Checkbox
-                  aria-label="Select row"
+                  aria-label={t("dataTable.selectRow")}
                   checked={row.getIsSelected()}
                   onCheckedChange={(value) => row.toggleSelected(!!value)}
                   onClick={(event) => event.stopPropagation()}
@@ -154,7 +156,7 @@ export function DataTable<TData extends RowData, TValue = unknown>({
                   <DropdownMenuTrigger
                     render={
                       <Button
-                        aria-label="Open row actions"
+                        aria-label={t("dataTable.openRowActions")}
                         className="cursor-pointer"
                         size="icon"
                         variant="ghost"
@@ -188,7 +190,7 @@ export function DataTable<TData extends RowData, TValue = unknown>({
           ]
         : []),
     ];
-  }, [columns, hasRowSelection, hasRowActions, rowActions]);
+  }, [columns, hasRowSelection, hasRowActions, rowActions, t]);
 
   const tableColumns: Array<ColumnDef<TData, TValue>> = useMemo(() => {
     return processedColumns.map((column) => ({
@@ -201,6 +203,7 @@ export function DataTable<TData extends RowData, TValue = unknown>({
   const [isAllPageRowsSelected, setIsAllPageRowsSelected] = useState(false);
   const onRowSelectionChangeRef = useRef(onRowSelectionChange);
   const onAllRowsSelectedChangeRef = useRef(onAllRowsSelectedChange);
+  const selectedRowCount = Object.keys(rowSelection).length;
 
   useEffect(() => {
     onRowSelectionChangeRef.current = onRowSelectionChange;
@@ -240,10 +243,10 @@ export function DataTable<TData extends RowData, TValue = unknown>({
   return (
     <div>
       <div className="relative overflow-auto rounded-md">
-        {Object.keys(rowSelection).length > 0 && (
+        {selectedRowCount > 0 && (
           <div className="bg-background absolute top-0 left-0 z-100 flex h-10 w-full items-center gap-2 px-2">
             <Checkbox
-              aria-label="Select all rows"
+              aria-label={t("dataTable.selectAllRows")}
               checked={table.getIsAllPageRowsSelected()}
               onCheckedChange={(value) =>
                 table.toggleAllPageRowsSelected(!!value)
@@ -255,8 +258,10 @@ export function DataTable<TData extends RowData, TValue = unknown>({
                 render={
                   <Button size="sm" variant="ghost">
                     {isAllPageRowsSelected
-                      ? "All selected"
-                      : `${Object.keys(rowSelection).length} selected`}
+                      ? t("dataTable.allSelected")
+                      : t("dataTable.selectedRows", {
+                          count: selectedRowCount,
+                        })}
                     <ChevronDown />
                   </Button>
                 }
@@ -267,7 +272,9 @@ export function DataTable<TData extends RowData, TValue = unknown>({
                     <DropdownMenuItem
                       onClick={() => table.toggleAllPageRowsSelected(true)}
                     >
-                      Select all {table.getRowCount()} on page
+                      {t("dataTable.selectAllRowsOnPage", {
+                        count: table.getRowCount(),
+                      })}
                     </DropdownMenuItem>
                   )}
 
@@ -278,7 +285,7 @@ export function DataTable<TData extends RowData, TValue = unknown>({
                         handleAllRowsSelectedChange(true);
                       }}
                     >
-                      Select all
+                      {t("dataTable.selectAll")}
                     </DropdownMenuItem>
                   )}
 
@@ -288,7 +295,7 @@ export function DataTable<TData extends RowData, TValue = unknown>({
                       handleAllRowsSelectedChange(false);
                     }}
                   >
-                    Unselect all
+                    {t("dataTable.unselectAll")}
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
               </DropdownMenuContent>
@@ -367,8 +374,8 @@ export function DataTable<TData extends RowData, TValue = unknown>({
                 >
                   {empty ?? (
                     <Empty
-                      description="Try changing the filters or search term."
-                      title="No items found"
+                      description={t("dataTable.emptyDescription")}
+                      title={t("dataTable.emptyTitle")}
                     />
                   )}
                 </TableCell>
@@ -382,6 +389,7 @@ export function DataTable<TData extends RowData, TValue = unknown>({
         <div className="flex items-center justify-center py-4">
           <ButtonGroup>
             <Button
+              aria-label={t("dataTable.previousPage")}
               disabled={!pagination.hasPreviousPage}
               size="icon"
               variant="outline"
@@ -390,6 +398,7 @@ export function DataTable<TData extends RowData, TValue = unknown>({
               <ChevronLeft />
             </Button>
             <Button
+              aria-label={t("dataTable.nextPage")}
               disabled={!pagination.hasNextPage}
               size="icon"
               variant="outline"

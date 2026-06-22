@@ -1,8 +1,15 @@
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import type { DataFilterSortOptions, DataFilterSortProps } from "../interfaces";
-import type { DataFilterSortDirection } from "../types";
+import {
+  getDataFilterSortFieldChoices,
+  getDataFilterSortOptionByKey,
+} from "../utils";
+import type {
+  DataFilterSortDirection,
+  DataFilterSortOptions,
+  DataFilterSortValue,
+} from "../types";
 import type { FC } from "react";
 import { RadioGroup } from "@/components/thread-ui/radio-group";
 import { Button } from "@/components/ui/button";
@@ -14,7 +21,16 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 
-export const DataFilterSort: FC<DataFilterSortProps> = ({
+export interface DataFilterSortProps {
+  options: Array<DataFilterSortOptions>;
+}
+
+interface DataFilterSortViewProps extends DataFilterSortProps {
+  selected?: DataFilterSortValue;
+  onChange?: (selected: DataFilterSortValue) => void;
+}
+
+export const DataFilterSort: FC<DataFilterSortViewProps> = ({
   options,
   selected,
   onChange,
@@ -23,30 +39,30 @@ export const DataFilterSort: FC<DataFilterSortProps> = ({
 
   const selectedKey = selected?.field ?? "";
   const selectedDirection = selected?.direction ?? "DESC";
-  const selectedValue = `${selectedKey}:${selectedDirection}`;
 
   const fieldChoices = useMemo(() => {
-    const seen = new Map<string, DataFilterSortOptions>();
-    for (const option of options) {
-      if (
-        !seen.has(option.fieldLabel) ||
-        option.direction === selectedDirection
-      ) {
-        seen.set(option.fieldLabel, option);
-      }
-    }
-    return Array.from(seen.values());
-  }, [options, selectedDirection]);
+    return getDataFilterSortFieldChoices(options, selected);
+  }, [options, selected]);
+
+  const selectedFieldChoice = fieldChoices.find((choice) => {
+    return choice.option.field === selectedKey;
+  });
+  const selectedValue = selectedFieldChoice?.key;
 
   const directionChoices = useMemo(() => {
     return options.filter((option) => option.field === selectedKey);
   }, [options, selectedKey]);
 
   const handleFieldChange = (value: string) => {
-    const [field, direction] = value.split(":");
+    const option = getDataFilterSortOptionByKey(options, value);
+
+    if (!option) {
+      return;
+    }
+
     onChange?.({
-      field,
-      direction: direction as DataFilterSortDirection,
+      field: option.field,
+      direction: option.direction,
     });
   };
 
@@ -74,9 +90,9 @@ export const DataFilterSort: FC<DataFilterSortProps> = ({
             <div className="p-3 pb-2">
               <RadioGroup
                 value={selectedValue}
-                items={fieldChoices.map((option) => ({
+                items={fieldChoices.map(({ key, option }) => ({
                   label: option.fieldLabel,
-                  value: `${option.field}:${option.direction}`,
+                  value: key,
                   disabled: option.disabled,
                 }))}
                 onValueChange={(val) => handleFieldChange(val)}
@@ -92,9 +108,11 @@ export const DataFilterSort: FC<DataFilterSortProps> = ({
                     return (
                       <button
                         key={`${option.field}:${option.direction}`}
+                        disabled={option.disabled}
                         type="button"
                         className={cn(
                           "flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm transition-colors",
+                          option.disabled && "pointer-events-none opacity-50",
                           isActive
                             ? "bg-accent text-accent-foreground"
                             : "hover:bg-accent/50 text-muted-foreground",

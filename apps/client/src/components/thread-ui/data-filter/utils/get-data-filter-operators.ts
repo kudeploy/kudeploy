@@ -3,8 +3,7 @@ import { dataFilterDefaultDatePickerOperators } from "./data-filter-default-date
 import { dataFilterDefaultInputOperators } from "./data-filter-default-input-operators";
 import { dataFilterDefaultNumberInputOperators } from "./data-filter-default-number-input-operators";
 import { dataFilterDefaultSelectOperators } from "./data-filter-default-select-operators";
-import type { DataFilterItemProps } from "../interfaces";
-import type { DataFilterOperator } from "../types";
+import type { DataFilterItemProps, DataFilterOperator } from "../types";
 
 export const getDataFilterOperators = (
   item: DataFilterItemProps,

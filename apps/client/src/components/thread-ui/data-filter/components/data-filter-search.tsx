@@ -2,7 +2,6 @@ import { Search } from "lucide-react";
 
 import { useState } from "react";
 import type { FC } from "react";
-import type { DataFilterSearchProps } from "../interfaces/data-filter-search-props";
 import {
   InputGroup,
   InputGroupAddon,
@@ -10,23 +9,54 @@ import {
 } from "@/components/ui/input-group";
 import { Spinner } from "@/components/ui/spinner";
 
-export const DataFilterSearch: FC<DataFilterSearchProps> = ({
-  className,
-  disabled,
+export interface DataFilterSearchProps {
+  placeholder?: string;
+}
+
+interface DataFilterSearchViewProps extends DataFilterSearchProps {
+  loading?: boolean;
+  value?: string;
+  onChange?: (value: string) => void;
+}
+
+interface SearchDraftState {
+  sourceValue: string;
+  value: string;
+}
+
+const createSearchDraftState = (
+  value: string | undefined,
+): SearchDraftState => {
+  const query = value ?? "";
+
+  return {
+    sourceValue: query,
+    value: query,
+  };
+};
+
+export const DataFilterSearch: FC<DataFilterSearchViewProps> = ({
   loading,
   placeholder,
   value,
   onChange,
 }) => {
-  const [query, setQuery] = useState(value ?? "");
-  const [prevValue, setPrevValue] = useState(value);
-
-  if (value !== prevValue) {
-    setPrevValue(value);
-    setQuery(value ?? "");
-  }
+  const [draftState, setDraftState] = useState(() =>
+    createSearchDraftState(value),
+  );
+  const currentQuery = value ?? "";
+  const query =
+    draftState.sourceValue === currentQuery ? draftState.value : currentQuery;
 
   const emitChange = () => {
+    if (query === currentQuery) {
+      return;
+    }
+
+    setDraftState({
+      sourceValue: query,
+      value: query,
+    });
     onChange?.(query);
   };
 
@@ -35,21 +65,24 @@ export const DataFilterSearch: FC<DataFilterSearchProps> = ({
       className="flex min-w-0 items-center gap-2"
       data-slot="data-filter-search"
     >
-      <InputGroup className={className}>
+      <InputGroup>
         <InputGroupInput
-          disabled={disabled}
           placeholder={placeholder}
           value={query}
           onBlur={emitChange}
           onChange={(event) => {
-            setQuery(event.target.value);
+            setDraftState({
+              sourceValue: currentQuery,
+              value: event.target.value,
+            });
           }}
           onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              event.preventDefault();
-
-              emitChange();
+            if (event.key !== "Enter" || event.nativeEvent.isComposing) {
+              return;
             }
+
+            event.preventDefault();
+            emitChange();
           }}
         />
         <InputGroupAddon>

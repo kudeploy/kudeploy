@@ -14,6 +14,9 @@
   "description": "Create and manage API keys for this workspace.",
   "filter": {
     "items": {
+      "created_at": {
+        "label": "Created"
+      },
       "key_prefix": {
         "label": "Key Prefix",
         "placeholder": "Search key prefix"

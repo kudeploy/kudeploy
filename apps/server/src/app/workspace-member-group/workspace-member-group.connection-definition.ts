@@ -9,7 +9,7 @@ const { Connection, ConnectionArgs } = new ConnectionBuilder(WorkspaceMemberGrou
     replacement: 'searchableName',
     searchable: true,
     filterable: true,
-    fulltext: true,
+    fulltext: 'searchableName',
     type: 'string',
   })
   .addField({
@@ -17,7 +17,7 @@ const { Connection, ConnectionArgs } = new ConnectionBuilder(WorkspaceMemberGrou
     replacement: 'searchableDescription',
     searchable: true,
     filterable: true,
-    fulltext: true,
+    fulltext: 'searchableDescription',
     type: 'string',
   })
   .addField({

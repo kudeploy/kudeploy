@@ -1,6 +1,5 @@
 import { getDataFilterOperators } from "./get-data-filter-operators";
-import type { DataFilterItemProps } from "../interfaces";
-import type { DataFilterOperator } from "../types";
+import type { DataFilterItemProps, DataFilterOperator } from "../types";
 
 export const getDefaultDataFilterOperator = (
   item: DataFilterItemProps,

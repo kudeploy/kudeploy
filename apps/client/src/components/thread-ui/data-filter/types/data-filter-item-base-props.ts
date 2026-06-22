@@ -2,7 +2,7 @@ import type { ReactElement, ReactNode } from "react";
 
 import type { DataFilterRenderContext } from "./data-filter-render-context";
 import type { DataFilterRenderValueOptions } from "./data-filter-render-value-options";
-import type { DataFilterOperator } from "../types";
+import type { DataFilterOperator } from "./data-filter-operator";
 
 export interface DataFilterItemBaseProps<
   TValue = unknown,
@@ -10,7 +10,6 @@ export interface DataFilterItemBaseProps<
 > {
   label: string;
   field: string;
-  icon?: ReactNode;
   operators?: Array<TOperator>;
   defaultOperator?: TOperator;
   render?: (

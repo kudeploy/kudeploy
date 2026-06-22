@@ -1,5 +1,7 @@
 packages:
   - "apps/*"
+overrides:
+  emittery: 0.13.1
 allowBuilds:
   "@apollo/protobufjs": true
   "@nestjs/core": true
@@ -11,3 +13,5 @@ allowBuilds:
 minimumReleaseAgeExclude:
   - nx-helm
   - '@nest-boot/auth@7.11.1'
+  - '@nest-boot/graphql-connection@7.9.0'
+  - mikro-orm-filter-query-schema@1.3.0

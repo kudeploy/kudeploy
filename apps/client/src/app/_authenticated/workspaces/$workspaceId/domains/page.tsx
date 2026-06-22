@@ -14,13 +14,16 @@ import { isEmpty, pick } from "lodash";
 import { toast } from "sonner";
 import z from "zod";
 
-import type { DataFilterItemProps as FilterItemProps } from "@/components/thread-ui/data-filter";
+import type { DataFilterItemProps } from "@/components/thread-ui/data-filter";
 import type { GetDomainsFromDomainsRouteQuery } from "@/gql/graphql";
 import { alertDialog } from "@/components/thread-ui/alert-dialog";
 import { Badge } from "@/components/thread-ui/badge";
 import { Button } from "@/components/thread-ui/button";
-import { DataFilter as Filter } from "@/components/thread-ui/data-filter";
-import { formatFilterValues } from "@/lib/format-filter-values";
+import { DataFilter } from "@/components/thread-ui/data-filter";
+import {
+  formatConnectionFilterValue,
+  formatFilterValues,
+} from "@/lib/format-filter-values";
 import { DataTable } from "@/components/thread-ui/data-table";
 import { Input } from "@/components/thread-ui/input";
 import {
@@ -48,6 +51,11 @@ import {
   getNextPageSearch,
   getPreviousPageSearch,
 } from "@/lib/connection-search";
+import {
+  createDataFilterInputSearchSchema,
+  createDataFilterSelectSearchSchema,
+  dataFilterDateSearchSchema,
+} from "@/lib/data-filter-search-schema";
 
 const GET_DOMAINS_FROM_DOMAINS_ROUTE = graphql(`
   query getDomainsFromDomainsRoute(
@@ -139,7 +147,14 @@ export const Route = createFileRoute(
     createConnectionSearchSchema({
       filterSchema: z
         .object({
-          name: z.string().max(255).optional().catch(undefined),
+          name: createDataFilterInputSearchSchema().optional().catch(undefined),
+          status: createDataFilterSelectSearchSchema(
+            z.nativeEnum(DomainStatus),
+            Object.values(DomainStatus).length,
+          )
+            .optional()
+            .catch(undefined),
+          created_at: dataFilterDateSearchSchema.optional().catch(undefined),
         })
         .optional(),
       pageSize: 20,
@@ -156,7 +171,7 @@ function DomainsComponent() {
   const location = useLocation();
 
   const query = search?.query ?? "";
-  const filterValues = search?.filter ?? {};
+  const filterValues = (search?.filter ?? {}) as Record<string, unknown>;
 
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [copiedDomainId, setCopiedDomainId] = useState<string | null>(null);
@@ -165,14 +180,7 @@ function DomainsComponent() {
     variables: {
       ...pick(search, ["after", "before", "first", "last"]),
       query,
-      filter: formatFilterValues(filterValues, (field, value) => {
-        switch (field) {
-          case "name":
-            return { $fulltext: value };
-          default:
-            return value;
-        }
-      }),
+      filter: formatFilterValues(filterValues, formatConnectionFilterValue),
       orderBy: {
         field: search?.orderBy?.field ?? DomainOrderField.CREATED_AT,
         direction: search?.orderBy?.direction ?? OrderDirection.DESC,
@@ -232,25 +240,34 @@ function DomainsComponent() {
     },
   });
 
-  const filters: Array<FilterItemProps> = useMemo(() => {
+  const filters: Array<DataFilterItemProps> = useMemo(() => {
     return [
       {
         label: t("domain:filter.items.name.label"),
         field: "name",
         type: "input",
-        pinned: true,
-        render: ({ field: { value, onChange } }) => (
-          <Input
-            placeholder={t("domain:filter.items.name.placeholder")}
-            defaultValue={value ?? ""}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                onChange?.((e.target as HTMLInputElement).value);
-              }
-            }}
-          />
-        ),
+        placeholder: t("domain:filter.items.name.placeholder"),
+        operators: ["$eq", "$ne"],
+        defaultOperator: "$eq",
+      },
+      {
+        label: t("domain:filter.items.status.label"),
+        field: "status",
+        type: "select",
+        options: Object.values(DomainStatus).map((status) => ({
+          label: t(`domain:status.${status.toLowerCase()}`),
+          value: status,
+        })),
+        operators: ["$in"],
+        defaultOperator: "$in",
+      },
+      {
+        label: t("domain:filter.items.created_at.label"),
+        field: "created_at",
+        type: "date-picker",
+        max: dayjs().toISOString(),
+        operators: ["$gte", "$lte"],
+        defaultOperator: "$gte",
       },
     ];
   }, []);
@@ -326,30 +343,20 @@ function DomainsComponent() {
       </PageHeader>
       <PageContent>
         <div className="mb-4" data-testid="domains-page">
-          <Filter
+          <DataFilter
             filters={filters}
-            values={filterValues}
-            onChange={(values) => {
+            value={{ filter: filterValues, query }}
+            onChange={(value) => {
               navigate({
                 to: location.pathname,
                 search: {
-                  ...(query ? { query } : {}),
-                  ...(!isEmpty(values) ? { filter: values } : {}),
+                  ...(value.query ? { query: value.query } : {}),
+                  ...(!isEmpty(value.filter) ? { filter: value.filter } : {}),
                 },
               });
             }}
             search={{
               placeholder: t("domain:filter.search.placeholder"),
-              value: query,
-              onChange: (value) => {
-                navigate({
-                  to: location.pathname,
-                  search: {
-                    ...(value ? { query: value } : {}),
-                    ...(!isEmpty(filterValues) ? { filter: filterValues } : {}),
-                  },
-                });
-              },
             }}
           />
         </div>

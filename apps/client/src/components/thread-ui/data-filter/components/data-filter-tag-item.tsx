@@ -1,22 +1,25 @@
 import { ChevronDown, Trash2 } from "lucide-react";
-import dayjs from "dayjs";
-import { useState } from "react";
 
 import {
   createDataFilterCondition,
-  formatRenderValue,
   getDataFilterCondition,
+  getDataFilterDefaultRenderValue,
   getDataFilterOperatorLabel,
   getDataFilterOperators,
   getDefaultDataFilterOperator,
   isEmpty,
+  isEmptyDataFilterValue,
 } from "../utils";
+import { useDataFilterContext } from "./data-filter-context";
 import { DataFilterDefaultField } from "./data-filter-default-field";
 import { DataFilterOperatorSelect } from "./data-filter-operator-select";
-import type { DataFilterItemBaseProps } from "../interfaces/data-filter-item-base-props";
-import type { DataFilterTagItemProps } from "../interfaces/data-filter-tag-item-props";
+import type {
+  DataFilterItemBaseProps,
+  DataFilterItemProps,
+  DataFilterOperator,
+} from "../types";
 import type { FC } from "react";
-import type { DataFilterOperator } from "../types";
+import { useThreadUITranslation } from "@/components/thread-ui/app-provider";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -30,14 +33,21 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-export const DataFilterTagItem: FC<DataFilterTagItemProps> = ({
-  item,
-  value: fieldValue,
-  onChange,
-  onEmptyClose,
-  onRemove,
-}) => {
+interface DataFilterTagItemProps {
+  item: DataFilterItemProps;
+}
+
+export const DataFilterTagItem: FC<DataFilterTagItemProps> = ({ item }) => {
   const { field, label } = item;
+  const { t } = useThreadUITranslation();
+  const {
+    filterValues,
+    selectOptionCache,
+    setFilterValue,
+    hideFilter,
+    removeFilter,
+  } = useDataFilterContext();
+  const fieldValue = filterValues[field];
   const operators = getDataFilterOperators(item);
   const getOperator = (value: unknown): DataFilterOperator => {
     const condition = getDataFilterCondition(value);
@@ -50,64 +60,31 @@ export const DataFilterTagItem: FC<DataFilterTagItemProps> = ({
       ? condition.operator
       : getDefaultDataFilterOperator(item);
   };
-  const [operator, setOperator] = useState(() => getOperator(fieldValue));
-  const [prevFieldValue, setPrevFieldValue] = useState(fieldValue);
+  const operator = getOperator(fieldValue);
   const rawValue = getDataFilterCondition(fieldValue).value;
   const renderValue = item.renderValue as
     | DataFilterItemBaseProps<unknown>["renderValue"]
     | undefined;
 
-  if (fieldValue !== prevFieldValue) {
-    setPrevFieldValue(fieldValue);
-    setOperator(getOperator(fieldValue));
-  }
-
   const getDefaultValue = (): unknown => {
-    if (item.type === "date-picker") {
-      const date =
-        rawValue instanceof Date || typeof rawValue === "string"
-          ? dayjs(rawValue)
-          : undefined;
-
-      return date?.isValid() ? date.format("YYYY-MM-DD") : rawValue;
-    }
-
-    if (item.type === "checkbox") {
-      if (rawValue === true) {
-        return "Checked";
-      }
-
-      if (rawValue === false) {
-        return "Unchecked";
-      }
-    }
-
-    if (item.type === "select") {
-      const values = Array.isArray(rawValue) ? rawValue : [rawValue];
-      const options = Array.isArray(item.options) ? item.options : [];
-
-      return values
-        .map((optionValue) => {
-          return (
-            options.find((option) => option.value === optionValue)?.label ??
-            optionValue
-          );
-        })
-        .join(", ");
-    }
-
-    return formatRenderValue({
-      [field]: rawValue,
-    })[field];
+    return getDataFilterDefaultRenderValue({
+      field,
+      item,
+      checkedLabel: t("dataFilter.checked"),
+      operator,
+      selectOptionCache: selectOptionCache[field],
+      uncheckedLabel: t("dataFilter.unchecked"),
+      value: rawValue,
+    });
   };
 
   const getValue = (): string | undefined => {
-    if (isEmpty(rawValue)) {
+    if (rawValue === null) {
       return undefined;
     }
 
-    if (rawValue === null) {
-      return "empty";
+    if (isFieldValueEmpty || isEmpty(rawValue)) {
+      return undefined;
     }
 
     return String(
@@ -126,36 +103,42 @@ export const DataFilterTagItem: FC<DataFilterTagItemProps> = ({
     nextOperator: DataFilterOperator,
     value: unknown,
   ) => {
-    setOperator(nextOperator);
-    onChange(field, createDataFilterCondition(nextOperator, value));
+    setFilterValue(field, createDataFilterCondition(nextOperator, value));
   };
 
   const handleValueChange = (value: unknown) => {
-    onChange(field, createDataFilterCondition(operator, value));
+    setFilterValue(field, createDataFilterCondition(operator, value));
   };
 
   const remove = () => {
-    onRemove(field);
+    removeFilter(field);
   };
 
   const render = item.render as
     | DataFilterItemBaseProps<unknown>["render"]
     | undefined;
+  const isFieldValueEmpty = isEmptyDataFilterValue(fieldValue);
   const value = getValue();
+  const operatorLabel =
+    rawValue === null && operator === "$eq"
+      ? t("dataFilter.isEmpty")
+      : rawValue === null && operator === "$ne"
+        ? t("dataFilter.isNotEmpty")
+        : getDataFilterOperatorLabel(operator, t);
   const shouldRenderContent = rawValue !== null;
   const labelValue = value
-    ? `${label} ${getDataFilterOperatorLabel(operator)} ${value}`
-    : `${label} ${getDataFilterOperatorLabel(operator)}`;
+    ? `${label} ${operatorLabel} ${value}`
+    : `${label} ${operatorLabel}`;
 
   return (
     <Popover
       key={field}
-      defaultOpen={isEmpty(rawValue)}
+      defaultOpen={isFieldValueEmpty}
       modal={true}
       onOpenChange={(open) => {
         // Remove empty filters when their popover closes.
-        if (!open && isEmpty(rawValue)) {
-          onEmptyClose(field);
+        if (!open && isFieldValueEmpty) {
+          hideFilter(field);
         }
       }}
     >
@@ -196,7 +179,12 @@ export const DataFilterTagItem: FC<DataFilterTagItemProps> = ({
             onChange={handleOperatorChange}
           />
 
-          <Button size="icon-xs" variant="ghost" onClick={remove}>
+          <Button
+            aria-label={t("dataFilter.removeFilter")}
+            size="icon-xs"
+            variant="ghost"
+            onClick={remove}
+          >
             <Trash2 />
           </Button>
         </div>

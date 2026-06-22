@@ -96,6 +96,10 @@
       "created_at": {
         "label": "创建时间"
       },
+      "description": {
+        "label": "描述",
+        "placeholder": "搜索成员组描述"
+      },
       "name": {
         "label": "名称",
         "placeholder": "搜索成员组名称"

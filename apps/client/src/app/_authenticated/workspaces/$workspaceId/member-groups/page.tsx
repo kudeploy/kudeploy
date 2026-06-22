@@ -11,10 +11,9 @@ import { t } from "i18next";
 import z from "zod";
 import { isEmpty, pick } from "lodash";
 import { useMemo } from "react";
-import { zhCN } from "react-day-picker/locale";
 import { useCurrentWorkspaceMemberContext } from "../contexts/current-workspace-member-context";
-import type { DataFilterItemProps as FilterItemProps } from "@/components/thread-ui/data-filter";
-import { DataFilter as Filter } from "@/components/thread-ui/data-filter";
+import type { DataFilterItemProps } from "@/components/thread-ui/data-filter";
+import { DataFilter } from "@/components/thread-ui/data-filter";
 import {
   Page,
   PageActions,
@@ -41,9 +40,14 @@ import {
   getNextPageSearch,
   getPreviousPageSearch,
 } from "@/lib/connection-search";
-import { formatFilterValues } from "@/lib/format-filter-values";
-import { Input } from "@/components/ui/input";
-import { Calendar } from "@/components/ui/calendar";
+import {
+  createDataFilterInputSearchSchema,
+  dataFilterDateSearchSchema,
+} from "@/lib/data-filter-search-schema";
+import {
+  formatConnectionFilterValue,
+  formatFilterValues,
+} from "@/lib/format-filter-values";
 
 export const GET_WORKSPACE_MEMBER_GROUPS_FROM_MEMBER_GROUPS_ROUTE = graphql(`
   query getWorkspaceMemberGroupsFromMemberGroupsRoute(
@@ -91,8 +95,17 @@ export const Route = createFileRoute(
     createConnectionSearchSchema({
       filterSchema: z
         .object({
-          name: z.string().max(255).optional().catch(undefined),
-          created_at: z.array(z.string().datetime()).length(2).optional(),
+          name: createDataFilterInputSearchSchema(z.string().max(255), {
+            fulltext: true,
+          })
+            .optional()
+            .catch(undefined),
+          description: createDataFilterInputSearchSchema(z.string().max(255), {
+            fulltext: true,
+          })
+            .optional()
+            .catch(undefined),
+          created_at: dataFilterDateSearchSchema.optional().catch(undefined),
         })
         .optional(),
       pageSize: 20,
@@ -112,7 +125,7 @@ function MemberGroupsComponent() {
   const currentWorkspaceMember = useCurrentWorkspaceMemberContext();
 
   const query = search?.query ?? "";
-  const filterValues = search?.filter ?? {};
+  const filterValues = (search?.filter ?? {}) as Record<string, unknown>;
 
   const { data } = useQuery(
     GET_WORKSPACE_MEMBER_GROUPS_FROM_MEMBER_GROUPS_ROUTE,
@@ -120,19 +133,7 @@ function MemberGroupsComponent() {
       variables: {
         ...pick(search, ["after", "before", "first", "last"]),
         query,
-        filter: formatFilterValues(filterValues, (field, value) => {
-          switch (field) {
-            case "name":
-              return { $fulltext: value };
-            case "created_at":
-              return {
-                $gte: value[0],
-                $lte: dayjs(value[1]).endOf("day").toISOString(),
-              };
-            default:
-              return value;
-          }
-        }),
+        filter: formatFilterValues(filterValues, formatConnectionFilterValue),
         orderBy: {
           field:
             search?.orderBy?.field ?? WorkspaceMemberGroupOrderField.CREATED_AT,
@@ -152,68 +153,33 @@ function MemberGroupsComponent() {
     WorkspaceMemberRole.ADMIN,
   ].includes(currentWorkspaceMember.role);
 
-  const filters: Array<FilterItemProps> = useMemo(() => {
+  const filters: Array<DataFilterItemProps> = useMemo(() => {
     return [
       {
         label: t("workspace-member-group:filter.items.name.label"),
         field: "name",
         type: "input",
-        pinned: true,
-        render: ({ field: { value, onChange } }) => {
-          return (
-            <Input
-              placeholder={t(
-                "workspace-member-group:filter.items.name.placeholder",
-              )}
-              defaultValue={value ?? ""}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-
-                  onChange?.((e.target as HTMLInputElement).value);
-                }
-              }}
-            />
-          );
-        },
+        placeholder: t("workspace-member-group:filter.items.name.placeholder"),
+        operators: ["$fulltext"],
+        defaultOperator: "$fulltext",
+      },
+      {
+        label: t("workspace-member-group:filter.items.description.label"),
+        field: "description",
+        type: "input",
+        placeholder: t(
+          "workspace-member-group:filter.items.description.placeholder",
+        ),
+        operators: ["$fulltext"],
+        defaultOperator: "$fulltext",
       },
       {
         label: t("workspace-member-group:filter.items.created_at.label"),
         field: "created_at",
-        type: "select",
-        options: [],
-        pinned: true,
-        render: ({ field }) => {
-          const dates = Array.isArray(field.value) ? field.value : [];
-
-          return (
-            <Calendar
-              className="p-0"
-              mode="range"
-              locale={zhCN}
-              selected={{
-                from: dates[0] ? new Date(dates[0]) : undefined,
-                to: dates[1] ? new Date(dates[1]) : undefined,
-              }}
-              onSelect={(dateRange) => {
-                if (dateRange) {
-                  field.onChange(
-                    [dateRange.from, dateRange.to]
-                      .filter((date): date is Date => date instanceof Date)
-                      .map((date) => date.toISOString()),
-                  );
-                }
-              }}
-              disabled={(date) => dayjs(date).isAfter(dayjs())}
-              numberOfMonths={2}
-            />
-          );
-        },
-        renderValue: ({ value }) => {
-          return (value ?? [])
-            .map((date) => dayjs(date).format("YYYY-MM-DD"))
-            .join(",");
-        },
+        type: "date-picker",
+        max: dayjs().toISOString(),
+        operators: ["$gte", "$lte"],
+        defaultOperator: "$gte",
       },
     ];
   }, []);
@@ -240,15 +206,15 @@ function MemberGroupsComponent() {
       </PageHeader>
       <PageContent>
         <div className="mb-4" data-testid="member-groups-page">
-          <Filter
+          <DataFilter
             filters={filters}
-            values={filterValues}
-            onChange={(values) => {
+            value={{ filter: filterValues, query }}
+            onChange={(value) => {
               navigate({
                 to: location.pathname,
                 search: {
-                  ...(query ? { query } : {}),
-                  ...(!isEmpty(values) ? { filter: values } : {}),
+                  ...(value.query ? { query: value.query } : {}),
+                  ...(!isEmpty(value.filter) ? { filter: value.filter } : {}),
                 },
               });
             }}
@@ -256,16 +222,6 @@ function MemberGroupsComponent() {
               placeholder: t(
                 "workspace-member-group:filter.search.placeholder",
               ),
-              value: query,
-              onChange: (value) => {
-                navigate({
-                  to: location.pathname,
-                  search: {
-                    ...(value ? { query: value } : {}),
-                    ...(!isEmpty(filterValues) ? { filter: filterValues } : {}),
-                  },
-                });
-              },
             }}
           />
         </div>

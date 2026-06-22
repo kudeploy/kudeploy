@@ -96,6 +96,10 @@
       "created_at": {
         "label": "Created At"
       },
+      "description": {
+        "label": "Description",
+        "placeholder": "Search member group description"
+      },
       "name": {
         "label": "Name",
         "placeholder": "Search member group name"

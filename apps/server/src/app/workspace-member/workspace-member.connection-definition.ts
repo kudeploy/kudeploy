@@ -9,7 +9,7 @@ const { Connection, ConnectionArgs } = new ConnectionBuilder(WorkspaceMember)
     replacement: 'searchableName',
     searchable: true,
     filterable: true,
-    fulltext: true,
+    fulltext: 'searchableName',
     type: 'string',
   })
   .addField({
@@ -26,7 +26,7 @@ const { Connection, ConnectionArgs } = new ConnectionBuilder(WorkspaceMember)
     field: 'email',
     searchable: true,
     filterable: true,
-    fulltext: true,
+    fulltext: 'email',
     type: 'string',
   })
   .addField({

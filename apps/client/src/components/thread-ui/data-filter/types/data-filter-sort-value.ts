@@ -1,4 +1,4 @@
-import type { DataFilterSortDirection } from "../types";
+import type { DataFilterSortDirection } from "./data-filter-sort-direction";
 
 export interface DataFilterSortValue {
   field: string;

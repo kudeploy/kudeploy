@@ -53,6 +53,9 @@
       },
       "status": {
         "label": "状态"
+      },
+      "type": {
+        "label": "类型"
       }
     },
     "search": {
@@ -84,6 +87,10 @@
     "disabled": "禁用",
     "invite_expired": "邀请过期",
     "inviting": "待接受"
+  },
+  "type": {
+    "service_account": "服务账号",
+    "user": "用户"
   },
   "table": {
     "joined": "加入时间",

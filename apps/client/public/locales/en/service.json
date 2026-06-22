@@ -227,6 +227,9 @@
     "search": {
       "placeholder": "Search services"
     },
+    "created_at": {
+      "label": "Created"
+    },
     "name": {
       "label": "Name",
       "placeholder": "Service name"

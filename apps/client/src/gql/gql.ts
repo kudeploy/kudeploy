@@ -27,7 +27,7 @@ type Documents = {
   "\n  mutation createDomainFromDomainsRoute($input: CreateDomainInput!) {\n    createDomain(input: $input) {\n      id\n      name\n      status\n      verificationToken\n      verifiedAt\n      createdAt\n      updatedAt\n    }\n  }\n": typeof types.CreateDomainFromDomainsRouteDocument;
   "\n  mutation verifyDomainFromDomainsRoute($id: ID!) {\n    verifyDomain(id: $id) {\n      id\n      name\n      status\n      verificationToken\n      verifiedAt\n      createdAt\n      updatedAt\n    }\n  }\n": typeof types.VerifyDomainFromDomainsRouteDocument;
   "\n  mutation deleteDomainFromDomainsRoute($id: ID!) {\n    deleteDomain(id: $id) {\n      id\n      name\n      status\n      verificationToken\n      verifiedAt\n      createdAt\n      updatedAt\n    }\n  }\n": typeof types.DeleteDomainFromDomainsRouteDocument;
-  "\n  query getCurrentWorkspaceFromWorkspaceLayout {\n    currentWorkspace {\n      id\n    }\n    currentWorkspaceMember {\n      id\n    }\n  }\n": typeof types.GetCurrentWorkspaceFromWorkspaceLayoutDocument;
+  "\n  query getCurrentWorkspaceFromWorkspaceLayout($workspaceId: ID!) {\n    workspace(id: $workspaceId) {\n      id\n    }\n    currentWorkspaceMember {\n      id\n    }\n  }\n": typeof types.GetCurrentWorkspaceFromWorkspaceLayoutDocument;
   "\n  query getWorkspaceMemberGroupFromMemberGroupRoute($id: ID!, $first: Int) {\n    workspaceMemberGroup(id: $id) {\n      id\n      name\n      description\n      permissions\n      members(first: $first) {\n        edges {\n          node {\n            id\n            name\n            email\n            user {\n              id\n              name\n              email\n            }\n          }\n        }\n      }\n    }\n  }\n": typeof types.GetWorkspaceMemberGroupFromMemberGroupRouteDocument;
   "\n  mutation updateWorkspaceMemberGroupFromMemberGroupRoute(\n    $id: ID!\n    $input: UpdateWorkspaceMemberGroupInput!\n  ) {\n    updateWorkspaceMemberGroup(id: $id, input: $input) {\n      id\n      name\n      description\n      permissions\n    }\n  }\n": typeof types.UpdateWorkspaceMemberGroupFromMemberGroupRouteDocument;
   "\n  mutation deleteWorkspaceMemberGroupFromMemberGroupRoute($id: ID!) {\n    deleteWorkspaceMemberGroup(id: $id) {\n      id\n    }\n  }\n": typeof types.DeleteWorkspaceMemberGroupFromMemberGroupRouteDocument;
@@ -106,7 +106,7 @@ const documents: Documents = {
     types.VerifyDomainFromDomainsRouteDocument,
   "\n  mutation deleteDomainFromDomainsRoute($id: ID!) {\n    deleteDomain(id: $id) {\n      id\n      name\n      status\n      verificationToken\n      verifiedAt\n      createdAt\n      updatedAt\n    }\n  }\n":
     types.DeleteDomainFromDomainsRouteDocument,
-  "\n  query getCurrentWorkspaceFromWorkspaceLayout {\n    currentWorkspace {\n      id\n    }\n    currentWorkspaceMember {\n      id\n    }\n  }\n":
+  "\n  query getCurrentWorkspaceFromWorkspaceLayout($workspaceId: ID!) {\n    workspace(id: $workspaceId) {\n      id\n    }\n    currentWorkspaceMember {\n      id\n    }\n  }\n":
     types.GetCurrentWorkspaceFromWorkspaceLayoutDocument,
   "\n  query getWorkspaceMemberGroupFromMemberGroupRoute($id: ID!, $first: Int) {\n    workspaceMemberGroup(id: $id) {\n      id\n      name\n      description\n      permissions\n      members(first: $first) {\n        edges {\n          node {\n            id\n            name\n            email\n            user {\n              id\n              name\n              email\n            }\n          }\n        }\n      }\n    }\n  }\n":
     types.GetWorkspaceMemberGroupFromMemberGroupRouteDocument,
@@ -306,8 +306,8 @@ export function graphql(
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
-  source: "\n  query getCurrentWorkspaceFromWorkspaceLayout {\n    currentWorkspace {\n      id\n    }\n    currentWorkspaceMember {\n      id\n    }\n  }\n",
-): (typeof documents)["\n  query getCurrentWorkspaceFromWorkspaceLayout {\n    currentWorkspace {\n      id\n    }\n    currentWorkspaceMember {\n      id\n    }\n  }\n"];
+  source: "\n  query getCurrentWorkspaceFromWorkspaceLayout($workspaceId: ID!) {\n    workspace(id: $workspaceId) {\n      id\n    }\n    currentWorkspaceMember {\n      id\n    }\n  }\n",
+): (typeof documents)["\n  query getCurrentWorkspaceFromWorkspaceLayout($workspaceId: ID!) {\n    workspace(id: $workspaceId) {\n      id\n    }\n    currentWorkspaceMember {\n      id\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

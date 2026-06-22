@@ -33,6 +33,7 @@ i18n
       "workspace",
       "workspace-member",
       "workspace-member-group",
+      "thread-ui",
     ],
     defaultNS: "common",
     interpolation: {

@@ -9,6 +9,7 @@ const { Connection, ConnectionArgs } = new ConnectionBuilder(ApiKey)
     searchable: true,
     filterable: true,
     type: 'string',
+    fulltext: 'name',
   })
   .addField({
     field: 'key_prefix',

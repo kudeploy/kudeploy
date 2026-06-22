@@ -14,13 +14,16 @@ import { AlertTriangle, Check, Copy, KeyRound } from "lucide-react";
 import { toast } from "sonner";
 import z from "zod";
 
-import type { DataFilterItemProps as FilterItemProps } from "@/components/thread-ui/data-filter";
+import type { DataFilterItemProps } from "@/components/thread-ui/data-filter";
 import type { GetApiKeysFromApiKeysRouteQuery } from "@/gql/graphql";
 import { alertDialog } from "@/components/thread-ui/alert-dialog";
 import { Badge } from "@/components/thread-ui/badge";
 import { Button } from "@/components/thread-ui/button";
-import { DataFilter as Filter } from "@/components/thread-ui/data-filter";
-import { formatFilterValues } from "@/lib/format-filter-values";
+import { DataFilter } from "@/components/thread-ui/data-filter";
+import {
+  formatConnectionFilterValue,
+  formatFilterValues,
+} from "@/lib/format-filter-values";
 import { DataTable } from "@/components/thread-ui/data-table";
 import { Input } from "@/components/thread-ui/input";
 import {
@@ -49,6 +52,10 @@ import {
   getNextPageSearch,
   getPreviousPageSearch,
 } from "@/lib/connection-search";
+import {
+  createDataFilterInputSearchSchema,
+  dataFilterDateSearchSchema,
+} from "@/lib/data-filter-search-schema";
 import { truncateEmail } from "@/utils/truncate-email";
 
 const GET_API_KEYS_FROM_API_KEYS_ROUTE = graphql(`
@@ -160,7 +167,15 @@ export const Route = createFileRoute(
     createConnectionSearchSchema({
       filterSchema: z
         .object({
-          name: z.string().max(255).optional().catch(undefined),
+          name: createDataFilterInputSearchSchema(z.string().max(255), {
+            fulltext: true,
+          })
+            .optional()
+            .catch(undefined),
+          key_prefix: createDataFilterInputSearchSchema()
+            .optional()
+            .catch(undefined),
+          created_at: dataFilterDateSearchSchema.optional().catch(undefined),
         })
         .optional(),
       pageSize: 20,
@@ -177,7 +192,7 @@ function ApiKeysComponent() {
   const location = useLocation();
 
   const query = search?.query ?? "";
-  const filterValues = search?.filter ?? {};
+  const filterValues = (search?.filter ?? {}) as Record<string, unknown>;
 
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
@@ -190,14 +205,7 @@ function ApiKeysComponent() {
     variables: {
       ...pick(search, ["after", "before", "first", "last"]),
       query,
-      filter: formatFilterValues(filterValues, (field, value) => {
-        switch (field) {
-          case "name":
-            return { $fulltext: value };
-          default:
-            return value;
-        }
-      }),
+      filter: formatFilterValues(filterValues, formatConnectionFilterValue),
       orderBy: {
         field: search?.orderBy?.field ?? ApiKeyOrderField.CREATED_AT,
         direction: search?.orderBy?.direction ?? OrderDirection.DESC,
@@ -288,25 +296,31 @@ function ApiKeysComponent() {
     },
   });
 
-  const filters: Array<FilterItemProps> = useMemo(() => {
+  const filters: Array<DataFilterItemProps> = useMemo(() => {
     return [
       {
         label: t("api-key:filter.items.name.label"),
         field: "name",
         type: "input",
-        pinned: true,
-        render: ({ field: { value, onChange } }) => (
-          <Input
-            placeholder={t("api-key:filter.items.name.placeholder")}
-            defaultValue={value ?? ""}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                onChange?.((e.target as HTMLInputElement).value);
-              }
-            }}
-          />
-        ),
+        placeholder: t("api-key:filter.items.name.placeholder"),
+        operators: ["$fulltext"],
+        defaultOperator: "$fulltext",
+      },
+      {
+        label: t("api-key:filter.items.key_prefix.label"),
+        field: "key_prefix",
+        type: "input",
+        placeholder: t("api-key:filter.items.key_prefix.placeholder"),
+        operators: ["$eq", "$ne"],
+        defaultOperator: "$eq",
+      },
+      {
+        label: t("api-key:filter.items.created_at.label"),
+        field: "created_at",
+        type: "date-picker",
+        max: dayjs().toISOString(),
+        operators: ["$gte", "$lte"],
+        defaultOperator: "$gte",
       },
     ];
   }, []);
@@ -392,30 +406,20 @@ function ApiKeysComponent() {
       </PageHeader>
       <PageContent>
         <div className="mb-4" data-testid="api-keys-page">
-          <Filter
+          <DataFilter
             filters={filters}
-            values={filterValues}
-            onChange={(values) => {
+            value={{ filter: filterValues, query }}
+            onChange={(value) => {
               navigate({
                 to: location.pathname,
                 search: {
-                  ...(query ? { query } : {}),
-                  ...(!isEmpty(values) ? { filter: values } : {}),
+                  ...(value.query ? { query: value.query } : {}),
+                  ...(!isEmpty(value.filter) ? { filter: value.filter } : {}),
                 },
               });
             }}
             search={{
               placeholder: t("api-key:filter.search.placeholder"),
-              value: query,
-              onChange: (value) => {
-                navigate({
-                  to: location.pathname,
-                  search: {
-                    ...(value ? { query: value } : {}),
-                    ...(!isEmpty(filterValues) ? { filter: filterValues } : {}),
-                  },
-                });
-              },
             }}
           />
         </div>

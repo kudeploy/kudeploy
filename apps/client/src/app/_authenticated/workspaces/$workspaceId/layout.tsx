@@ -12,8 +12,8 @@ import {
 import { Breadcrumbs } from "@/components/breadcrumbs";
 
 const GET_CURRENT_WORKSPACE_FROM_WORKSPACE_LAYOUT = graphql(`
-  query getCurrentWorkspaceFromWorkspaceLayout {
-    currentWorkspace {
+  query getCurrentWorkspaceFromWorkspaceLayout($workspaceId: ID!) {
+    workspace(id: $workspaceId) {
       id
     }
     currentWorkspaceMember {
@@ -25,14 +25,17 @@ const GET_CURRENT_WORKSPACE_FROM_WORKSPACE_LAYOUT = graphql(`
 export const Route = createFileRoute("/_authenticated/workspaces/$workspaceId")(
   {
     component: WorkspaceLayout,
-    beforeLoad: async ({ context: { apolloClient } }) => {
+    beforeLoad: async ({ context: { apolloClient }, params }) => {
       const { data } = await apolloClient.query({
         query: GET_CURRENT_WORKSPACE_FROM_WORKSPACE_LAYOUT,
+        variables: {
+          workspaceId: params.workspaceId,
+        },
         errorPolicy: "ignore",
-        fetchPolicy: "network-only",
+        fetchPolicy: "cache-first",
       });
 
-      if (!data?.currentWorkspace || !data.currentWorkspaceMember) {
+      if (!data?.workspace || !data.currentWorkspaceMember) {
         throw redirect({ to: "/workspaces" });
       }
     },

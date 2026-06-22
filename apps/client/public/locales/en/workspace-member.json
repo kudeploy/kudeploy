@@ -53,6 +53,9 @@
       },
       "status": {
         "label": "Status"
+      },
+      "type": {
+        "label": "Type"
       }
     },
     "search": {
@@ -84,6 +87,10 @@
     "disabled": "Disabled",
     "invite_expired": "Invite Expired",
     "inviting": "Inviting"
+  },
+  "type": {
+    "service_account": "Service Account",
+    "user": "User"
   },
   "table": {
     "joined": "Joined",

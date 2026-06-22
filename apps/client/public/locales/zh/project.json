@@ -41,6 +41,9 @@
       "search": {
         "placeholder": "搜索存储卷"
       },
+      "created_at": {
+        "label": "创建时间"
+      },
       "name": {
         "label": "名称",
         "placeholder": "存储卷名称"
@@ -107,6 +110,9 @@
       "search": {
         "placeholder": "搜索镜像凭证"
       },
+      "created_at": {
+        "label": "创建时间"
+      },
       "name": {
         "label": "名称",
         "placeholder": "凭证名称"
@@ -155,6 +161,9 @@
   "filter": {
     "search": {
       "placeholder": "搜索项目"
+    },
+    "created_at": {
+      "label": "创建时间"
     },
     "name": {
       "label": "名称",

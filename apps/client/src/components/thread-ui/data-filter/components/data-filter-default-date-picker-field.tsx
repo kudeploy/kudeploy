@@ -1,42 +1,68 @@
-import dayjs from "dayjs";
+import {
+  getDataFilterDate,
+  getDataFilterDateDisabled,
+  getDataFilterDateRange,
+  getDataFilterDateRangeValue,
+} from "../utils";
 import type { FC } from "react";
 
-import type { DataFilterDefaultDatePickerFieldProps } from "../interfaces/data-filter-default-date-picker-field-props";
-import { Calendar } from "@/components/ui/calendar";
+import type {
+  DataFilterDatePickerBetweenValue,
+  DataFilterItemDatePickerProps,
+  DataFilterOperator,
+} from "../types";
+import { Calendar } from "@/components/thread-ui/calendar";
 
-const getDate = (value: unknown): Date | undefined => {
-  if (value instanceof Date) {
-    return value;
-  }
+type DataFilterDefaultDatePickerFieldValue =
+  | DataFilterDatePickerBetweenValue
+  | Date
+  | string
+  | undefined;
 
-  if (typeof value !== "string") {
-    return undefined;
-  }
-
-  const date = dayjs(value);
-
-  return date.isValid() ? date.toDate() : undefined;
-};
+interface DataFilterDefaultDatePickerFieldProps {
+  item: DataFilterItemDatePickerProps;
+  operator: DataFilterOperator;
+  value: DataFilterDefaultDatePickerFieldValue;
+  onChange: (value: DataFilterDefaultDatePickerFieldValue) => void;
+}
 
 export const DataFilterDefaultDatePickerField: FC<
   DataFilterDefaultDatePickerFieldProps
-> = ({ item, value, onChange }) => {
-  const min = getDate(item.min);
-  const max = getDate(item.max);
-  const selected = getDate(value);
+> = ({ item, operator, value, onChange }) => {
+  const selected = getDataFilterDate(value);
+  const disabled = getDataFilterDateDisabled({
+    min: item.min,
+    max: item.max,
+  });
+
+  if (operator === "$between") {
+    const [from, to] = getDataFilterDateRange(value);
+    const selectedRange = {
+      from,
+      to,
+    };
+
+    return (
+      <Calendar
+        className="p-0 px-2 pb-2"
+        defaultMonth={selectedRange.from ?? selectedRange.to}
+        disabled={disabled}
+        mode="range"
+        selected={selectedRange}
+        onSelect={(dateRange) => {
+          onChange(getDataFilterDateRangeValue(dateRange));
+        }}
+      />
+    );
+  }
 
   return (
     <Calendar
       className="p-0 px-2 pb-2"
       defaultMonth={selected}
+      disabled={disabled}
       mode="single"
       selected={selected}
-      disabled={(date) => {
-        return (
-          (typeof min !== "undefined" && dayjs(date).isBefore(min, "day")) ||
-          (typeof max !== "undefined" && dayjs(date).isAfter(max, "day"))
-        );
-      }}
       onSelect={(date) => {
         onChange(date ? date.toISOString() : undefined);
       }}

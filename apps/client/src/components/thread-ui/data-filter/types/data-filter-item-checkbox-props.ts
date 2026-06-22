@@ -1,5 +1,5 @@
 import type { DataFilterItemBaseProps } from "./data-filter-item-base-props";
-import type { DataFilterCheckboxOperator } from "../types";
+import type { DataFilterCheckboxOperator } from "./data-filter-checkbox-operator";
 
 export interface DataFilterItemCheckboxProps extends DataFilterItemBaseProps<
   boolean | null,

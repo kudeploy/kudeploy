@@ -1,4 +1,5 @@
 import { isDataFilterOperator } from "./is-data-filter-operator";
+import { getDataFilterBetweenValue } from "./get-data-filter-between-value";
 import type { DataFilterOperator } from "../types";
 
 export const getDataFilterCondition = (
@@ -10,8 +11,24 @@ export const getDataFilterCondition = (
     !Array.isArray(value) &&
     !(value instanceof Date)
   ) {
-    const entry = Object.entries(value as Record<string, unknown>).find(
-      ([operator]) => isDataFilterOperator(operator),
+    const record = value as Record<string, unknown>;
+
+    if ("$between" in record) {
+      return {
+        operator: "$between",
+        value: getDataFilterBetweenValue(record.$between),
+      };
+    }
+
+    if ("$gte" in record && "$lte" in record) {
+      return {
+        operator: "$between",
+        value: getDataFilterBetweenValue(record),
+      };
+    }
+
+    const entry = Object.entries(record).find(([operator]) =>
+      isDataFilterOperator(operator),
     );
 
     if (entry) {

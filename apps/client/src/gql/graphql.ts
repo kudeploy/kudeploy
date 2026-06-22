@@ -1616,12 +1616,12 @@ export type DeleteDomainFromDomainsRouteMutation = {
 };
 
 export type GetCurrentWorkspaceFromWorkspaceLayoutQueryVariables = Exact<{
-  [key: string]: never;
+  workspaceId: Scalars["ID"]["input"];
 }>;
 
 export type GetCurrentWorkspaceFromWorkspaceLayoutQuery = {
   __typename?: "Query";
-  currentWorkspace?: { __typename?: "Workspace"; id: string } | null;
+  workspace?: { __typename?: "Workspace"; id: string } | null;
   currentWorkspaceMember?: {
     __typename?: "WorkspaceMember";
     id: string;
@@ -3973,12 +3973,35 @@ export const GetCurrentWorkspaceFromWorkspaceLayoutDocument = {
       kind: "OperationDefinition",
       operation: "query",
       name: { kind: "Name", value: "getCurrentWorkspaceFromWorkspaceLayout" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "workspaceId" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+      ],
       selectionSet: {
         kind: "SelectionSet",
         selections: [
           {
             kind: "Field",
-            name: { kind: "Name", value: "currentWorkspace" },
+            name: { kind: "Name", value: "workspace" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "id" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "workspaceId" },
+                },
+              },
+            ],
             selectionSet: {
               kind: "SelectionSet",
               selections: [

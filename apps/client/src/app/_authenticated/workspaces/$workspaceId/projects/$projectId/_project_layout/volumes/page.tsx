@@ -14,12 +14,12 @@ import { toast } from "sonner";
 import z from "zod";
 
 import { formatVolumeFilterValue } from "./volume-filter";
-import type { DataFilterItemProps as FilterItemProps } from "@/components/thread-ui/data-filter";
+import type { DataFilterItemProps } from "@/components/thread-ui/data-filter";
 import type { GetVolumesFromProjectVolumesRouteQuery } from "@/gql/graphql";
 import { alertDialog } from "@/components/thread-ui/alert-dialog";
 import { Badge } from "@/components/thread-ui/badge";
 import { Button } from "@/components/thread-ui/button";
-import { DataFilter as Filter } from "@/components/thread-ui/data-filter";
+import { DataFilter } from "@/components/thread-ui/data-filter";
 import { formatFilterValues } from "@/lib/format-filter-values";
 import { DataTable } from "@/components/thread-ui/data-table";
 import { Input } from "@/components/thread-ui/input";
@@ -48,6 +48,10 @@ import {
   getNextPageSearch,
   getPreviousPageSearch,
 } from "@/lib/connection-search";
+import {
+  createDataFilterInputSearchSchema,
+  dataFilterDateSearchSchema,
+} from "@/lib/data-filter-search-schema";
 
 const GET_VOLUMES_FROM_PROJECT_VOLUMES_ROUTE = graphql(`
   query getVolumesFromProjectVolumesRoute(
@@ -124,7 +128,8 @@ export const Route = createFileRoute(
     createConnectionSearchSchema({
       filterSchema: z
         .object({
-          name: z.string().max(255).optional().catch(undefined),
+          name: createDataFilterInputSearchSchema().optional().catch(undefined),
+          createdAt: dataFilterDateSearchSchema.optional().catch(undefined),
         })
         .optional(),
       pageSize: 20,
@@ -159,7 +164,7 @@ function ProjectVolumesComponent() {
   const [volumeForm, setVolumeForm] = useState(initialVolumeFormValue());
 
   const query = search?.query ?? "";
-  const filterValues = search?.filter ?? {};
+  const filterValues = (search?.filter ?? {}) as Record<string, unknown>;
 
   const { data, refetch } = useQuery(GET_VOLUMES_FROM_PROJECT_VOLUMES_ROUTE, {
     variables: {
@@ -185,25 +190,23 @@ function ProjectVolumesComponent() {
   const volumes = data?.volumes.edges.map((edge) => edge.node) ?? [];
   const pageInfo = data?.volumes.pageInfo;
 
-  const filters: Array<FilterItemProps> = useMemo(
+  const filters: Array<DataFilterItemProps> = useMemo(
     () => [
       {
         label: t("project:volumes.filter.name.label"),
         field: "name",
         type: "input",
-        pinned: true,
-        render: ({ field: { value, onChange } }) => (
-          <Input
-            defaultValue={value ?? ""}
-            placeholder={t("project:volumes.filter.name.placeholder")}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                onChange?.((event.target as HTMLInputElement).value);
-              }
-            }}
-          />
-        ),
+        placeholder: t("project:volumes.filter.name.placeholder"),
+        operators: ["$eq"],
+        defaultOperator: "$eq",
+      },
+      {
+        label: t("project:volumes.filter.created_at.label"),
+        field: "createdAt",
+        type: "date-picker",
+        max: dayjs().toISOString(),
+        operators: ["$gte", "$lte"],
+        defaultOperator: "$gte",
       },
     ],
     [],
@@ -283,30 +286,20 @@ function ProjectVolumesComponent() {
       </PageHeader>
       <PageContent>
         <div className="mb-4" data-testid="project-volumes-page">
-          <Filter
+          <DataFilter
             filters={filters}
-            values={filterValues}
-            onChange={(values) => {
+            value={{ filter: filterValues, query }}
+            onChange={(value) => {
               navigate({
                 to: location.pathname,
                 search: {
-                  ...(query ? { query } : {}),
-                  ...(!isEmpty(values) ? { filter: values } : {}),
+                  ...(value.query ? { query: value.query } : {}),
+                  ...(!isEmpty(value.filter) ? { filter: value.filter } : {}),
                 },
               });
             }}
             search={{
               placeholder: t("project:volumes.filter.search.placeholder"),
-              value: query,
-              onChange: (value) => {
-                navigate({
-                  to: location.pathname,
-                  search: {
-                    ...(value ? { query: value } : {}),
-                    ...(!isEmpty(filterValues) ? { filter: filterValues } : {}),
-                  },
-                });
-              },
             }}
           />
         </div>
