@@ -1,3 +1,13 @@
+## 0.9.1 (2026-06-22)
+
+### 🩹 Fixes
+
+- **client:** align shadcn variants and empty filters ([4368526](https://github.com/kudeploy/kudeploy/commit/4368526))
+
+### ❤️ Thank You
+
+- Xudong Huang @xudongcc
+
 ## 0.9.0 (2026-06-10)
 
 ### 🚀 Features
